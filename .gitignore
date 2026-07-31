@@ -1,0 +1,77 @@
+# ---- Secrets / local config ----
+.env
+.env.*
+!.env.example
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Streamlit ----
+.streamlit/secrets.toml
+
+# ---- Databases ----
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+data/invoices.db
+
+# ---- App runtime data (generated at runtime, not source) ----
+data/uploads/*
+!data/uploads/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/temp/*
+!data/temp/.gitkeep
+data/logs/*
+!data/logs/.gitkeep
+storage/exports/*
+!storage/exports/.gitkeep
+storage/json/*
+!storage/json/.gitkeep
+
+# Sample/test invoices if kept locally only (remove this line if you want
+# sample files tracked in the repo)
+# data/samples/*
+
+# ---- Logs ----
+*.log
+
+# ---- OCR / ML model weights & caches (large, downloaded on first run) ----
+*.pth
+*.onnx
+*.pt
+.paddleocr/
+.paddlex/
+paddleocr_models/
+.cache/
+models/weights/
+
+# ---- Jupyter (if used for experimentation) ----
+.ipynb_checkpoints/
+
+# ---- Testing / coverage ----
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---- Editor / IDE ----
+.vscode/
+.idea/
+*.swp
+
+# ---- OS junk ----
+.DS_Store
+Thumbs.db
