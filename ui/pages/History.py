@@ -6,20 +6,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import pandas as pd
 import streamlit as st
-<<<<<<< HEAD
 from config.constants import CATEGORY_OPTIONS
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 from database.repository import DuplicateInvoiceError, InvoiceLockedError
 from services.invoice_service import (
     list_invoices, get_invoice, update_invoice, lock_invoice, unlock_invoice,
 )
 from services.search_service import search
 from ui.components.nav import render_nav, guard_locked_navigation
-<<<<<<< HEAD
 from utils.pdf_utils import pdf_to_images
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 
 st.set_page_config(page_title="Invoice History", page_icon="🗂️", layout="wide")
 
@@ -82,15 +76,12 @@ def edit_invoice_dialog(inv: dict):
             STATUS_OPTIONS,
             index=STATUS_OPTIONS.index(inv["status"]) if inv.get("status") in STATUS_OPTIONS else 0,
         )
-<<<<<<< HEAD
         category = st.selectbox(
             "Category",
             CATEGORY_OPTIONS,
             index=CATEGORY_OPTIONS.index(inv["category"]) if inv.get("category") in CATEGORY_OPTIONS else len(CATEGORY_OPTIONS) - 1,
             help="AI-assigned during processing — change it here if it's wrong.",
         )
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 
     computed = subtotal + tax_amount
     if abs(computed - total_amount) > max(0.02 * total_amount, 0.01):
@@ -123,10 +114,7 @@ def edit_invoice_dialog(inv: dict):
             "tax_amount": tax_amount,
             "total_amount": total_amount,
             "status": status,
-<<<<<<< HEAD
             "category": category,
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
         }
         try:
             update_invoice(inv["id"], updates)
@@ -144,28 +132,8 @@ def edit_invoice_dialog(inv: dict):
         st.rerun()
 
 
-<<<<<<< HEAD
 def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
     """Renders the header + per-row Edit/Lock table for a given invoice list."""
-=======
-query = st.text_input("Search by invoice #, vendor, or customer")
-status_filter = st.selectbox("Filter by status", ["All"] + STATUS_OPTIONS)
-
-if query:
-    invoices = search(query)
-else:
-    invoices = list_invoices(limit=200, status=None if status_filter == "All" else status_filter)
-
-if not invoices:
-    st.info("No invoices found.")
-else:
-    locked_count = sum(1 for inv in invoices if inv.get("locked"))
-    st.caption(
-        f"{len(invoices)} invoice(s) — {locked_count} locked. "
-        "Click ✏️ Edit to correct a field, then 🔒 Lock once it's confirmed correct."
-    )
-
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
     header_cols = st.columns(ROW_WIDTHS)
     for col, label in zip(header_cols, COLUMN_LABELS):
         col.markdown(f"**{label}**")
@@ -184,19 +152,11 @@ else:
         row_cols[8].write(inv.get("currency") or "-")
         row_cols[9].write(inv.get("status") or "-")
         row_cols[10].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
-<<<<<<< HEAD
         if row_cols[11].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
             edit_invoice_dialog(inv)
         lock_icon = "🔓" if locked else "🔒"
         if row_cols[12].button(
             lock_icon, key=f"lock_btn_{key_prefix}_{inv['id']}",
-=======
-        if row_cols[11].button("✏️", key=f"edit_btn_{inv['id']}", disabled=locked, help="Edit"):
-            edit_invoice_dialog(inv)
-        lock_icon = "🔓" if locked else "🔒"
-        if row_cols[12].button(
-            lock_icon, key=f"lock_btn_{inv['id']}",
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
             help="Unlock" if locked else "Lock (confirm this row is correct)",
         ):
             if locked:
@@ -205,7 +165,6 @@ else:
                 lock_invoice(inv["id"])
             st.rerun()
 
-<<<<<<< HEAD
 
 def render_category_tables(invoices: list[dict], scope_key: str) -> None:
     """Splits `invoices` into one table per category (Foods, Office Supplies,
@@ -310,8 +269,6 @@ else:
                 invoices += by_month[chosen_key]
 
 if invoices:
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
     st.divider()
 
     selected_id = st.selectbox("View full details for invoice ID", [None] + [inv["id"] for inv in invoices])
@@ -323,10 +280,7 @@ if invoices:
         c1.write(f"**Customer:** {detail.get('customer_name') or '-'}")
         c1.write(f"**Date:** {detail.get('invoice_date') or '-'}")
         c1.write(f"**Filename:** {detail.get('original_filename') or '-'}")
-<<<<<<< HEAD
         c1.write(f"**Category:** {detail.get('category') or '-'}")
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
         c2.write(f"**Net Amount:** {(detail.get('subtotal') or 0):,.2f} {detail.get('currency')}")
         c2.write(f"**VAT:** {(detail.get('tax_amount') or 0):,.2f} {detail.get('currency')}")
         c2.write(f"**Total Amount Due:** {(detail.get('total_amount') or 0):,.2f} {detail.get('currency')}")
@@ -349,7 +303,6 @@ if invoices:
             st.write("**Line Items**")
             st.dataframe(pd.DataFrame(detail["line_items"]), use_container_width=True, hide_index=True)
 
-<<<<<<< HEAD
         with st.expander("🖼️ Invoice image"):
             source_file = detail.get("source_file")
             if not source_file or not Path(source_file).exists():
@@ -367,7 +320,5 @@ if invoices:
             else:
                 st.image(source_file, use_column_width=True)
 
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
         with st.expander("Raw OCR text (debug)"):
             st.text(detail.get("raw_text") or "(no OCR text stored for this invoice)")
