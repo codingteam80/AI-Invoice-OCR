@@ -1,0 +1,99 @@
+"""Streamlit page: upload one or more invoices and process them."""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+import streamlit as st
+from config.settings import settings
+from services.upload_service import handle_upload, UploadError
+from services.invoice_service import process_invoice_file
+from ui.components.nav import render_nav
+
+st.set_page_config(page_title="Upload Invoices", page_icon="📤", layout="wide")
+
+st.session_state.setdefault("upload_in_progress", False)
+st.session_state.setdefault("pending_upload_files", None)
+st.session_state.setdefault("upload_results", None)
+
+render_nav()
+
+st.title("📤 Upload Invoices")
+
+locked = st.session_state.upload_in_progress
+
+if locked:
+    st.info("⏳ Processing invoices — please wait. Other tabs are locked until this finishes.")
+
+st.caption("OCR engine is chosen automatically — PaddleOCR for printed invoices, TrOCR for handwritten ones.")
+override_enabled = st.checkbox("Manually override handwriting detection", disabled=locked)
+force_handwritten = None
+if override_enabled:
+    force_handwritten = st.radio(
+        "Treat these files as:", ["Printed", "Handwritten"], horizontal=True, disabled=locked
+    ) == "Handwritten"
+
+files = st.file_uploader(
+    "Drop invoice images or PDFs here",
+    type=["png", "jpg", "jpeg", "tiff", "bmp", "pdf"],
+    accept_multiple_files=True,
+    disabled=locked,
+)
+
+if files and not locked and st.button("Process Invoices", type="primary"):
+    # Snapshot the uploaded bytes now, then lock navigation and rerun so the
+    # sidebar renders in its locked state *before* the (potentially slow)
+    # processing loop below actually starts.
+    st.session_state.pending_upload_files = [(f.name, f.read()) for f in files]
+    st.session_state.upload_results = None
+    st.session_state.force_handwritten = force_handwritten
+    st.session_state.upload_in_progress = True
+    st.rerun()
+
+if locked and st.session_state.pending_upload_files:
+    pending = st.session_state.pending_upload_files
+    progress = st.progress(0.0, text="Starting...")
+    results = []
+
+    for i, (name, data) in enumerate(pending):
+        progress.progress(i / len(pending), text=f"Processing {name}...")
+        try:
+            saved_path = handle_upload(data, name)
+        except UploadError as e:
+            results.append({"success": False, "error": str(e), "file": name})
+            continue
+
+        result = process_invoice_file(
+            saved_path,
+            force_handwritten=st.session_state.get("force_handwritten"),
+            original_filename=name,
+        )
+        result["file"] = name
+        results.append(result)
+
+    progress.progress(1.0, text="Done")
+
+    # Unlock navigation and rerun so the sidebar (and this page) reflect the
+    # finished state.
+    st.session_state.upload_results = results
+    st.session_state.pending_upload_files = None
+    st.session_state.upload_in_progress = False
+    st.rerun()
+
+if st.session_state.upload_results:
+    for r in st.session_state.upload_results:
+        if r.get("duplicate"):
+            st.warning(f"⚠️ {r['file']}: {r.get('error')}")
+        elif r.get("success"):
+            with st.expander(f"✅ {r['file']} — {r.get('invoice_number', 'N/A')}", expanded=True):
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Vendor", r.get("vendor_name", "-"))
+                c2.metric("Total", f"{r.get('total_amount', 0):,.2f} {r.get('currency', '')}")
+                c3.metric("Confidence", f"{(r.get('confidence_score') or 0)*100:.0f}%")
+                c4.metric("Status", r.get("status", "-"))
+                st.caption(f"OCR engine used: `{r.get('ocr_engine_used', '-')}`")
+                if r.get("status") == "needs_review":
+                    st.warning("This invoice needs manual review — low confidence or data mismatch.")
+        else:
+            st.error(f"❌ {r['file']}: {r.get('error')}")
+elif not files and not locked:
+    st.info(f"Supported formats: PNG, JPG, TIFF, BMP, PDF · Max size: {settings.MAX_UPLOAD_MB} MB")
