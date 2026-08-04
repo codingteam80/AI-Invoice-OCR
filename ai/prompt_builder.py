@@ -20,15 +20,6 @@ fields as accurately as possible. Follow these rules strictly:
    Never use CASH or TENDERED (what the customer handed over) or CHANGE
    (money handed back) as total_amount, even if that number is larger or
    appears more prominently on the receipt.
-<<<<<<< HEAD
-9. category must be EXACTLY one of: Foods, Office Supplies, Furnitures,
-   Others — no other spelling or new categories. Base the choice on the
-   vendor name and the line items (e.g. a grocery/restaurant/canteen
-   vendor or food line items -> "Foods"; pens, paper, ink, printer
-   supplies -> "Office Supplies"; chairs, desks, cabinets -> "Furnitures").
-   If nothing clearly matches, use "Others".
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 """
 
 

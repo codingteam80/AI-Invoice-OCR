@@ -88,10 +88,6 @@ class InvoiceRepository:
             total_amount=invoice.total_amount,
             currency=invoice.currency,
             payment_terms=invoice.payment_terms,
-<<<<<<< HEAD
-            category=invoice.category,
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
             source_file=invoice.source_file,
             original_filename=invoice.original_filename,
             ocr_engine_used=invoice.ocr_engine_used,
@@ -159,11 +155,7 @@ class InvoiceRepository:
         editable_fields = [
             "invoice_number", "invoice_date", "due_date", "customer_name",
             "subtotal", "tax_amount", "tax_rate", "discount", "total_amount",
-<<<<<<< HEAD
-            "currency", "payment_terms", "status", "category", "source_file",
-=======
             "currency", "payment_terms", "status",
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
         ]
         for field in editable_fields:
             if field in data:

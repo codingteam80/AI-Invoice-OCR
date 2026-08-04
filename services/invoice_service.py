@@ -7,10 +7,7 @@ from database.database import SessionLocal
 from database.repository import InvoiceRepository, DuplicateInvoiceError, InvoiceLockedError
 from parser.invoice_parser import parse_invoice, InvoiceParsingError
 from utils.file_utils import move_to_processed
-<<<<<<< HEAD
 from utils.categorizer import auto_categorize
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 
 logger = get_logger("services.invoice")
 
@@ -38,10 +35,7 @@ def process_invoice_file(
         return {"success": False, "error": str(e), "file": file_path}
 
     invoice.original_filename = original_filename or Path(file_path).name
-<<<<<<< HEAD
     invoice.category = auto_categorize(invoice.vendor_name)
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 
     session = SessionLocal()
     try:
@@ -80,7 +74,6 @@ def process_invoice_file(
     except Exception as e:
         logger.warning(f"Could not move file to processed dir: {e}")
         processed_path = file_path
-<<<<<<< HEAD
     else:
         # move_to_processed() runs AFTER repo.save(), so the source_file
         # persisted above still points at the (now-empty) upload path.
@@ -93,8 +86,6 @@ def process_invoice_file(
             logger.warning(f"Could not update source_file after move: {e}")
         finally:
             session.close()
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 
     return {
         "success": True,
@@ -216,12 +207,9 @@ def _orm_to_dict(row) -> dict:
         "vendor_name": row.vendor_name,
         "customer_name": row.customer_name,
         "original_filename": row.original_filename,
-<<<<<<< HEAD
         "source_file": row.source_file,
         "category": row.category,
         "created_at": row.created_at.isoformat() if row.created_at else None,
-=======
->>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
         "subtotal": row.subtotal,
         "tax_amount": row.tax_amount,
         "discount": row.discount,
