@@ -4,7 +4,10 @@ import uuid
 from utils.date_utils import to_iso
 from parser.currency_parser import normalize_currency, to_float
 from config.settings import settings
+<<<<<<< HEAD
 from config.constants import CATEGORY_OPTIONS, DEFAULT_CATEGORY
+=======
+>>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 
 # Labels used by reconcile_total_amount() to scan raw OCR text for the
 # amounts sitting next to each kind of line. "total" deliberately excludes
@@ -50,6 +53,7 @@ def _amounts_near_label(ocr_text: str, labels: tuple, exclude: tuple = ()) -> li
     return amounts
 
 
+<<<<<<< HEAD
 def normalize_category(value) -> str:
     """Snap whatever the LLM returned to one of CATEGORY_OPTIONS.
 
@@ -72,6 +76,11 @@ def post_process(data: dict) -> dict:
 
     data["category"] = normalize_category(data.get("category"))
 
+=======
+def post_process(data: dict) -> dict:
+    data = dict(data)  # shallow copy
+
+>>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
     for date_field in ("invoice_date", "due_date"):
         if data.get(date_field):
             data[date_field] = to_iso(str(data[date_field]))

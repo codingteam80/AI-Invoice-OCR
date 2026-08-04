@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿"""SQLAlchemy ORM models (distinct from the Pydantic models in /models)."""
+=======
+"""SQLAlchemy ORM models (distinct from the Pydantic models in /models)."""
+>>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 from datetime import datetime, date
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, Text
@@ -41,7 +45,10 @@ class InvoiceORM(Base):
     currency = Column(String, default="USD")
 
     payment_terms = Column(String, nullable=True)
+<<<<<<< HEAD
     category = Column(String, default="Others", nullable=False)
+=======
+>>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
     source_file = Column(String, nullable=True)
     original_filename = Column(String, nullable=True)
     ocr_engine_used = Column(String, nullable=True)

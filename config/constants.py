@@ -20,6 +20,7 @@ REQUIRED_FIELDS = [
     "total_amount", "currency",
 ]
 
+<<<<<<< HEAD
 # Fixed list of purchase categories. The LLM is asked to pick one of these
 # during extraction (see ai/prompt_builder.py); anything it returns that
 # isn't in this list gets normalized to "Others" (see
@@ -28,6 +29,8 @@ REQUIRED_FIELDS = [
 CATEGORY_OPTIONS = ["Foods", "Office Supplies", "Furnitures", "Others"]
 DEFAULT_CATEGORY = "Others"
 
+=======
+>>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 EXTRACTION_SCHEMA = {
     "invoice_number": (
         "string — the document's unique identifier. On formal invoices this "
@@ -67,10 +70,13 @@ EXTRACTION_SCHEMA = {
     ),
     "currency": "3-letter ISO code",
     "payment_terms": "string or null",
+<<<<<<< HEAD
     "category": (
         f"string — one of exactly: {', '.join(CATEGORY_OPTIONS)}. Classify "
         "what was purchased based on the vendor name and line items. If it "
         "doesn't clearly fit Foods, Office Supplies, or Furnitures, use "
         "'Others'."
     ),
+=======
+>>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 }

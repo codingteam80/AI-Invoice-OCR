@@ -44,7 +44,10 @@ class Invoice(BaseModel):
     currency: str = "USD"
 
     payment_terms: Optional[str] = None
+<<<<<<< HEAD
     category: str = "Others"
+=======
+>>>>>>> 6f955363a7d26856b8f0ea3d25a45457d11dfa98
 
     source_file: Optional[str] = None
     original_filename: Optional[str] = None
