@@ -1,5 +1,10 @@
 ﻿"""Shared constants used across the app."""
 
+APP_NAME = "AI Invoice OCR"
+APP_VERSION = "1.0.0"
+COMPANY_NAME = "Tsukiden Global Solutions, Inc."
+COPYRIGHT_YEAR = "2026"
+
 SUPPORTED_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
 SUPPORTED_PDF_EXTS = {".pdf"}
 SUPPORTED_EXTS = SUPPORTED_IMAGE_EXTS | SUPPORTED_PDF_EXTS

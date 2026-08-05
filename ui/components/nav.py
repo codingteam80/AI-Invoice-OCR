@@ -13,6 +13,7 @@ for direct URL navigation / browser back-button, which `disabled=True` on a
 page_link can't prevent by itself.
 """
 import streamlit as st
+from config.constants import APP_NAME, APP_VERSION, COMPANY_NAME, COPYRIGHT_YEAR
 
 # (path relative to the main script ui/streamlit_app.py, label, icon)
 _PAGES = [
@@ -25,9 +26,26 @@ _PAGES = [
 
 _UPLOAD_PAGE = "pages/Upload.py"
 
-_HIDE_DEFAULT_NAV_CSS = """
+_SIDEBAR_CSS = """
 <style>
 [data-testid="stSidebarNav"] { display: none; }
+
+/* Stretch the sidebar's own content area to full height and lay it out as
+   a column, so the footer (margin-top: auto) sticks to the bottom instead
+   of just trailing after the nav links. */
+[data-testid="stSidebarUserContent"] {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 3rem);
+}
+.tsukiden-sidebar-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(26, 35, 31, 0.12);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: #5b6b60;
+}
 </style>
 """
 
@@ -37,15 +55,27 @@ def is_upload_locked() -> bool:
 
 
 def render_nav() -> None:
-    """Render the sidebar nav, disabling every page but Upload while locked."""
-    st.markdown(_HIDE_DEFAULT_NAV_CSS, unsafe_allow_html=True)
+    """Render the sidebar: title, nav links (disabled but Upload while an
+    upload is in progress), and a footer pinned to the bottom."""
+    st.markdown(_SIDEBAR_CSS, unsafe_allow_html=True)
     locked = is_upload_locked()
 
     with st.sidebar:
+        st.markdown(f"## 🧾 {APP_NAME}")
         if locked:
             st.warning("⏳ Upload in progress — other tabs are locked until it finishes.")
         for path, label, icon in _PAGES:
             st.page_link(path, label=label, icon=icon, disabled=locked and path != _UPLOAD_PAGE)
+
+        st.markdown(
+            f"""
+            <div class="tsukiden-sidebar-footer">
+            © {COPYRIGHT_YEAR} {COMPANY_NAME}<br>
+            {APP_NAME} System • Version {APP_VERSION}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def guard_locked_navigation() -> None:

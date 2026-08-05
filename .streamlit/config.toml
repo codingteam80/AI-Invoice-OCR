@@ -1,0 +1,10 @@
+[theme]
+# Tsukiden brand colors, sampled from Logo_TSUKIDEN.png:
+#   primary green  #3AAF11
+#   dark green/ink #1A231F
+base = "light"
+primaryColor = "#3AAF11"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F6EE"
+textColor = "#1A231F"
+font = "sans serif"
