@@ -124,7 +124,7 @@ def _bbox_pil_box(bbox: list) -> tuple:
 
 def extract_from_image(
     image_path: str,
-    use_preprocessing: bool = True,
+    use_preprocessing: bool = False,
     force_handwritten: bool | None = None,
 ) -> dict:
     """
