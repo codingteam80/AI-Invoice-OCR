@@ -4,7 +4,6 @@ from datetime import date
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-import pandas as pd
 import streamlit as st
 from config.constants import CATEGORY_OPTIONS
 from database.repository import DuplicateInvoiceError, InvoiceLockedError
@@ -13,6 +12,7 @@ from services.invoice_service import (
 )
 from services.search_service import search
 from ui.components.nav import render_nav, guard_locked_navigation
+from utils.file_utils import resolve_source_file
 from utils.pdf_utils import pdf_to_images
 
 st.set_page_config(page_title="Invoice History", page_icon="🗂️", layout="wide")
@@ -24,11 +24,20 @@ st.title("🗂️ Invoice History")
 
 STATUS_OPTIONS = ["processed", "needs_review", "failed", "pending"]
 
-ROW_WIDTHS = [0.5, 1.0, 1.3, 1.1, 0.8, 0.9, 0.7, 1.0, 0.6, 0.9, 0.8, 0.7, 0.9]
+ROW_WIDTHS = [0.5, 1.0, 1.3, 1.1, 0.8, 0.9, 0.7, 1.0, 0.6, 0.9, 0.9, 0.8, 0.7, 0.9]
 COLUMN_LABELS = [
     "ID", "Invoice #", "Filename", "Vendor", "Date",
-    "Net Amount", "VAT", "Total Amount Due", "Currency", "Status", "Confidence", "", "",
+    "Net Amount", "VAT", "Total Amount Due", "Currency", "Status", "Category", "Confidence", "", "",
 ]
+
+
+def _show_image(source):
+    """st.image()'s width kwarg was renamed use_column_width -> use_container_width
+    partway through Streamlit's 1.x line — support whichever this runtime has."""
+    try:
+        st.image(source, use_container_width=True)
+    except TypeError:
+        st.image(source, use_column_width=True)
 
 
 def _parse_date(value: str):
@@ -151,11 +160,12 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
         row_cols[7].write(f"{(inv.get('total_amount') or 0):,.2f}")
         row_cols[8].write(inv.get("currency") or "-")
         row_cols[9].write(inv.get("status") or "-")
-        row_cols[10].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
-        if row_cols[11].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
+        row_cols[10].write(inv.get("category") or "-")
+        row_cols[11].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
+        if row_cols[12].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
             edit_invoice_dialog(inv)
         lock_icon = "🔓" if locked else "🔒"
-        if row_cols[12].button(
+        if row_cols[13].button(
             lock_icon, key=f"lock_btn_{key_prefix}_{inv['id']}",
             help="Unlock" if locked else "Lock (confirm this row is correct)",
         ):
@@ -220,12 +230,16 @@ def _month_label(month_key: str) -> str:
 
 
 query = st.text_input("Search by invoice #, vendor, or customer")
-status_filter = st.selectbox("Filter by status", ["All"] + STATUS_OPTIONS)
+f1, f2 = st.columns(2)
+status_filter = f1.selectbox("Filter by status", ["All"] + STATUS_OPTIONS)
+category_filter = f2.selectbox("Filter by category", ["All"] + CATEGORY_OPTIONS)
 
 if query:
     # Search spans every month — shown as one flat table since the point
     # here is finding a specific invoice, not browsing by period.
     invoices = search(query)
+    if category_filter != "All":
+        invoices = [inv for inv in invoices if (inv.get("category") or "Others") == category_filter]
     if not invoices:
         st.info("No invoices found.")
     else:
@@ -237,6 +251,8 @@ if query:
         render_invoice_row_table(invoices, key_prefix="search")
 else:
     all_invoices = list_invoices(limit=2000, status=None if status_filter == "All" else status_filter)
+    if category_filter != "All":
+        all_invoices = [inv for inv in all_invoices if (inv.get("category") or "Others") == category_filter]
 
     if not all_invoices:
         st.info("No invoices found.")
@@ -299,26 +315,22 @@ if invoices:
                 lock_invoice(detail["id"])
             st.rerun()
 
-        if detail.get("line_items"):
-            st.write("**Line Items**")
-            st.dataframe(pd.DataFrame(detail["line_items"]), use_container_width=True, hide_index=True)
-
         with st.expander("🖼️ Invoice image"):
-            source_file = detail.get("source_file")
-            if not source_file or not Path(source_file).exists():
+            resolved_file = resolve_source_file(detail.get("source_file"))
+            if not resolved_file:
                 st.caption("(no image on disk for this invoice)")
-            elif Path(source_file).suffix.lower() == ".pdf":
+            elif resolved_file.suffix.lower() == ".pdf":
                 try:
-                    pages = pdf_to_images(source_file)
+                    pages = pdf_to_images(str(resolved_file))
                 except Exception as e:
                     st.caption(f"(couldn't render PDF preview: {e})")
                     pages = []
                 if pages:
-                    st.image(pages[0], use_column_width=True)
+                    _show_image(pages[0])
                     if len(pages) > 1:
                         st.caption(f"Showing page 1 of {len(pages)}.")
             else:
-                st.image(source_file, use_column_width=True)
+                _show_image(str(resolved_file))
 
         with st.expander("Raw OCR text (debug)"):
             st.text(detail.get("raw_text") or "(no OCR text stored for this invoice)")

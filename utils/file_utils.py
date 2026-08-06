@@ -2,7 +2,7 @@
 import hashlib
 import shutil
 import uuid
-from pathlib import Path
+from pathlib import Path, PureWindowsPath, PurePosixPath
 from config.constants import SUPPORTED_EXTS
 from config.settings import settings
 
@@ -37,3 +37,36 @@ def move_to_processed(path: str) -> str:
 
 def file_size_mb(path: str) -> float:
     return Path(path).stat().st_size / (1024 * 1024)
+
+
+def resolve_source_file(stored_path: str | None) -> Path | None:
+    """Best-effort lookup for an invoice's saved image/PDF on disk.
+
+    `source_file` is persisted at processing time as a plain absolute path.
+    That path can go stale — most commonly because the record was created
+    on a different machine/OS than the one currently serving the app (e.g.
+    a Windows dev path like 'C:\\...\\data\\uploads\\xyz.jpg' baked into the
+    DB before deploying to a Linux server), or because the file was moved
+    after the record was written. Rather than only checking the literal
+    path, this also looks for a same-named file in the app's own upload/
+    processed/temp folders, which is where it actually lives today.
+    """
+    if not stored_path:
+        return None
+
+    direct = Path(stored_path)
+    if direct.exists():
+        return direct
+
+    # Handle a foreign OS path (e.g. Windows backslashes) arriving as a
+    # single opaque string on Linux/Mac — pull out just the filename.
+    filename = PureWindowsPath(stored_path).name or PurePosixPath(stored_path).name
+    if not filename:
+        return None
+
+    for folder in (settings.PROCESSED_DIR, settings.UPLOAD_DIR, settings.TEMP_DIR):
+        candidate = Path(folder) / filename
+        if candidate.exists():
+            return candidate
+
+    return None

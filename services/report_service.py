@@ -23,6 +23,15 @@ def spend_by_month(limit: int = 500) -> dict:
     return dict(sorted(totals.items()))
 
 
+def spend_by_category(limit: int = 500) -> dict:
+    invoices = list_invoices(limit=limit)
+    totals = defaultdict(float)
+    for inv in invoices:
+        cat = inv.get("category") or "Others"
+        totals[cat] += inv.get("total_amount") or 0
+    return dict(sorted(totals.items(), key=lambda kv: kv[1], reverse=True))
+
+
 def status_breakdown(limit: int = 500) -> dict:
     invoices = list_invoices(limit=limit)
     counts = defaultdict(int)
