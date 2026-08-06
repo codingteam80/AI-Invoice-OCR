@@ -15,6 +15,17 @@ handwritten and wants to avoid the extra per-region overhead.
 """
 from pathlib import Path
 
+import torch  # noqa: F401 — imported eagerly and first, before paddleocr/paddlepaddle
+# ever loads. Both torch and paddlepaddle bundle their own native
+# OpenMP/MKL runtime DLLs; on Windows, whichever one's DLLs get loaded
+# into the process first "wins" the DLL search path, and the second one
+# to load can fail with OSError: [WinError 127] ... shm.dll (or similar).
+# Both ocr/paddleocr_engine.py and ocr/trocr_engine.py import their real
+# libraries lazily (only when first used), and _hybrid_extract() below
+# always calls PaddleOCR before TrOCR — so without this eager import,
+# paddle would win the race on every run and torch would be the one to
+# fail. Importing torch here, at module load time (before any OCR call),
+# ensures torch's DLLs are loaded first instead.
 import cv2
 import numpy as np
 from PIL import Image
