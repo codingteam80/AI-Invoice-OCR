@@ -33,6 +33,7 @@ class Invoice(BaseModel):
     vendor_tax_id: Optional[str] = None
 
     customer_name: Optional[str] = None
+    customer_contact: Optional[str] = None
 
     line_items: list[LineItem] = Field(default_factory=list)
 

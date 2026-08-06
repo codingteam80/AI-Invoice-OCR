@@ -179,6 +179,21 @@ def unlock_invoice(invoice_id: int) -> dict:
         session.close()
 
 
+def delete_invoice(invoice_id: int) -> None:
+    """Permanently delete an invoice — e.g. to clear out a bad duplicate
+    upload. Raises InvoiceLockedError if the invoice is locked (unlock it
+    on the History page first); raises ValueError if it doesn't exist.
+    """
+    session = SessionLocal()
+    try:
+        repo = InvoiceRepository(session)
+        deleted = repo.delete(invoice_id)
+        if not deleted:
+            raise ValueError(f"Invoice {invoice_id} not found")
+    finally:
+        session.close()
+
+
 def search_invoices(keyword: str) -> list[dict]:
     session = SessionLocal()
     try:

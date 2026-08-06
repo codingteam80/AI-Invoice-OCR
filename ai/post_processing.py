@@ -3,7 +3,14 @@ import re
 import uuid
 from utils.date_utils import to_iso
 from parser.currency_parser import normalize_currency, to_float
+from parser.tax_parser import find_tax_rate, find_tax_amount
 from config.settings import settings
+
+# Chars that handwriting/OCR commonly confuse with digits. Only applied to
+# the numeric run of an invoice number (e.g. "INV-00I" -> "INV-001"),
+# never to the whole string, so we don't mangle a genuinely alphabetic ID.
+_DIGIT_CONFUSION = str.maketrans({"I": "1", "l": "1", "O": "0", "o": "0", "S": "5"})
+_ID_NUMERIC_TAIL_RE = re.compile(r"^(?P<prefix>\D*)(?P<tail>[\dIlOoS]+)$")
 
 # Labels used by reconcile_total_amount() to scan raw OCR text for the
 # amounts sitting next to each kind of line. "total" deliberately excludes
@@ -74,11 +81,65 @@ def post_process(data: dict) -> dict:
         })
     data["line_items"] = cleaned_items
 
-    for text_field in ("vendor_name", "vendor_address", "customer_name", "invoice_number"):
+    for text_field in (
+        "vendor_name", "vendor_address", "customer_name", "customer_contact", "invoice_number",
+    ):
         if data.get(text_field):
             data[text_field] = str(data[text_field]).strip()
 
+    if data.get("invoice_number"):
+        data["invoice_number"] = _normalize_id_digits(data["invoice_number"])
+
     return data
+
+
+def _normalize_id_digits(value: str) -> str:
+    """
+    Invoice numbers like 'INV-001' are almost always digits after the
+    prefix, but OCR/handwriting frequently swaps look-alikes (I/1, O/0,
+    l/1, S/5). If the tail is ALREADY all-numeric we leave it untouched;
+    we only rewrite look-alike characters when the tail is a mix of digits
+    and exactly those look-alikes, since a genuinely alphanumeric ID
+    (e.g. 'INV-A01') should be left alone.
+    """
+    match = _ID_NUMERIC_TAIL_RE.match(value)
+    if not match:
+        return value
+    tail = match.group("tail")
+    if tail.isdigit() or not any(c.isdigit() for c in tail):
+        return value
+    fixed_tail = tail.translate(_DIGIT_CONFUSION)
+    return match.group("prefix") + fixed_tail
+
+
+def reconcile_tax(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
+    """
+    Backstop for missing tax_amount/tax_rate. parser/tax_parser.py already
+    implements regex-based tax detection but was never wired into the
+    pipeline, so a null/zero tax_amount from the LLM was silently accepted
+    even when the OCR text clearly contained tax figures (e.g. '2%', '5%',
+    'Tax: 4.80'). Only fills gaps — never overwrites a value the LLM did
+    provide, since the LLM has more context (e.g. per-line-item tax rates)
+    than a flat regex scan can.
+    """
+    notes = []
+    if not ocr_text:
+        return data, notes
+
+    data = dict(data)
+    if data.get("tax_rate") in (None, 0, 0.0):
+        rate = find_tax_rate(ocr_text)
+        if rate is not None:
+            data["tax_rate"] = rate
+            notes.append(f"tax_rate filled from OCR text via regex fallback: {rate}%")
+
+    if data.get("tax_amount") in (None, 0, 0.0):
+        amount = find_tax_amount(ocr_text)
+        if amount is not None:
+            data["tax_amount"] = amount
+            notes.append(f"tax_amount filled from OCR text via regex fallback: {amount}")
+
+    return data, notes
 
 
 def sanitize_for_model(data: dict) -> dict:
@@ -157,6 +218,24 @@ def reconcile_total_amount(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
             )
             data = dict(data)
             data["total_amount"] = corrected
+
+            # If subtotal was ALSO set to the same wrong CASH/CHANGE value
+            # (common when the LLM anchored both fields on the same
+            # misread number), it's now silently wrong even though
+            # total_amount just got fixed. We can't safely guess a
+            # replacement subtotal here — recomputing it from total - tax
+            # is a bigger inferential leap than the total fix above,
+            # which had a real matching label to fall back on — so just
+            # surface it as a note and let the required-field/needs_review
+            # path force a human look rather than pretend it's still fine.
+            try:
+                if data.get("subtotal") is not None and abs(float(data["subtotal"]) - total_f) < 0.01:
+                    notes.append(
+                        f"subtotal ({data['subtotal']}) also matched the same {wrong_kind} "
+                        f"value as the corrected total_amount — likely wrong too, needs manual review."
+                    )
+            except (TypeError, ValueError):
+                pass
         else:
             notes.append(
                 f"total_amount ({total_f}) matches a CASH/TENDERED or CHANGE line rather than "

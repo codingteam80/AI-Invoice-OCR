@@ -49,6 +49,43 @@ def _reading_order_key(line: dict) -> tuple:
     return (round(y_center / max(line_height, 20)), x_center)
 
 
+def _assign_columns(lines: list[dict], page_width: float, gap_ratio: float = 0.06) -> list[int]:
+    """
+    Cluster boxes into columns by x-position (e.g. a left "client info"
+    column vs a right "invoice metadata" column), using a simple 1D gap
+    scan over x-centers rather than a fixed column count.
+
+    Sorting purely by (y_bucket, x) — the previous behaviour — silently
+    breaks on multi-column templates: on a two-column invoice, two boxes
+    that are logically unrelated (one from each column) can land in the
+    same y-bucket purely from page skew/curvature (very common on phone
+    photos of a notebook, like a curled page), and then get interleaved
+    by x instead of being read one column fully, then the next. That
+    interleaving is what scrambles output like "Due Date" appearing next
+    to "quantity" instead of both invoice-metadata lines staying together.
+
+    This clusters x-centers into columns first (any gap between sorted
+    x-centers wider than `gap_ratio` of the page width starts a new
+    column), then reading order sorts by (column, y) within each column
+    — so a whole column is read top-to-bottom before moving to the next.
+    Single-column documents are unaffected: everything just falls into
+    column 0.
+    """
+    if not lines:
+        return []
+    x_centers = [sum(p[0] for p in l["bbox"]) / len(l["bbox"]) for l in lines]
+    order = sorted(range(len(lines)), key=lambda i: x_centers[i])
+    gap_threshold = max(page_width * gap_ratio, 1.0)
+
+    columns = [0] * len(lines)
+    current_col = 0
+    for prev_i, cur_i in zip(order, order[1:]):
+        if x_centers[cur_i] - x_centers[prev_i] > gap_threshold:
+            current_col += 1
+        columns[cur_i] = current_col
+    return columns
+
+
 def _hybrid_extract(image_path: str) -> dict:
     """
     Detect all text regions once, classify each region individually as
@@ -102,7 +139,19 @@ def _hybrid_extract(image_path: str) -> dict:
             "engine": engine_tag,
         })
 
-    lines.sort(key=_reading_order_key)
+    page_width = img_bgr.shape[1] if img_bgr is not None else 0
+    columns = _assign_columns(lines, page_width)
+    for line, col in zip(lines, columns):
+        line["_column"] = col
+
+    def _column_reading_order_key(line: dict) -> tuple:
+        ys = [p[1] for p in line["bbox"]]
+        line_height = max(ys) - min(ys) or 1
+        return (line["_column"], round(sum(ys) / len(ys) / max(line_height, 20)))
+
+    lines.sort(key=_column_reading_order_key)
+    for line in lines:
+        line.pop("_column", None)
 
     confidences = [l["confidence"] for l in lines]
     engines_used = sorted(set(l["engine"] for l in lines))

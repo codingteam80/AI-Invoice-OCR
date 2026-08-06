@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
-from services.invoice_service import list_invoices, get_invoice, search_invoices, get_dashboard_stats
+from services.invoice_service import (
+    list_invoices, get_invoice, search_invoices, get_dashboard_stats, delete_invoice,
+)
+from database.repository import InvoiceLockedError
 from services.export_service import export_invoices
 
 router = APIRouter()
@@ -27,6 +30,20 @@ def get_one(invoice_id: int):
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return invoice
+
+
+@router.delete("/{invoice_id}")
+def delete_one(invoice_id: int):
+    try:
+        delete_invoice(invoice_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    except InvoiceLockedError:
+        raise HTTPException(
+            status_code=409,
+            detail="Invoice is locked — unlock it before deleting.",
+        )
+    return {"deleted": invoice_id}
 
 
 @router.get("/export/{fmt}")

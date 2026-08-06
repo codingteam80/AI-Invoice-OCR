@@ -7,7 +7,7 @@ from ocr.ocr_engine import extract_from_file
 from ai.extractor import extract_invoice_data, ExtractionError
 from ai.validator import validate_extraction
 from ai.confidence import score_extraction
-from ai.post_processing import post_process, sanitize_for_model, reconcile_total_amount
+from ai.post_processing import post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax
 from parser.table_parser import parse_line_items_from_text
 from models.invoice import Invoice
 from config.constants import INVOICE_STATUS_PROCESSED, INVOICE_STATUS_REVIEW, INVOICE_STATUS_FAILED
@@ -57,7 +57,12 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     # a CASH/CHANGE line in the OCR text instead of the real TOTAL line
     # (see ai/post_processing.reconcile_total_amount). Auto-corrects when
     # confident, and always surfaces a note so it's still reviewable.
-    cleaned, reconciliation_notes = reconcile_total_amount(cleaned, ocr_text)
+    cleaned, total_notes = reconcile_total_amount(cleaned, ocr_text)
+
+    # 4c. Heuristic backstop: fill tax_rate/tax_amount from a regex scan of
+    # the raw OCR text when the LLM left them null/zero (see ai/post_processing.reconcile_tax).
+    cleaned, tax_notes = reconcile_tax(cleaned, ocr_text)
+    reconciliation_notes = total_notes + tax_notes
 
     # 5. Validate + score confidence — MUST run before sanitizing, so a
     #    genuinely-missing field still counts against confidence/needs_review.

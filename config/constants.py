@@ -38,7 +38,18 @@ EXTRACTION_SCHEMA = {
     "vendor_name": "string",
     "vendor_address": "string or null",
     "vendor_tax_id": "string or null",
-    "customer_name": "string or null",
+    "customer_name": (
+        "string or null â€” the client/billed-to ORGANIZATION or COMPANY name, "
+        "e.g. from a 'Client:', 'Bill To:', or 'Customer:' block. If the "
+        "block lists both a company and an individual (often marked "
+        "'Attn:', 'ATTN:', or 'c/o'), customer_name is the COMPANY, never "
+        "the individual â€” put the individual in customer_contact instead."
+    ),
+    "customer_contact": (
+        "string or null â€” an individual contact person associated with the "
+        "customer, typically marked 'Attn:', 'ATTN:', or 'c/o'. Leave null "
+        "if no individual contact is named separately from the company."
+    ),
     "line_items": [
         {"description": "string", "quantity": "number", "unit_price": "number", "amount": "number"}
     ],
@@ -63,7 +74,13 @@ EXTRACTION_SCHEMA = {
         "handed back) â€” those are payment mechanics, not the total."
     ),
     "currency": "3-letter ISO code",
-    "payment_terms": "string or null",
+    "payment_terms": (
+        "string or null â€” e.g. 'Net 21', 'Net 30', 'Due on receipt'. "
+        "IMPORTANT: a bare label 'Net:' followed by a small integer (e.g. "
+        "'Net: 21') near the invoice/due dates or P.O. number is a payment "
+        "term (days until due), NOT the subtotal/net amount â€” do not put "
+        "that number in the 'subtotal' field."
+    ),
 }
 
 

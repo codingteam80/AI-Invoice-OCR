@@ -2,6 +2,7 @@
 Calls a local Ollama model (Qwen 2.5 / Llama 3) to turn raw OCR text into
 structured invoice JSON.
 """
+import time
 import requests
 from config.settings import settings
 from config.logging import get_logger
@@ -22,14 +23,37 @@ def _call_ollama(prompt: str) -> str:
         "model": settings.OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "keep_alive": settings.OLLAMA_KEEP_ALIVE,
         "options": {"temperature": settings.LLM_TEMPERATURE},
     }
-    try:
-        resp = requests.post(url, json=payload, timeout=120)
-        resp.raise_for_status()
-        return resp.json().get("response", "")
-    except requests.RequestException as e:
-        raise ExtractionError(f"Ollama request failed: {e}") from e
+
+    attempts = settings.OLLAMA_TIMEOUT_RETRIES + 1
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        start = time.perf_counter()
+        try:
+            resp = requests.post(url, json=payload, timeout=settings.OLLAMA_TIMEOUT_SECONDS)
+            resp.raise_for_status()
+            return resp.json().get("response", "")
+        except requests.exceptions.Timeout as e:
+            elapsed = time.perf_counter() - start
+            last_error = e
+            logger.warning(
+                f"Ollama call timed out after {elapsed:.1f}s "
+                f"(attempt {attempt}/{attempts}, limit={settings.OLLAMA_TIMEOUT_SECONDS}s)"
+            )
+            continue  # timeouts get a fresh retry; connection/HTTP errors below do not
+        except requests.RequestException as e:
+            raise ExtractionError(f"Ollama request failed: {e}") from e
+
+    raise ExtractionError(
+        f"Ollama request timed out after {attempts} attempt(s), "
+        f"{settings.OLLAMA_TIMEOUT_SECONDS}s each. The model may be too slow for "
+        f"this document size, or may be cold-starting on every call — check "
+        f"`ollama ps` to confirm the model is actually staying loaded between "
+        f"requests, and consider a smaller/quantized model or raising "
+        f"OLLAMA_TIMEOUT_SECONDS further."
+    ) from last_error
 
 
 def extract_invoice_data(ocr_text: str) -> dict:

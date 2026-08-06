@@ -213,6 +213,8 @@ class InvoiceRepository:
         obj = self.get_by_id(invoice_id)
         if not obj:
             return False
+        if obj.locked:
+            raise InvoiceLockedError(invoice_id)
         self.session.delete(obj)
         self.session.commit()
         return True

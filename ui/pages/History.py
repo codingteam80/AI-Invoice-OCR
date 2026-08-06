@@ -8,7 +8,7 @@ import streamlit as st
 from config.constants import CATEGORY_OPTIONS
 from database.repository import DuplicateInvoiceError, InvoiceLockedError
 from services.invoice_service import (
-    list_invoices, get_invoice, update_invoice, lock_invoice, unlock_invoice,
+    list_invoices, get_invoice, update_invoice, lock_invoice, unlock_invoice, delete_invoice,
 )
 from services.search_service import search
 from ui.components.nav import render_nav, guard_locked_navigation
@@ -24,10 +24,10 @@ st.title("🗂️ Invoice History")
 
 STATUS_OPTIONS = ["processed", "needs_review", "failed", "pending"]
 
-ROW_WIDTHS = [0.5, 1.0, 1.3, 1.1, 0.8, 0.9, 0.7, 1.0, 0.6, 0.9, 0.9, 0.8, 0.7, 0.9]
+ROW_WIDTHS = [0.5, 1.0, 1.3, 1.1, 0.8, 0.9, 0.7, 1.0, 0.6, 0.9, 0.9, 0.8, 0.7, 0.9, 0.7]
 COLUMN_LABELS = [
     "ID", "Invoice #", "Filename", "Vendor", "Date",
-    "Net Amount", "VAT", "Total Amount Due", "Currency", "Status", "Category", "Confidence", "", "",
+    "Net Amount", "VAT", "Total Amount Due", "Currency", "Status", "Category", "Confidence", "", "", "",
 ]
 
 
@@ -141,6 +141,28 @@ def edit_invoice_dialog(inv: dict):
         st.rerun()
 
 
+@st.dialog("🗑️ Delete Invoice")
+def delete_invoice_dialog(inv: dict):
+    st.warning(
+        f"Delete invoice **{inv['invoice_number']}** (ID {inv['id']}, "
+        f"{inv.get('vendor_name') or 'unknown vendor'})? This can't be undone."
+    )
+    c_confirm, c_cancel = st.columns(2)
+    if c_confirm.button("🗑️ Yes, delete", type="primary", use_container_width=True):
+        try:
+            delete_invoice(inv["id"])
+        except InvoiceLockedError:
+            st.error("This invoice is locked. Unlock it first, then delete.")
+            return
+        except ValueError:
+            st.error("Invoice not found — it may have already been deleted.")
+            return
+        st.success("Invoice deleted.")
+        st.rerun()
+    if c_cancel.button("Cancel", use_container_width=True):
+        st.rerun()
+
+
 def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
     """Renders the header + per-row Edit/Lock table for a given invoice list."""
     header_cols = st.columns(ROW_WIDTHS)
@@ -174,6 +196,11 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
             else:
                 lock_invoice(inv["id"])
             st.rerun()
+        if row_cols[14].button(
+            "🗑️", key=f"delete_btn_{key_prefix}_{inv['id']}",
+            disabled=locked, help="Unlock first to delete" if locked else "Delete",
+        ):
+            delete_invoice_dialog(inv)
 
 
 def render_category_tables(invoices: list[dict], scope_key: str) -> None:
@@ -304,7 +331,7 @@ if invoices:
         c2.write(f"**Confidence:** {(detail.get('confidence_score') or 0) * 100:.0f}%")
         c2.write(f"**Locked:** {'🔒 Yes' if detail.get('locked') else '🔓 No'}")
 
-        b1, b2 = st.columns(2)
+        b1, b2, b3 = st.columns(3)
         if b1.button("✏️ Edit this invoice", disabled=bool(detail.get("locked")), use_container_width=True):
             edit_invoice_dialog(detail)
         lock_label = "🔓 Unlock this invoice" if detail.get("locked") else "🔒 Lock this invoice"
@@ -314,6 +341,10 @@ if invoices:
             else:
                 lock_invoice(detail["id"])
             st.rerun()
+        if b3.button(
+            "🗑️ Delete this invoice", disabled=bool(detail.get("locked")), use_container_width=True
+        ):
+            delete_invoice_dialog(detail)
 
         with st.expander("🖼️ Invoice image"):
             resolved_file = resolve_source_file(detail.get("source_file"))

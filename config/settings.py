@@ -36,6 +36,20 @@ class Settings:
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
     LLM_MAX_RETRIES: int = int(os.getenv("LLM_MAX_RETRIES", "3"))
+    # Generous default: a local CPU-run 7B model on a multi-page PDF's
+    # full OCR text can genuinely take longer than 120s to generate a
+    # full JSON response. Raise further if you're still seeing timeouts
+    # on large documents.
+    OLLAMA_TIMEOUT_SECONDS: int = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))
+    # How many times to retry ONLY on a connection/read timeout (distinct
+    # from LLM_MAX_RETRIES, which is for validation failures on a JSON
+    # response the model DID return in time).
+    OLLAMA_TIMEOUT_RETRIES: int = int(os.getenv("OLLAMA_TIMEOUT_RETRIES", "1"))
+    # Tells Ollama how long to keep the model loaded in memory after a
+    # request. Without this, the model may get unloaded between invoices
+    # and the next request pays a cold-start reload on top of generation
+    # time — often the real cause of a timeout that "shouldn't" happen.
+    OLLAMA_KEEP_ALIVE: str = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/data/invoices.db")
