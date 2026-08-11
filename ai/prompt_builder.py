@@ -56,3 +56,42 @@ Original OCR TEXT:
 
 Fix the issues and return only the corrected JSON object.
 """
+
+
+def build_vision_verification_prompt(extracted_fields: dict) -> str:
+    """Used by ai.vision_verifier — sent to a vision-capable model ALONGSIDE
+    the invoice image itself, unlike build_extraction_prompt/
+    build_correction_prompt above which only ever see OCR text.
+
+    This is what lets the pipeline catch OCR misreads: the text-only
+    extraction/correction steps can only be internally self-consistent with
+    whatever the OCR already produced, they have no independent way to
+    notice the OCR itself misread a character. A model that can actually
+    see the document does.
+    """
+    fields_str = json.dumps(extracted_fields, indent=2)
+    return f"""You are double-checking a handful of values that were already
+extracted from this document image by a separate OCR + text-extraction
+process. Look ONLY at what is actually printed/written in the IMAGE —
+the values below are just a reference point to check against, not
+necessarily correct.
+
+Extracted values to verify:
+{fields_str}
+
+Respond with ONLY a single valid JSON object — no markdown, no commentary —
+in exactly this shape:
+{{
+  "mismatches": [
+    {{"field": "<field name from the list above>", "image_shows": "<what the image actually shows for this field>", "note": "<optional short reason, e.g. digit misread>"}}
+  ]
+}}
+
+Rules:
+1. Only include a field in "mismatches" if you are reasonably confident the
+   image shows something DIFFERENT from the extracted value.
+2. If a field looks correct, or the image is too unclear/cropped to tell,
+   leave it out entirely — do not guess.
+3. If every field matches, return {{"mismatches": []}}.
+4. Never invent a field that is not in the list above.
+"""

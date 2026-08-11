@@ -51,6 +51,18 @@ class Settings:
     # time — often the real cause of a timeout that "shouldn't" happen.
     OLLAMA_KEEP_ALIVE: str = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
 
+    # Vision cross-check (see ai/vision_verifier.py). Independent second
+    # read of the source IMAGE itself (not the OCR text) for the fields
+    # where a misread is costliest — lets the pipeline catch OCR errors
+    # that the text-only LLM step has no way to see. Off switch included
+    # since this roughly doubles per-invoice processing time and needs a
+    # vision-capable model actually pulled in Ollama (`ollama pull
+    # qwen2.5vl:7b`) — leave disabled until that's done, or on machines
+    # too limited to run a second, heavier model.
+    VISION_VERIFICATION_ENABLED: bool = os.getenv("VISION_VERIFICATION_ENABLED", "false").lower() == "true"
+    VISION_MODEL: str = os.getenv("VISION_MODEL", "qwen2.5vl:7b")
+    VISION_TIMEOUT_SECONDS: int = int(os.getenv("VISION_TIMEOUT_SECONDS", "180"))
+
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/data/invoices.db")
 

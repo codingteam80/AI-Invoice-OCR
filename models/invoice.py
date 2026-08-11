@@ -53,6 +53,7 @@ class Invoice(BaseModel):
     confidence_score: Optional[float] = None
     status: str = "pending"
     raw_text: Optional[str] = None
+    vision_notes: Optional[str] = None
     locked: bool = False
 
     class Config:

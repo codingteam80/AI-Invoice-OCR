@@ -94,6 +94,7 @@ class InvoiceRepository:
             confidence_score=invoice.confidence_score,
             status=invoice.status,
             raw_text=invoice.raw_text,
+            vision_notes=invoice.vision_notes,
         )
         orm_invoice.line_items = [
             LineItemORM(

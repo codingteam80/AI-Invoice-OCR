@@ -101,6 +101,7 @@ def process_invoice_file(
         "status": invoice.status,
         "processed_file": processed_path,
         "ocr_engine_used": invoice.ocr_engine_used,
+        "vision_notes": invoice.vision_notes,
     }
 
 
@@ -235,6 +236,7 @@ def _orm_to_dict(row) -> dict:
         "confidence_score": row.confidence_score,
         "ocr_engine_used": row.ocr_engine_used,
         "raw_text": row.raw_text,
+        "vision_notes": row.vision_notes,
         "line_items": [
             {"description": li.description, "quantity": li.quantity, "unit_price": li.unit_price, "amount": li.amount}
             for li in row.line_items

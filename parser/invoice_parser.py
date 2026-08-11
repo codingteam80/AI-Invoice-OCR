@@ -8,6 +8,7 @@ from ai.extractor import extract_invoice_data, ExtractionError
 from ai.validator import validate_extraction
 from ai.confidence import score_extraction
 from ai.post_processing import post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax
+from ai.vision_verifier import verify_against_image
 from parser.table_parser import parse_line_items_from_text
 from models.invoice import Invoice
 from config.constants import INVOICE_STATUS_PROCESSED, INVOICE_STATUS_REVIEW, INVOICE_STATUS_FAILED
@@ -64,9 +65,17 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     cleaned, tax_notes = reconcile_tax(cleaned, ocr_text)
     reconciliation_notes = total_notes + tax_notes
 
+    # 4d. Vision cross-check: an independent second look at the actual
+    # IMAGE (not the OCR text) for the fields where a misread is costliest.
+    # Complements 4b/4c above — those catch specific known LLM/OCR
+    # confusions from the text alone, this catches OCR misreads the
+    # text-only pipeline has no way to see at all. Off by default and
+    # fails open (see ai/vision_verifier.py docstring).
+    vision_issues = verify_against_image(file_path, cleaned)
+
     # 5. Validate + score confidence — MUST run before sanitizing, so a
     #    genuinely-missing field still counts against confidence/needs_review.
-    issues = validate_extraction(cleaned) + reconciliation_notes
+    issues = validate_extraction(cleaned) + reconciliation_notes + vision_issues
     prediction = score_extraction(cleaned, ocr_confidence, issues)
 
     # 6. Build Invoice model. Sanitize placeholders now (not earlier) so
@@ -84,6 +93,7 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     invoice.ocr_engine_used = ocr_result.get("engine")
     invoice.confidence_score = prediction.overall_confidence
     invoice.raw_text = ocr_text
+    invoice.vision_notes = "\n".join(vision_issues) if vision_issues else None
     invoice.status = INVOICE_STATUS_REVIEW if prediction.needs_review else INVOICE_STATUS_PROCESSED
 
     logger.info(

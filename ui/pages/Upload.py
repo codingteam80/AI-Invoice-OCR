@@ -108,6 +108,9 @@ if st.session_state.upload_results:
                     st.caption(f"Uploaded and processed in {elapsed:.2f} seconds.")
                 if r.get("status") == "needs_review":
                     st.warning("This invoice needs manual review — low confidence or data mismatch.")
+                if r.get("vision_notes"):
+                    st.warning("🔍 **Vision cross-check flagged possible mismatches:**\n\n"
+                               + "\n".join(f"- {line}" for line in r["vision_notes"].split("\n")))
         else:
             st.error(f"❌ {r['file']}: {r.get('error')}{elapsed_suffix}")
 elif not files and not locked:

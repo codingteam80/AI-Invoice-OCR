@@ -48,6 +48,12 @@ class InvoiceORM(Base):
     confidence_score = Column(Float, nullable=True)
     status = Column(String, default="pending")
     raw_text = Column(Text, nullable=True)
+    # Notes from ai/vision_verifier.py's independent image cross-check —
+    # populated only when a vision-capable model flags a mismatch between
+    # what was extracted and what it sees in the source image. Null when
+    # verification is disabled, found nothing, or wasn't run for this
+    # invoice (e.g. it predates the feature).
+    vision_notes = Column(Text, nullable=True)
     locked = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -346,6 +346,10 @@ if invoices:
         ):
             delete_invoice_dialog(detail)
 
+        if detail.get("vision_notes"):
+            st.warning("🔍 **Vision cross-check flagged possible mismatches:**\n\n"
+                       + "\n".join(f"- {line}" for line in detail["vision_notes"].split("\n")))
+
         with st.expander("🖼️ Invoice image"):
             resolved_file = resolve_source_file(detail.get("source_file"))
             if not resolved_file:
