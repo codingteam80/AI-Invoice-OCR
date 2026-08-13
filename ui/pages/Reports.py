@@ -135,17 +135,11 @@ else:
     )
     _render_preview_table(table_df)
 
-    # Sums are computed across whatever's currently filtered above — if the
-    # invoices span more than one currency, this adds them together as raw
-    # numbers rather than converting, same as the per-category subtotals on
-    # the History page.
-    net_sum = sum(inv.get("subtotal") or 0 for inv in invoices)
-    vat_sum = sum(inv.get("tax_amount") or 0 for inv in invoices)
+    # Net Amount and VAT sums are intentionally not shown on this page —
+    # only Total Amount Due is. All three are still included in every
+    # exported file (see exports/common.py: invoice_totals_row).
     total_sum = sum(inv.get("total_amount") or 0 for inv in invoices)
-    s1, s2, s3 = st.columns(3)
-    s1.metric("Net Amount (sum)", f"{net_sum:,.2f}")
-    s2.metric("VAT (sum)", f"{vat_sum:,.2f}")
-    s3.metric("Total Amount Due (sum)", f"{total_sum:,.2f}")
+    st.metric("Total Amount Due (sum)", f"{total_sum:,.2f}")
 
 st.subheader("📊 Chart")
 chart_path_for_export = None

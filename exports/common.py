@@ -14,6 +14,20 @@ EXPORT_COLUMNS = [
 ]
 
 
+def invoice_totals_row(invoices: list[dict]) -> dict:
+    """Bottom summary row: sums of Net Amount, VAT, Discount, and Total
+    Amount Due across `invoices`, blank everywhere else. None of these sums
+    are shown on the Reports page itself (only Total Amount Due is), but
+    all are still included in every exported file — see ui/pages/Reports.py."""
+    row = {col: "" for col in EXPORT_COLUMNS}
+    row["ID"] = "TOTAL"
+    row["Net Amount"] = sum(inv.get("subtotal") or 0 for inv in invoices)
+    row["VAT"] = sum(inv.get("tax_amount") or 0 for inv in invoices)
+    row["Discount"] = sum(inv.get("discount") or 0 for inv in invoices)
+    row["Total Amount Due"] = sum(inv.get("total_amount") or 0 for inv in invoices)
+    return row
+
+
 def invoice_export_row(inv: dict) -> dict:
     """Builds one export row from an invoice dict (see
     services.invoice_service._orm_to_dict for the source shape).

@@ -6,7 +6,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet
 from config.settings import settings
-from exports.common import EXPORT_COLUMNS, invoice_export_row
+from exports.common import EXPORT_COLUMNS, invoice_export_row, invoice_totals_row
 
 
 def export_to_pdf(invoices: list[dict], filename: str = "invoices_report.pdf", chart_path: str | None = None) -> list[str]:
@@ -21,6 +21,8 @@ def export_to_pdf(invoices: list[dict], filename: str = "invoices_report.pdf", c
     for inv in invoices:
         row = invoice_export_row(inv)
         data.append([str(row[col]) for col in EXPORT_COLUMNS])
+    totals = invoice_totals_row(invoices)
+    data.append([str(totals[col]) for col in EXPORT_COLUMNS])
 
     table = Table(data, repeatRows=1)
     table.setStyle(TableStyle([
@@ -29,6 +31,9 @@ def export_to_pdf(invoices: list[dict], filename: str = "invoices_report.pdf", c
         ("FONTSIZE", (0, 0), (-1, -1), 6),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F2F2F2")]),
+        # TOTAL row (last row) — bold + highlighted, overrides the striping above.
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E4E9E3")),
     ]))
     elements.append(table)
 
