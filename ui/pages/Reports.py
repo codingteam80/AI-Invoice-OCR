@@ -135,14 +135,28 @@ else:
     )
     _render_preview_table(table_df)
 
+    # Sums are computed across whatever's currently filtered above — if the
+    # invoices span more than one currency, this adds them together as raw
+    # numbers rather than converting, same as the per-category subtotals on
+    # the History page.
+    net_sum = sum(inv.get("subtotal") or 0 for inv in invoices)
+    vat_sum = sum(inv.get("tax_amount") or 0 for inv in invoices)
+    total_sum = sum(inv.get("total_amount") or 0 for inv in invoices)
+    s1, s2, s3 = st.columns(3)
+    s1.metric("Net Amount (sum)", f"{net_sum:,.2f}")
+    s2.metric("VAT (sum)", f"{vat_sum:,.2f}")
+    s3.metric("Total Amount Due (sum)", f"{total_sum:,.2f}")
+
 st.subheader("📊 Chart")
 chart_path_for_export = None
 if not invoices:
     st.caption("No invoices to chart — adjust the filters above.")
 else:
     c1, c2 = st.columns([1, 3])
-    chart_group_by = c1.selectbox("Group chart by", ["Vendor", "Category", "Month"], key="report_chart_group_by")
-    if c1.button("📊 Generate Graph"):
+    chart_group_by = c1.multiselect(
+        "Group chart by", ["Vendor", "Category", "Month"], default=["Vendor"], key="report_chart_group_by"
+    )
+    if c1.button("📊 Generate Graph", disabled=not chart_group_by):
         chart_path = generate_chart(invoices, group_by=chart_group_by)
         st.session_state["report_chart_path"] = chart_path
         st.session_state["report_chart_ids"] = tuple(sorted(inv["id"] for inv in invoices))
