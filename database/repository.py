@@ -224,7 +224,17 @@ class InvoiceRepository:
         from sqlalchemy import func
         total_invoices = self.session.query(func.count(InvoiceORM.id)).scalar() or 0
         total_amount = self.session.query(func.sum(InvoiceORM.total_amount)).scalar() or 0.0
-        vendor_count = self.session.query(func.count(VendorORM.id)).scalar() or 0
+        # Distinct vendors among invoices that currently exist — not a count
+        # of the `vendors` table itself. That table is a permanent dimension
+        # table (kept around for name-normalization/dedup lookups even after
+        # an invoice is deleted), so counting its rows directly used to keep
+        # "Vendors" inflated after the last invoice for a vendor was removed.
+        # vendor_id is set on every invoice at creation (see
+        # get_or_create_vendor above), and COUNT(DISTINCT ...) ignores NULLs
+        # on its own, so this stays accurate without extra filtering.
+        vendor_count = (
+            self.session.query(func.count(func.distinct(InvoiceORM.vendor_id))).scalar() or 0
+        )
         needs_review = (
             self.session.query(func.count(InvoiceORM.id))
             .filter(InvoiceORM.status == "needs_review")
