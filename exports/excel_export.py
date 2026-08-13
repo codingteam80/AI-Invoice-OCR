@@ -2,27 +2,14 @@
 from pathlib import Path
 import pandas as pd
 from openpyxl.styles import Font, PatternFill
+from openpyxl.drawing.image import Image as XLImage
 from config.settings import settings
+from exports.common import EXPORT_COLUMNS, invoice_export_row
 
 
-def export_to_excel(invoices: list[dict], filename: str = "invoices_export.xlsx") -> str:
-    rows = []
-    for inv in invoices:
-        rows.append({
-            "Invoice #": inv["invoice_number"],
-            "Date": inv.get("invoice_date"),
-            "Vendor": inv["vendor_name"],
-            "Customer": inv.get("customer_name"),
-            "Subtotal": inv.get("subtotal"),
-            "Tax": inv.get("tax_amount"),
-            "Discount": inv.get("discount"),
-            "Total": inv.get("total_amount"),
-            "Currency": inv.get("currency"),
-            "Status": inv.get("status"),
-            "Confidence": inv.get("confidence_score"),
-        })
-
-    df = pd.DataFrame(rows)
+def export_to_excel(invoices: list[dict], filename: str = "invoices_export.xlsx", chart_path: str | None = None) -> list[str]:
+    rows = [invoice_export_row(inv) for inv in invoices]
+    df = pd.DataFrame(rows, columns=EXPORT_COLUMNS)
     out_path = Path(settings.EXPORT_DIR) / filename
 
     with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
@@ -36,4 +23,8 @@ def export_to_excel(invoices: list[dict], filename: str = "invoices_export.xlsx"
             max_len = max((len(str(c.value)) for c in col if c.value is not None), default=10)
             ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
 
-    return str(out_path)
+        if chart_path:
+            chart_ws = writer.book.create_sheet("Chart")
+            chart_ws.add_image(XLImage(chart_path), "A1")
+
+    return [str(out_path)]

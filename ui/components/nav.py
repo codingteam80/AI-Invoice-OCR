@@ -26,6 +26,43 @@ _PAGES = [
 
 _UPLOAD_PAGE = "pages/Upload.py"
 
+_GLOBAL_FONT_CSS = """
+<style>
+/* Bigger base font size across the whole app. Most of Streamlit's built-in
+   typography and spacing is defined in rem, which is relative to this, so
+   raising it here scales text, buttons, inputs, and tables together rather
+   than growing text out of proportion with everything else. Browsers
+   default html to 16px; 18px is roughly a 12% bump. */
+html {
+    font-size: 18px;
+}
+
+/* A few Streamlit elements pin their own font-size in px rather than
+   inheriting rem, so nudge those specifically too. */
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stDataFrame"] div,
+[data-testid="stMetricValue"],
+.stButton button,
+.stSelectbox label,
+.stMultiSelect label,
+.stTextInput label {
+    font-size: 1rem !important;
+}
+
+/* CSS can only see the browser viewport's width, not the screen's actual
+   diagonal size — an 11" laptop and a 15" laptop can report the same
+   viewport width depending on resolution/OS scaling. This is the closest
+   proxy available: narrower windows (small/high-DPI screens, or a window
+   that isn't maximized) get a further bump. */
+@media (max-width: 900px) {
+    html {
+        font-size: 20px;
+    }
+}
+</style>
+"""
+
 _SIDEBAR_CSS = """
 <style>
 [data-testid="stSidebarNav"] { display: none; }
@@ -57,6 +94,7 @@ def is_upload_locked() -> bool:
 def render_nav() -> None:
     """Render the sidebar: title, nav links (disabled but Upload while an
     upload is in progress), and a footer pinned to the bottom."""
+    st.markdown(_GLOBAL_FONT_CSS, unsafe_allow_html=True)
     st.markdown(_SIDEBAR_CSS, unsafe_allow_html=True)
     locked = is_upload_locked()
 

@@ -10,7 +10,6 @@ from database.repository import DuplicateInvoiceError, InvoiceLockedError
 from services.invoice_service import (
     list_invoices, get_invoice, update_invoice, lock_invoice, unlock_invoice, delete_invoice,
 )
-from services.search_service import search
 from ui.components.nav import render_nav, guard_locked_navigation
 from utils.file_utils import resolve_source_file
 from utils.pdf_utils import pdf_to_images
@@ -24,10 +23,15 @@ st.title("🗂️ Invoice History")
 
 STATUS_OPTIONS = ["processed", "needs_review", "failed", "pending"]
 
-ROW_WIDTHS = [0.5, 1.0, 1.3, 1.1, 0.8, 0.9, 0.7, 1.0, 0.6, 0.9, 0.9, 0.8, 0.7, 0.9, 0.7]
+# Full invoice detail (filename, currency, category, net amount, VAT, etc.)
+# is already available under "View full details for invoice ID" below, so
+# this row table only needs the at-a-glance fields plus the action buttons.
+# ID column width is left untouched; the action-button columns are sized
+# tight to their icon-only buttons, and the freed-up space is redistributed
+# across the remaining data columns.
+ROW_WIDTHS = [0.5, 1.3, 1.6, 1.1, 1.3, 1.1, 1.0, 0.5, 0.5, 0.5]
 COLUMN_LABELS = [
-    "ID", "Invoice #", "Filename", "Vendor", "Date",
-    "Net Amount", "VAT", "Total Amount Due", "Currency", "Status", "Category", "Confidence", "", "", "",
+    "ID", "Invoice #", "Vendor", "Date", "Total Amount Due", "Status", "Confidence", "", "", "",
 ]
 
 
@@ -167,27 +171,25 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
     """Renders the header + per-row Edit/Lock table for a given invoice list."""
     header_cols = st.columns(ROW_WIDTHS)
     for col, label in zip(header_cols, COLUMN_LABELS):
-        col.markdown(f"**{label}**")
+        # "**" + "" + "**" is "****", which Markdown parses as a horizontal
+        # rule (4+ asterisks = thematic break) rather than empty bold text —
+        # that's what was drawing a line above the button columns.
+        col.markdown(f"**{label}**" if label else "")
 
     for inv in invoices:
         locked = bool(inv.get("locked"))
         row_cols = st.columns(ROW_WIDTHS)
         row_cols[0].write(f"{'🔒' if locked else ''} {inv['id']}")
         row_cols[1].write(inv["invoice_number"])
-        row_cols[2].write(inv.get("original_filename") or "—")
-        row_cols[3].write(inv["vendor_name"])
-        row_cols[4].write(inv.get("invoice_date") or "-")
-        row_cols[5].write(f"{(inv.get('subtotal') or 0):,.2f}")
-        row_cols[6].write(f"{(inv.get('tax_amount') or 0):,.2f}")
-        row_cols[7].write(f"{(inv.get('total_amount') or 0):,.2f}")
-        row_cols[8].write(inv.get("currency") or "-")
-        row_cols[9].write(inv.get("status") or "-")
-        row_cols[10].write(inv.get("category") or "-")
-        row_cols[11].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
-        if row_cols[12].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
+        row_cols[2].write(inv["vendor_name"])
+        row_cols[3].write(inv.get("invoice_date") or "-")
+        row_cols[4].write(f"{(inv.get('total_amount') or 0):,.2f} {inv.get('currency') or ''}".strip())
+        row_cols[5].write(inv.get("status") or "-")
+        row_cols[6].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
+        if row_cols[7].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
             edit_invoice_dialog(inv)
         lock_icon = "🔓" if locked else "🔒"
-        if row_cols[13].button(
+        if row_cols[8].button(
             lock_icon, key=f"lock_btn_{key_prefix}_{inv['id']}",
             help="Unlock" if locked else "Lock (confirm this row is correct)",
         ):
@@ -196,7 +198,7 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
             else:
                 lock_invoice(inv["id"])
             st.rerun()
-        if row_cols[14].button(
+        if row_cols[9].button(
             "🗑️", key=f"delete_btn_{key_prefix}_{inv['id']}",
             disabled=locked, help="Unlock first to delete" if locked else "Delete",
         ):
@@ -205,7 +207,8 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
 
 def render_category_tables(invoices: list[dict], scope_key: str) -> None:
     """Splits `invoices` into one table per category (Foods, Office Supplies,
-    Furnitures, Others, ...), each with its own per-vendor filter."""
+    Furnitures, Others, ...). Status/category/vendor filtering happens one
+    level up (see render_filters below) before invoices ever reach here."""
     if not invoices:
         st.info("No invoices for this period.")
         return
@@ -219,26 +222,41 @@ def render_category_tables(invoices: list[dict], scope_key: str) -> None:
     ordered_categories = [c for c in CATEGORY_OPTIONS if c in by_category]
     ordered_categories += [c for c in by_category if c not in CATEGORY_OPTIONS]
 
-    for cat in ordered_categories:
+    for i, cat in enumerate(ordered_categories):
         cat_invoices = by_category[cat]
         locked_count = sum(1 for inv in cat_invoices if inv.get("locked"))
         st.markdown(f"#### 🏷️ {cat} — {len(cat_invoices)} invoice(s), {locked_count} locked")
 
-        vendors = sorted({inv["vendor_name"] for inv in cat_invoices if inv.get("vendor_name")})
-        vendor_choice = st.selectbox(
-            "Filter by vendor",
-            ["All vendors"] + vendors,
-            key=f"vendor_filter_{scope_key}_{cat}",
-        )
-        rows = (
-            cat_invoices if vendor_choice == "All vendors"
-            else [inv for inv in cat_invoices if inv["vendor_name"] == vendor_choice]
-        )
-
-        render_invoice_row_table(rows, key_prefix=f"{scope_key}_{cat}")
-        total = sum(inv.get("total_amount") or 0 for inv in rows)
+        render_invoice_row_table(cat_invoices, key_prefix=f"{scope_key}_{cat}")
+        total = sum(inv.get("total_amount") or 0 for inv in cat_invoices)
         st.caption(f"Subtotal for {cat}: {total:,.2f}")
-        st.divider()
+        # Only between categories, not after the last one — otherwise this
+        # divider lands directly next to the page-level divider that comes
+        # after render_category_tables() returns, drawing two lines in a row.
+        if i < len(ordered_categories) - 1:
+            st.divider()
+
+
+def render_filters(scope_key: str, invoices_pool: list[dict]) -> list[dict]:
+    """Renders Filter by status/category/vendor as multiselects — each is a
+    searchable text box you can also type into, not just a single-choice
+    dropdown — and returns invoices_pool filtered by whatever's selected.
+    Options are computed from invoices_pool itself so, e.g., the vendor list
+    for the current-month filter only shows vendors seen this month."""
+    vendors = sorted({inv["vendor_name"] for inv in invoices_pool if inv.get("vendor_name")})
+    c1, c2, c3 = st.columns(3)
+    statuses = c1.multiselect("Filter by status", STATUS_OPTIONS, key=f"status_filter_{scope_key}")
+    categories = c2.multiselect("Filter by category", CATEGORY_OPTIONS, key=f"category_filter_{scope_key}")
+    vendor_sel = c3.multiselect("Filter by vendor", vendors, key=f"vendor_filter_{scope_key}")
+
+    filtered = invoices_pool
+    if statuses:
+        filtered = [inv for inv in filtered if inv.get("status") in statuses]
+    if categories:
+        filtered = [inv for inv in filtered if (inv.get("category") or "Others") in categories]
+    if vendor_sel:
+        filtered = [inv for inv in filtered if inv.get("vendor_name") in vendor_sel]
+    return filtered
 
 
 def _month_key(inv: dict) -> str:
@@ -256,60 +274,40 @@ def _month_label(month_key: str) -> str:
         return "Unknown date"
 
 
-query = st.text_input("Search by invoice #, vendor, or customer")
-f1, f2 = st.columns(2)
-status_filter = f1.selectbox("Filter by status", ["All"] + STATUS_OPTIONS)
-category_filter = f2.selectbox("Filter by category", ["All"] + CATEGORY_OPTIONS)
+all_invoices = list_invoices(limit=2000, status=None)
 
-if query:
-    # Search spans every month — shown as one flat table since the point
-    # here is finding a specific invoice, not browsing by period.
-    invoices = search(query)
-    if category_filter != "All":
-        invoices = [inv for inv in invoices if (inv.get("category") or "Others") == category_filter]
-    if not invoices:
-        st.info("No invoices found.")
-    else:
-        locked_count = sum(1 for inv in invoices if inv.get("locked"))
-        st.caption(
-            f"{len(invoices)} invoice(s) — {locked_count} locked. "
-            "Click ✏️ Edit to correct a field, then 🔒 Lock once it's confirmed correct."
-        )
-        render_invoice_row_table(invoices, key_prefix="search")
+if not all_invoices:
+    st.info("No invoices found.")
+    invoices = []
 else:
-    all_invoices = list_invoices(limit=2000, status=None if status_filter == "All" else status_filter)
-    if category_filter != "All":
-        all_invoices = [inv for inv in all_invoices if (inv.get("category") or "Others") == category_filter]
+    by_month: dict[str, list[dict]] = {}
+    for inv in all_invoices:
+        by_month.setdefault(_month_key(inv), []).append(inv)
 
-    if not all_invoices:
-        st.info("No invoices found.")
-        invoices = []
-    else:
-        by_month: dict[str, list[dict]] = {}
-        for inv in all_invoices:
-            by_month.setdefault(_month_key(inv), []).append(inv)
+    current_key = date.today().strftime("%Y-%m")
+    current_pool = by_month.get(current_key, [])
 
-        current_key = date.today().strftime("%Y-%m")
-        current_invoices = by_month.get(current_key, [])
+    st.subheader(f"📅 {_month_label(current_key)} — Current Month")
+    current_invoices = render_filters("current", current_pool)
+    render_category_tables(current_invoices, scope_key="current")
 
-        st.subheader(f"📅 {_month_label(current_key)} — Current Month")
-        render_category_tables(current_invoices, scope_key="current")
+    past_keys = sorted(
+        (k for k in by_month if k != current_key and k != "unknown"), reverse=True
+    )
+    invoices = list(current_invoices)  # feeds the detail viewer below
 
-        past_keys = sorted(
-            (k for k in by_month if k != current_key and k != "unknown"), reverse=True
+    if past_keys:
+        label_map = {f"{_month_label(k)} ({len(by_month[k])})": k for k in past_keys}
+        chosen_label = st.selectbox(
+            "📂 View a previous month", ["Select a month..."] + list(label_map.keys())
         )
-        invoices = list(current_invoices)  # feeds the detail viewer below
-
-        if past_keys:
-            label_map = {f"{_month_label(k)} ({len(by_month[k])})": k for k in past_keys}
-            chosen_label = st.selectbox(
-                "📂 View a previous month", ["Select a month..."] + list(label_map.keys())
-            )
-            if chosen_label != "Select a month...":
-                chosen_key = label_map[chosen_label]
-                st.subheader(f"📅 {_month_label(chosen_key)}")
-                render_category_tables(by_month[chosen_key], scope_key=chosen_key)
-                invoices += by_month[chosen_key]
+        if chosen_label != "Select a month...":
+            chosen_key = label_map[chosen_label]
+            st.subheader(f"📅 {_month_label(chosen_key)}")
+            prev_pool = by_month[chosen_key]
+            prev_invoices = render_filters(chosen_key, prev_pool)
+            render_category_tables(prev_invoices, scope_key=chosen_key)
+            invoices += prev_invoices
 
 if invoices:
     st.divider()
