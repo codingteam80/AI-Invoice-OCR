@@ -33,9 +33,29 @@ EXTRACTION_SCHEMA = {
         "'SI No.', 'OR No.' (Official Receipt Number), 'Transaction #', "
         "or 'TR NO.' â€” use whichever such number appears on the document."
     ),
-    "invoice_date": "YYYY-MM-DD",
+    "invoice_date": (
+        "YYYY-MM-DD â€” the date THIS transaction/invoice was issued, usually "
+        "labeled just 'Date:' near the invoice number at the top of the "
+        "document. IMPORTANT: ignore dates found near BIR/permit boilerplate "
+        "at the bottom of Philippine receipts, e.g. 'Dated of Issue', 'Date "
+        "of ATP', or anything next to a 'Looseleaf Permit No.' / 'BIR "
+        "Authority to Print No.' â€” those are the PRINTED FORM's registration "
+        "date, often years earlier, not the date of this transaction."
+    ),
     "due_date": "YYYY-MM-DD or null",
-    "vendor_name": "string",
+    "vendor_name": (
+        "string â€” the SHORT business/brand name only, e.g. 'MedExpress' or "
+        "'DataBlitz'. Do NOT concatenate the whole letterhead block into "
+        "this field. Specifically exclude: taglines/slogans (e.g. 'The No. "
+        "1 Hospital Outpatient Pharmacy'), 'Owned & Operated by:' clauses "
+        "and the legal entity name that follows it, and the name of a host "
+        "location the business operates inside of (e.g. a pharmacy located "
+        "inside 'Manila Doctors Hospital' is still vendor 'MedExpress', not "
+        "'MedExpress Manila Doctors Hospital'). If you genuinely can't tell "
+        "which of several nearby lines is the brand name on a low-quality "
+        "scan, pick the single most prominent/largest one â€” never join "
+        "multiple lines together as a fallback."
+    ),
     "vendor_address": "string or null",
     "vendor_tax_id": "string or null",
     "customer_name": (
@@ -43,7 +63,13 @@ EXTRACTION_SCHEMA = {
         "e.g. from a 'Client:', 'Bill To:', or 'Customer:' block. If the "
         "block lists both a company and an individual (often marked "
         "'Attn:', 'ATTN:', or 'c/o'), customer_name is the COMPANY, never "
-        "the individual â€” put the individual in customer_contact instead."
+        "the individual â€” put the individual in customer_contact instead. "
+        "IMPORTANT: many retail receipts have a 'SOLD TO' / 'Registered "
+        "Name' block that is left BLANK for walk-in/cash customers â€” if "
+        "that block has no name actually filled in, customer_name is null. "
+        "Never fill it with text from the vendor's own letterhead/address "
+        "(e.g. the city/district printed in the vendor's business address) "
+        "just because it appears near the blank customer block."
     ),
     "customer_contact": (
         "string or null â€” an individual contact person associated with the "

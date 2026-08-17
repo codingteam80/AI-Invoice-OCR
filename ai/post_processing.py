@@ -118,9 +118,20 @@ def reconcile_tax(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
     implements regex-based tax detection but was never wired into the
     pipeline, so a null/zero tax_amount from the LLM was silently accepted
     even when the OCR text clearly contained tax figures (e.g. '2%', '5%',
-    'Tax: 4.80'). Only fills gaps — never overwrites a value the LLM did
+    'Tax: 4.80'). Only FILLS gaps — never overwrites a value the LLM did
     provide, since the LLM has more context (e.g. per-line-item tax rates)
     than a flat regex scan can.
+
+    It does, however, still flag disagreements: if the LLM already
+    supplied a tax_amount but a clearly-labeled VAT/tax line in the raw
+    OCR text scans to a different figure, that's the same "auto-correct
+    only when unambiguous, otherwise note and let a human look"
+    precedent reconcile_total_amount() follows above — the regex hit is a
+    cruder signal than the LLM's, so it doesn't get to silently overwrite,
+    but silently dropping the disagreement would hide a real error (e.g.
+    the LLM quietly reconciling tax_amount against a misread subtotal so
+    the arithmetic balances, even though the receipt's own printed VAT
+    line said something else).
     """
     notes = []
     if not ocr_text:
@@ -133,11 +144,22 @@ def reconcile_tax(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
             data["tax_rate"] = rate
             notes.append(f"tax_rate filled from OCR text via regex fallback: {rate}%")
 
+    regex_tax_amount = find_tax_amount(ocr_text)
     if data.get("tax_amount") in (None, 0, 0.0):
-        amount = find_tax_amount(ocr_text)
-        if amount is not None:
-            data["tax_amount"] = amount
-            notes.append(f"tax_amount filled from OCR text via regex fallback: {amount}")
+        if regex_tax_amount is not None:
+            data["tax_amount"] = regex_tax_amount
+            notes.append(f"tax_amount filled from OCR text via regex fallback: {regex_tax_amount}")
+    elif regex_tax_amount is not None:
+        try:
+            llm_tax_amount = float(data["tax_amount"])
+        except (TypeError, ValueError):
+            llm_tax_amount = None
+        if llm_tax_amount is not None and abs(llm_tax_amount - regex_tax_amount) > 0.01:
+            notes.append(
+                f"tax_amount extracted as {llm_tax_amount}, but a regex scan of the OCR "
+                f"text found {regex_tax_amount} on a labeled VAT/tax line instead — needs "
+                f"manual review."
+            )
 
     return data, notes
 

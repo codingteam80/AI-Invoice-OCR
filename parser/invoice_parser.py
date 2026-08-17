@@ -61,7 +61,10 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     cleaned, total_notes = reconcile_total_amount(cleaned, ocr_text)
 
     # 4c. Heuristic backstop: fill tax_rate/tax_amount from a regex scan of
-    # the raw OCR text when the LLM left them null/zero (see ai/post_processing.reconcile_tax).
+    # the raw OCR text when the LLM left them null/zero, and flag (without
+    # overwriting) cases where the LLM's tax_amount disagrees with a
+    # clearly-labeled VAT/tax line in the OCR text (see
+    # ai/post_processing.reconcile_tax).
     cleaned, tax_notes = reconcile_tax(cleaned, ocr_text)
     reconciliation_notes = total_notes + tax_notes
 

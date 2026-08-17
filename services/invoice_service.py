@@ -6,7 +6,7 @@ from config.logging import get_logger
 from database.database import SessionLocal
 from database.repository import InvoiceRepository, DuplicateInvoiceError, InvoiceLockedError
 from parser.invoice_parser import parse_invoice, InvoiceParsingError
-from utils.file_utils import move_to_processed
+from utils.file_utils import move_to_processed, sanitize_filename_component
 from utils.categorizer import auto_categorize
 
 logger = get_logger("services.invoice")
@@ -106,7 +106,13 @@ def process_invoice_file(
 
 
 def _archive_json(invoice) -> str:
-    out_path = Path(settings.JSON_DIR) / f"invoice_{invoice.invoice_number or 'unknown'}_{invoice.id}.json"
+    # invoice_number comes straight from OCR/LLM extraction and isn't
+    # guaranteed to be filesystem-safe (e.g. a stray '/' or '\\' turns one
+    # path segment into two and blows up write_text with a
+    # FileNotFoundError, since that nested "directory" was never created —
+    # see utils.file_utils.sanitize_filename_component).
+    safe_invoice_number = sanitize_filename_component(invoice.invoice_number or "unknown")
+    out_path = Path(settings.JSON_DIR) / f"invoice_{safe_invoice_number}_{invoice.id}.json"
     out_path.write_text(invoice.model_dump_json(indent=2, exclude={"raw_text"}), encoding="utf-8")
     return str(out_path)
 

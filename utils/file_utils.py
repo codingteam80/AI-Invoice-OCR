@@ -1,10 +1,27 @@
 """File-system helper functions: saving uploads, hashing, validation."""
 import hashlib
+import re
 import shutil
 import uuid
 from pathlib import Path, PureWindowsPath, PurePosixPath
 from config.constants import SUPPORTED_EXTS
 from config.settings import settings
+
+# Anything that isn't alphanumeric/dash/underscore/dot gets stripped. This
+# specifically covers '/' and '\\' — an invoice_number containing either
+# (e.g. an OCR'd "ALC081-221/2832-0071-241") silently turns one path
+# segment into two when interpolated straight into a filename, so instead
+# of writing "invoice_ALC081-221/2832-0071-241_3.json" the code ends up
+# trying to write into a "invoice_ALC081-221" subdirectory that was never
+# created, and fails with FileNotFoundError.
+_UNSAFE_FILENAME_CHARS_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def sanitize_filename_component(value: str, fallback: str = "unknown") -> str:
+    """Makes an arbitrary string (e.g. an OCR'd invoice number) safe to use
+    as a single filename path segment, on both Windows and POSIX."""
+    cleaned = _UNSAFE_FILENAME_CHARS_RE.sub("_", str(value)).strip("._")
+    return cleaned or fallback
 
 
 def is_supported_file(filename: str) -> bool:
