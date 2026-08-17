@@ -27,6 +27,12 @@ class Settings:
     # than a whole page (see ocr/ocr_engine.py hybrid router) — a short
     # invoice line naturally has far fewer glyphs than a full page.
     HANDWRITING_MIN_COMPONENTS_REGION: int = int(os.getenv("HANDWRITING_MIN_COMPONENTS_REGION", "4"))
+    # On by default: deskew + denoise + CLAHE contrast enhancement (see
+    # ocr/preprocessing.py). This is what actually improves recognition on
+    # real phone-photo receipts (faded thermal paper, glare, uneven
+    # lighting) before OCR ever runs. Turn off only if you've confirmed it
+    # hurts accuracy for your specific document source.
+    OCR_PREPROCESS_ENABLED: bool = os.getenv("OCR_PREPROCESS_ENABLED", "true").lower() == "true"
     # Off by default — see ocr/preprocessing.py docstring. Hard binarization
     # tends to hurt PaddleOCR/TrOCR on real phone photos more than it helps.
     OCR_PREPROCESS_BINARIZE: bool = os.getenv("OCR_PREPROCESS_BINARIZE", "false").lower() == "true"

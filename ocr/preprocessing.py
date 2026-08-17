@@ -27,6 +27,22 @@ def adaptive_threshold(img: np.ndarray) -> np.ndarray:
     )
 
 
+def enhance_contrast(img: np.ndarray) -> np.ndarray:
+    """CLAHE (Contrast Limited Adaptive Histogram Equalization) on a
+    grayscale image.
+
+    Unlike a global histogram-equalization/contrast stretch, CLAHE works on
+    small local tiles, so it boosts faded/low-contrast text (the common
+    complaint on phone photos of receipts — thermal-paper fade, glare on
+    one half of the page, a shadow across a corner) without blowing out
+    the parts of the image that were already well-lit. clipLimit caps how
+    much any one tile can be stretched, which keeps noise in flat regions
+    (blank paper) from getting amplified into speckle.
+    """
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+    return clahe.apply(img)
+
+
 def deskew(img: np.ndarray) -> np.ndarray:
     """Estimate skew angle from text contours and rotate to correct it."""
     gray = img if len(img.shape) == 2 else to_grayscale(img)
@@ -47,9 +63,15 @@ def deskew(img: np.ndarray) -> np.ndarray:
     return rotated
 
 
-def preprocess(path: str, save_path: str | None = None, binarize: bool = False) -> np.ndarray:
+def preprocess(
+    path: str,
+    save_path: str | None = None,
+    binarize: bool = False,
+    enhance: bool = True,
+) -> np.ndarray:
     """
-    Full pipeline: load -> deskew -> grayscale -> denoise -> (optional) threshold.
+    Full pipeline: load -> deskew -> grayscale -> denoise -> (optional)
+    contrast enhancement -> (optional) threshold.
 
     binarize=False (the default) is what PaddleOCR/TrOCR should get. Both
     are deep-learning models trained on natural photographs — they expect
@@ -62,11 +84,19 @@ def preprocess(path: str, save_path: str | None = None, binarize: bool = False) 
 
     Only set binarize=True if you've empirically confirmed it helps for
     your specific document source (e.g. clean flatbed scans).
+
+    enhance=True (the default) runs enhance_contrast() (CLAHE) after
+    denoising — this is what actually helps the common "photo of a faded
+    receipt" case, without the aggressive black/white flattening that
+    binarize does. Unlike binarize, it's safe to leave on by default since
+    it preserves the gradient information PaddleOCR/TrOCR expect.
     """
     img = load_image(path)
     img = deskew(img)
     gray = to_grayscale(img)
     gray = denoise(gray)
+    if enhance:
+        gray = enhance_contrast(gray)
     result = adaptive_threshold(gray) if binarize else gray
     if save_path:
         cv2.imwrite(save_path, result)

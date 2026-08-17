@@ -184,7 +184,7 @@ def _bbox_pil_box(bbox: list) -> tuple:
 
 def extract_from_image(
     image_path: str,
-    use_preprocessing: bool = False,
+    use_preprocessing: bool | None = None,
     force_handwritten: bool | None = None,
 ) -> dict:
     """
@@ -195,8 +195,16 @@ def extract_from_image(
                  independently, so mixed printed/handwritten pages work.
         True  -> skip detection, pin the WHOLE page to TrOCR.
         False -> skip detection, pin the WHOLE page to PaddleOCR.
+
+    use_preprocessing:
+        None  -> (default) follow settings.OCR_PREPROCESS_ENABLED, so the
+                 deskew/denoise/contrast-enhancement pipeline in
+                 ocr/preprocessing.py actually runs unless the user turned
+                 it off. Explicit True/False overrides the setting.
     """
     target_path = image_path
+    if use_preprocessing is None:
+        use_preprocessing = settings.OCR_PREPROCESS_ENABLED
 
     if use_preprocessing:
         try:
@@ -225,12 +233,19 @@ def extract_from_image(
         return result
 
 
-def extract_from_file(file_path: str, force_handwritten: bool | None = None) -> dict:
+def extract_from_file(
+    file_path: str,
+    force_handwritten: bool | None = None,
+    use_preprocessing: bool | None = None,
+) -> dict:
     """
     Handles both images and PDFs. For multi-page PDFs, concatenates text
     from all pages and averages confidence. Each page (and each region
     within it) is independently routed unless `force_handwritten` pins the
     whole document to one engine.
+
+    use_preprocessing: None (default) follows settings.OCR_PREPROCESS_ENABLED
+    — see extract_from_image().
     """
     ext = Path(file_path).suffix.lower()
 
@@ -238,7 +253,9 @@ def extract_from_file(file_path: str, force_handwritten: bool | None = None) -> 
         image_paths = pdf_to_images(file_path)
         all_text, all_lines, confs, engines_used = [], [], [], set()
         for img_path in image_paths:
-            res = extract_from_image(img_path, force_handwritten=force_handwritten)
+            res = extract_from_image(
+                img_path, use_preprocessing=use_preprocessing, force_handwritten=force_handwritten
+            )
             all_text.append(res["text"])
             all_lines.extend(res["lines"])
             confs.append(res["avg_confidence"])
@@ -251,4 +268,4 @@ def extract_from_file(file_path: str, force_handwritten: bool | None = None) -> 
             "pages": len(image_paths),
         }
 
-    return extract_from_image(file_path, force_handwritten=force_handwritten)
+    return extract_from_image(file_path, use_preprocessing=use_preprocessing, force_handwritten=force_handwritten)

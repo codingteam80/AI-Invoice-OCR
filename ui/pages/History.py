@@ -29,9 +29,9 @@ STATUS_OPTIONS = ["processed", "needs_review", "failed", "pending"]
 # ID column width is left untouched; the action-button columns are sized
 # tight to their icon-only buttons, and the freed-up space is redistributed
 # across the remaining data columns.
-ROW_WIDTHS = [0.5, 1.3, 1.6, 1.1, 1.3, 1.1, 1.0, 0.5, 0.5, 0.5]
+ROW_WIDTHS = [0.4, 0.5, 1.3, 1.6, 1.1, 1.3, 1.1, 1.0, 0.5, 0.5, 0.5]
 COLUMN_LABELS = [
-    "ID", "Invoice #", "Vendor", "Date", "Total Amount Due", "Status", "Confidence", "", "", "",
+    "", "ID", "Invoice #", "Vendor", "Date", "Total Amount Due", "Status", "Confidence", "", "", "",
 ]
 
 
@@ -167,8 +167,36 @@ def delete_invoice_dialog(inv: dict):
         st.rerun()
 
 
-def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
-    """Renders the header + per-row Edit/Lock table for a given invoice list."""
+@st.dialog("🗑️ Delete Selected Invoices")
+def bulk_delete_dialog(selected: list[dict]):
+    st.warning(
+        f"Delete **{len(selected)}** selected invoice(s)? This can't be undone.\n\n"
+        + "\n".join(f"- {inv['invoice_number']} ({inv.get('vendor_name') or 'unknown vendor'})" for inv in selected[:20])
+        + ("\n- ..." if len(selected) > 20 else "")
+    )
+    c_confirm, c_cancel = st.columns(2)
+    if c_confirm.button(f"🗑️ Yes, delete {len(selected)}", type="primary", use_container_width=True):
+        failures = []
+        for inv in selected:
+            try:
+                delete_invoice(inv["id"])
+            except (InvoiceLockedError, ValueError) as e:
+                failures.append(f"{inv['invoice_number']}: {e}")
+        if failures:
+            st.error("Some invoices couldn't be deleted:\n" + "\n".join(f"- {f}" for f in failures))
+        else:
+            st.success(f"Deleted {len(selected)} invoice(s).")
+            st.rerun()
+    if c_cancel.button("Cancel", use_container_width=True):
+        st.rerun()
+
+
+def render_invoice_row_table(invoices: list[dict], key_prefix: str, scope_key: str) -> None:
+    """Renders the header + per-row select/Edit/Lock table for a given
+    invoice list. `scope_key` (shared across categories within the same
+    month section) is what the page-level "select all" checkbox and
+    "delete selected" button key off of — `key_prefix` stays
+    category-specific so edit/lock/delete button keys stay unique."""
     header_cols = st.columns(ROW_WIDTHS)
     for col, label in zip(header_cols, COLUMN_LABELS):
         # "**" + "" + "**" is "****", which Markdown parses as a horizontal
@@ -179,17 +207,21 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
     for inv in invoices:
         locked = bool(inv.get("locked"))
         row_cols = st.columns(ROW_WIDTHS)
-        row_cols[0].write(f"{'🔒' if locked else ''} {inv['id']}")
-        row_cols[1].write(inv["invoice_number"])
-        row_cols[2].write(inv["vendor_name"])
-        row_cols[3].write(inv.get("invoice_date") or "-")
-        row_cols[4].write(f"{(inv.get('total_amount') or 0):,.2f} {inv.get('currency') or ''}".strip())
-        row_cols[5].write(inv.get("status") or "-")
-        row_cols[6].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
-        if row_cols[7].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
+        row_cols[0].checkbox(
+            "", key=f"sel_{scope_key}_{inv['id']}", disabled=locked,
+            label_visibility="collapsed", help="Unlock first to select" if locked else "Select",
+        )
+        row_cols[1].write(f"{'🔒' if locked else ''} {inv['id']}")
+        row_cols[2].write(inv["invoice_number"])
+        row_cols[3].write(inv["vendor_name"])
+        row_cols[4].write(inv.get("invoice_date") or "-")
+        row_cols[5].write(f"{(inv.get('total_amount') or 0):,.2f} {inv.get('currency') or ''}".strip())
+        row_cols[6].write(inv.get("status") or "-")
+        row_cols[7].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
+        if row_cols[8].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
             edit_invoice_dialog(inv)
         lock_icon = "🔓" if locked else "🔒"
-        if row_cols[8].button(
+        if row_cols[9].button(
             lock_icon, key=f"lock_btn_{key_prefix}_{inv['id']}",
             help="Unlock" if locked else "Lock (confirm this row is correct)",
         ):
@@ -198,20 +230,46 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str) -> None:
             else:
                 lock_invoice(inv["id"])
             st.rerun()
-        if row_cols[9].button(
+        if row_cols[10].button(
             "🗑️", key=f"delete_btn_{key_prefix}_{inv['id']}",
             disabled=locked, help="Unlock first to delete" if locked else "Delete",
         ):
             delete_invoice_dialog(inv)
 
 
+def _select_all_callback(scope_key: str, invoice_ids: list[int], value: bool) -> None:
+    for inv_id in invoice_ids:
+        st.session_state[f"sel_{scope_key}_{inv_id}"] = value
+
+
 def render_category_tables(invoices: list[dict], scope_key: str) -> None:
     """Splits `invoices` into one table per category (Foods, Office Supplies,
     Furnitures, Others, ...). Status/category/vendor filtering happens one
-    level up (see render_filters below) before invoices ever reach here."""
+    level up (see render_filters below) before invoices ever reach here.
+
+    Also renders a "select all" checkbox and "delete selected" button
+    covering every unlocked invoice currently shown for this scope (i.e.
+    across all its category tables, not just one) — see suggestion #1
+    (bulk select/delete)."""
     if not invoices:
         st.info("No invoices for this period.")
         return
+
+    unlocked_ids = [inv["id"] for inv in invoices if not inv.get("locked")]
+    sel_c1, sel_c2 = st.columns([1, 3])
+    sel_c1.checkbox(
+        f"Select all ({len(unlocked_ids)})",
+        key=f"select_all_{scope_key}",
+        disabled=not unlocked_ids,
+        on_change=lambda: _select_all_callback(
+            scope_key, unlocked_ids, st.session_state[f"select_all_{scope_key}"]
+        ),
+    )
+    selected = [inv for inv in invoices if st.session_state.get(f"sel_{scope_key}_{inv['id']}")]
+    if sel_c2.button(
+        f"🗑️ Delete selected ({len(selected)})", disabled=not selected, key=f"bulk_delete_{scope_key}",
+    ):
+        bulk_delete_dialog(selected)
 
     by_category: dict[str, list[dict]] = {}
     for inv in invoices:
@@ -227,7 +285,7 @@ def render_category_tables(invoices: list[dict], scope_key: str) -> None:
         locked_count = sum(1 for inv in cat_invoices if inv.get("locked"))
         st.markdown(f"#### 🏷️ {cat} — {len(cat_invoices)} invoice(s), {locked_count} locked")
 
-        render_invoice_row_table(cat_invoices, key_prefix=f"{scope_key}_{cat}")
+        render_invoice_row_table(cat_invoices, key_prefix=f"{scope_key}_{cat}", scope_key=scope_key)
         total = sum(inv.get("total_amount") or 0 for inv in cat_invoices)
         st.caption(f"Subtotal for {cat}: {total:,.2f}")
         # Only between categories, not after the last one — otherwise this
@@ -238,11 +296,23 @@ def render_category_tables(invoices: list[dict], scope_key: str) -> None:
 
 
 def render_filters(scope_key: str, invoices_pool: list[dict]) -> list[dict]:
-    """Renders Filter by status/category/vendor as multiselects — each is a
-    searchable text box you can also type into, not just a single-choice
-    dropdown — and returns invoices_pool filtered by whatever's selected.
-    Options are computed from invoices_pool itself so, e.g., the vendor list
-    for the current-month filter only shows vendors seen this month."""
+    """Renders a free-text search box plus Filter by status/category/vendor
+    multiselects — each multiselect is a searchable text box you can also
+    type into, not just a single-choice dropdown — and returns
+    invoices_pool filtered by whatever's selected. Options are computed
+    from invoices_pool itself so, e.g., the vendor list for the
+    current-month filter only shows vendors seen this month.
+
+    Each month section (current month, and whichever previous month is
+    picked below) gets its OWN search bar/filters, scoped by `scope_key` —
+    searching "current" never touches what's selected for a previous month.
+    """
+    search_term = st.text_input(
+        "🔍 Search invoice #, vendor, or customer",
+        key=f"search_{scope_key}",
+        placeholder="e.g. INV-2026 or Jollibee",
+    )
+
     vendors = sorted({inv["vendor_name"] for inv in invoices_pool if inv.get("vendor_name")})
     c1, c2, c3 = st.columns(3)
     statuses = c1.multiselect("Filter by status", STATUS_OPTIONS, key=f"status_filter_{scope_key}")
@@ -250,6 +320,14 @@ def render_filters(scope_key: str, invoices_pool: list[dict]) -> list[dict]:
     vendor_sel = c3.multiselect("Filter by vendor", vendors, key=f"vendor_filter_{scope_key}")
 
     filtered = invoices_pool
+    if search_term.strip():
+        needle = search_term.strip().lower()
+        filtered = [
+            inv for inv in filtered
+            if needle in (inv.get("invoice_number") or "").lower()
+            or needle in (inv.get("vendor_name") or "").lower()
+            or needle in (inv.get("customer_name") or "").lower()
+        ]
     if statuses:
         filtered = [inv for inv in filtered if inv.get("status") in statuses]
     if categories:
@@ -328,6 +406,25 @@ if invoices:
         c2.write(f"**Status:** {detail.get('status')}")
         c2.write(f"**Confidence:** {(detail.get('confidence_score') or 0) * 100:.0f}%")
         c2.write(f"**Locked:** {'🔒 Yes' if detail.get('locked') else '🔓 No'}")
+
+        line_items = detail.get("line_items") or []
+        if line_items:
+            st.markdown("**Items purchased:**")
+            st.dataframe(
+                [
+                    {
+                        "Item": li.get("description") or "-",
+                        "Qty": li.get("quantity") or 0,
+                        "Unit Price": f"{(li.get('unit_price') or 0):,.2f}",
+                        "Amount": f"{(li.get('amount') or 0):,.2f}",
+                    }
+                    for li in line_items
+                ],
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption("No individual line items were extracted for this invoice.")
 
         b1, b2, b3 = st.columns(3)
         if b1.button("✏️ Edit this invoice", disabled=bool(detail.get("locked")), use_container_width=True):
