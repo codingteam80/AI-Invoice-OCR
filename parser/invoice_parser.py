@@ -74,7 +74,16 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     # confusions from the text alone, this catches OCR misreads the
     # text-only pipeline has no way to see at all. Off by default and
     # fails open (see ai/vision_verifier.py docstring).
-    vision_issues = verify_against_image(file_path, cleaned)
+    #
+    # Any correction the vision model is confident enough about is applied
+    # directly to `cleaned` here — this is an auto-replace, not just a flag.
+    # It's still safe: vision_issues (below) always gets a note for every
+    # correction, which feeds into `issues` and forces needs_review=True
+    # (see ai/confidence.py), so an auto-corrected value still requires a
+    # human to review and lock it before it's treated as final.
+    vision_corrections, vision_issues = verify_against_image(file_path, cleaned)
+    if vision_corrections:
+        cleaned.update(vision_corrections)
 
     # 5. Validate + score confidence — MUST run before sanitizing, so a
     #    genuinely-missing field still counts against confidence/needs_review.
