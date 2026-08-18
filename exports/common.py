@@ -14,6 +14,28 @@ EXPORT_COLUMNS = [
 ]
 
 
+LINE_ITEM_COLUMNS = ["Invoice #", "ID", "Description", "Quantity", "Unit Price", "Total Unit Price"]
+
+
+def invoice_line_items_rows(invoices: list[dict]) -> list[dict]:
+    """Flat list of every line item across `invoices`, each row tagged with
+    its parent invoice's # and ID so it can be cross-referenced. Invoices
+    with no line items simply contribute nothing — see ui/pages/Reports.py
+    ("include Items purchased for invoices that have them")."""
+    rows = []
+    for inv in invoices:
+        for li in (inv.get("line_items") or []):
+            rows.append({
+                "Invoice #": inv.get("invoice_number"),
+                "ID": inv.get("id"),
+                "Description": li.get("description") or "-",
+                "Quantity": li.get("quantity") or 0,
+                "Unit Price": li.get("unit_price") or 0,
+                "Total Unit Price": li.get("amount") or 0,
+            })
+    return rows
+
+
 def invoice_totals_row(invoices: list[dict]) -> dict:
     """Bottom summary row: sums of Net Amount, VAT, Discount, and Total
     Amount Due across `invoices`, blank everywhere else. None of these sums

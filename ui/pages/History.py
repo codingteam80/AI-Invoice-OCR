@@ -4,7 +4,9 @@ from datetime import date
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from config.constants import CATEGORY_OPTIONS
 from database.repository import DuplicateInvoiceError, InvoiceLockedError
 from services.invoice_service import (
@@ -44,6 +46,29 @@ def _show_image(source):
         st.image(source, use_column_width=True)
 
 
+def _render_invoice_image(inv: dict) -> None:
+    """Resolves and displays the source file for `inv` — first page only
+    for PDFs. Shared by the invoice detail viewer and the Edit Invoice
+    dialog, so a user can see the original document while correcting the
+    extracted fields next to it."""
+    resolved_file = resolve_source_file(inv.get("source_file"))
+    if not resolved_file:
+        st.caption("(no image on disk for this invoice)")
+        return
+    if resolved_file.suffix.lower() == ".pdf":
+        try:
+            pages = pdf_to_images(str(resolved_file))
+        except Exception as e:
+            st.caption(f"(couldn't render PDF preview: {e})")
+            return
+        if pages:
+            _show_image(pages[0])
+            if len(pages) > 1:
+                st.caption(f"Showing page 1 of {len(pages)}.")
+    else:
+        _show_image(str(resolved_file))
+
+
 def _parse_date(value: str):
     value = (value or "").strip()
     if not value:
@@ -51,98 +76,216 @@ def _parse_date(value: str):
     return date.fromisoformat(value)  # raises ValueError -> caught by caller
 
 
-@st.dialog("✏️ Edit Invoice", width="large")
-def edit_invoice_dialog(inv: dict):
+def _request_detail_switch(target_id: int, enter_edit: bool) -> None:
+    """Central entry point for 'show invoice `target_id` in the View full
+    details section, optionally opening its edit form' — used by the
+    row-table ✏️ buttons and the detail section's own Edit button.
+
+    MUST be wired as a button's on_click callback (never called inline
+    inside an `if button(...):` block) — it sets detail_selected_id, which
+    is the View-full-details selectbox's own widget key. Streamlit forbids
+    setting a widget's session_state key after that widget has already
+    rendered once in the current script run; on_click callbacks run before
+    the next rerun (and its widgets) exist, so they're always safe, no
+    matter where on the page the button sits relative to the selectbox."""
+    st.session_state["detail_selected_id"] = target_id
+    editing_id = st.session_state.get("editing_invoice_id")
+    if editing_id is None or editing_id == target_id:
+        # No conflicting edit in progress — apply immediately.
+        if enter_edit:
+            st.session_state["editing_invoice_id"] = target_id
+    else:
+        # Someone else's edit is open — leave editing_invoice_id alone.
+        # The declarative mismatch check will catch this on rerun and show
+        # the discard/keep-editing prompt instead of jumping straight in.
+        st.session_state["pending_enter_edit"] = enter_edit
+    st.session_state["scroll_to_detail"] = True
+
+
+def _keep_editing_callback(editing_id: int) -> None:
+    """on_click callback for the 'Keep editing' button in the mid-edit
+    switch guard — reverts the selectbox back to the invoice actually
+    being edited. Must be a callback for the same reason as
+    _request_detail_switch: this runs after the selectbox has already
+    rendered once this run."""
+    st.session_state["detail_selected_id"] = editing_id
+    st.session_state.pop("pending_enter_edit", None)
+
+
+def _scroll_to_detail_if_needed() -> None:
+    """Streamlit has no built-in scroll-to-element — this is the standard
+    workaround: an invisible component iframe that's same-origin with the
+    main page, so it can reach into window.parent.document and scroll it.
+    Only fires once per switch request (the flag is popped, not just read)."""
+    if st.session_state.pop("scroll_to_detail", False):
+        components.html(
+            """<script>
+                var el = window.parent.document.getElementById("invoice-detail-anchor");
+                if (el) { el.scrollIntoView({behavior: "smooth", block: "start"}); }
+            </script>""",
+            height=0,
+        )
+
+
+def render_edit_form(inv: dict):
+    """Inline replacement for the old modal Edit Invoice dialog — renders
+    directly in the page flow (not a popup), so it isn't capped to
+    st.dialog's two width presets. See _request_detail_switch for how a
+    user gets routed here."""
     if inv.get("locked"):
         st.warning("This invoice is locked. Unlock it on the History page before editing.")
         if st.button("Close"):
+            st.session_state["editing_invoice_id"] = None
             st.rerun()
         return
 
+    st.subheader(f"✏️ Editing Invoice {inv.get('invoice_number') or inv['id']}")
     st.caption(
         f"Invoice ID {inv['id']} · Filename: {inv.get('original_filename') or '—'}\n\n"
         "Correct any fields the OCR/extraction got wrong — useful for invoices "
         "with misaligned labels/values or blurred scans."
     )
 
-    invoice_number = st.text_input("Invoice #", value=inv.get("invoice_number") or "")
-    col1, col2 = st.columns(2)
-    with col1:
-        vendor_name = st.text_input("Vendor", value=inv.get("vendor_name") or "")
-        customer_name = st.text_input("Customer", value=inv.get("customer_name") or "")
-        invoice_date_str = st.text_input(
-            "Invoice Date (YYYY-MM-DD)", value=inv.get("invoice_date") or ""
-        )
-        currency = st.text_input("Currency", value=inv.get("currency") or "USD")
-    with col2:
-        subtotal = st.number_input(
-            "Net Amount (Subtotal)", value=float(inv.get("subtotal") or 0.0), step=0.01, format="%.2f"
-        )
-        tax_amount = st.number_input(
-            "VAT", value=float(inv.get("tax_amount") or 0.0), step=0.01, format="%.2f"
-        )
-        total_amount = st.number_input(
-            "Total Amount Due", value=float(inv.get("total_amount") or 0.0), step=0.01, format="%.2f"
-        )
-        status = st.selectbox(
-            "Status",
-            STATUS_OPTIONS,
-            index=STATUS_OPTIONS.index(inv["status"]) if inv.get("status") in STATUS_OPTIONS else 0,
-        )
-        category = st.selectbox(
-            "Category",
-            CATEGORY_OPTIONS,
-            index=CATEGORY_OPTIONS.index(inv["category"]) if inv.get("category") in CATEGORY_OPTIONS else len(CATEGORY_OPTIONS) - 1,
-            help="AI-assigned during processing — change it here if it's wrong.",
-        )
+    main_col, image_col = st.columns([2, 1])
 
-    computed = subtotal + tax_amount
-    if abs(computed - total_amount) > max(0.02 * total_amount, 0.01):
-        st.warning(
-            f"Net Amount + VAT = {computed:,.2f}, which doesn't match Total Amount Due "
-            f"({total_amount:,.2f}). You can still save if that's correct for this invoice."
+    with main_col:
+        invoice_number = st.text_input("Invoice #", value=inv.get("invoice_number") or "")
+        col1, col2 = st.columns(2)
+        with col1:
+            vendor_name = st.text_input("Vendor", value=inv.get("vendor_name") or "")
+            customer_name = st.text_input("Customer", value=inv.get("customer_name") or "")
+            invoice_date_str = st.text_input(
+                "Invoice Date (YYYY-MM-DD)", value=inv.get("invoice_date") or ""
+            )
+            currency = st.text_input("Currency", value=inv.get("currency") or "USD")
+        with col2:
+            subtotal = st.number_input(
+                "Net Amount (Subtotal)", value=float(inv.get("subtotal") or 0.0), step=0.01, format="%.2f"
+            )
+            tax_amount = st.number_input(
+                "VAT", value=float(inv.get("tax_amount") or 0.0), step=0.01, format="%.2f"
+            )
+            total_amount = st.number_input(
+                "Total Amount Due", value=float(inv.get("total_amount") or 0.0), step=0.01, format="%.2f"
+            )
+            status = st.selectbox(
+                "Status",
+                STATUS_OPTIONS,
+                index=STATUS_OPTIONS.index(inv["status"]) if inv.get("status") in STATUS_OPTIONS else 0,
+            )
+            category = st.selectbox(
+                "Category",
+                CATEGORY_OPTIONS,
+                index=CATEGORY_OPTIONS.index(inv["category"]) if inv.get("category") in CATEGORY_OPTIONS else len(CATEGORY_OPTIONS) - 1,
+                help="AI-assigned during processing — change it here if it's wrong.",
+            )
+
+        computed = subtotal + tax_amount
+        if abs(computed - total_amount) > max(0.02 * total_amount, 0.01):
+            st.warning(
+                f"Net Amount + VAT = {computed:,.2f}, which doesn't match Total Amount Due "
+                f"({total_amount:,.2f}). You can still save if that's correct for this invoice."
+            )
+
+        st.markdown("**Items purchased**")
+        st.caption(
+            "Edit any cell directly. To add a row, start typing in the blank row at the "
+            "bottom. To delete a row, select it (checkbox on the left) and press the 🗑️ "
+            "icon that appears above the table."
         )
+        line_items_df = pd.DataFrame(
+            [
+                {
+                    "Description": li.get("description") or "",
+                    "Quantity": float(li.get("quantity") or 0.0),
+                    "Unit Price": float(li.get("unit_price") or 0.0),
+                    "Total Unit Price": float(li.get("amount") or 0.0),
+                }
+                for li in (inv.get("line_items") or [])
+            ],
+            columns=["Description", "Quantity", "Unit Price", "Total Unit Price"],
+        )
+        edited_line_items = st.data_editor(
+            line_items_df,
+            num_rows="dynamic",
+            hide_index=True,
+            use_container_width=True,
+            key=f"line_items_editor_{inv['id']}",
+            column_config={
+                "Description": st.column_config.TextColumn("Description"),
+                "Quantity": st.column_config.NumberColumn("Quantity", min_value=0.0, step=1.0, format="%.2f"),
+                "Unit Price": st.column_config.NumberColumn("Unit Price", min_value=0.0, step=0.01, format="%.2f"),
+                "Total Unit Price": st.column_config.NumberColumn("Total Unit Price", min_value=0.0, step=0.01, format="%.2f"),
+            },
+        )
+        # New blank rows from "dynamic" mode come back with NaN, not 0/"" —
+        # fillna before summing or reading values below, or the sum/save
+        # step would silently propagate NaN into the database.
+        edited_line_items = edited_line_items.fillna(
+            {"Description": "", "Quantity": 0.0, "Unit Price": 0.0, "Total Unit Price": 0.0}
+        )
+        items_sum = edited_line_items["Total Unit Price"].sum() if not edited_line_items.empty else 0.0
+        st.caption(f"Sum of Total Unit Price: {items_sum:,.2f}")
 
-    c_save, c_cancel = st.columns(2)
-    if c_save.button("💾 Save changes", type="primary", use_container_width=True):
-        if not invoice_number.strip():
-            st.error("Invoice # can't be empty.")
-            return
-        if not vendor_name.strip():
-            st.error("Vendor can't be empty.")
-            return
-        try:
-            parsed_invoice_date = _parse_date(invoice_date_str)
-        except ValueError:
-            st.error("Date must be in YYYY-MM-DD format.")
-            return
+        c_save, c_cancel = st.columns(2)
+        if c_save.button("💾 Save changes", type="primary", use_container_width=True):
+            if not invoice_number.strip():
+                st.error("Invoice # can't be empty.")
+                return
+            if not vendor_name.strip():
+                st.error("Vendor can't be empty.")
+                return
+            try:
+                parsed_invoice_date = _parse_date(invoice_date_str)
+            except ValueError:
+                st.error("Date must be in YYYY-MM-DD format.")
+                return
 
-        updates = {
-            "invoice_number": invoice_number.strip(),
-            "vendor_name": vendor_name.strip(),
-            "customer_name": customer_name.strip() or None,
-            "invoice_date": parsed_invoice_date,
-            "currency": currency.strip() or "USD",
-            "subtotal": subtotal,
-            "tax_amount": tax_amount,
-            "total_amount": total_amount,
-            "status": status,
-            "category": category,
-        }
-        try:
-            update_invoice(inv["id"], updates)
-        except DuplicateInvoiceError as e:
-            st.error(str(e))
-            return
-        except InvoiceLockedError as e:
-            st.error(str(e))
-            return
+            new_line_items = []
+            for _, row in edited_line_items.iterrows():
+                description = str(row["Description"]).strip()
+                if not description:
+                    continue  # blank template row from "+" that was never filled in
+                new_line_items.append({
+                    "description": description,
+                    "quantity": float(row["Quantity"]),
+                    "unit_price": float(row["Unit Price"]),
+                    "amount": float(row["Total Unit Price"]),
+                })
 
-        st.success("Invoice updated.")
-        st.rerun()
+            updates = {
+                "invoice_number": invoice_number.strip(),
+                "vendor_name": vendor_name.strip(),
+                "customer_name": customer_name.strip() or None,
+                "invoice_date": parsed_invoice_date,
+                "currency": currency.strip() or "USD",
+                "subtotal": subtotal,
+                "tax_amount": tax_amount,
+                "total_amount": total_amount,
+                "status": status,
+                "category": category,
+                "line_items": new_line_items,
+            }
+            try:
+                update_invoice(inv["id"], updates)
+            except DuplicateInvoiceError as e:
+                st.error(str(e))
+                return
+            except InvoiceLockedError as e:
+                st.error(str(e))
+                return
 
-    if c_cancel.button("Cancel", use_container_width=True):
-        st.rerun()
+            st.session_state["editing_invoice_id"] = None
+            st.success("Invoice updated.")
+            st.rerun()
+
+        if c_cancel.button("Cancel", use_container_width=True):
+            st.session_state["editing_invoice_id"] = None
+            st.rerun()
+
+    with image_col:
+        st.markdown("**🖼️ Invoice Image**")
+        _render_invoice_image(inv)
 
 
 @st.dialog("🗑️ Delete Invoice")
@@ -218,8 +361,10 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str, scope_key: s
         row_cols[5].write(f"{(inv.get('total_amount') or 0):,.2f} {inv.get('currency') or ''}".strip())
         row_cols[6].write(inv.get("status") or "-")
         row_cols[7].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
-        if row_cols[8].button("✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit"):
-            edit_invoice_dialog(inv)
+        row_cols[8].button(
+            "✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit",
+            on_click=_request_detail_switch, args=(inv["id"],), kwargs={"enter_edit": True},
+        )
         lock_icon = "🔓" if locked else "🔒"
         if row_cols[9].button(
             lock_icon, key=f"lock_btn_{key_prefix}_{inv['id']}",
@@ -287,7 +432,7 @@ def render_category_tables(invoices: list[dict], scope_key: str) -> None:
 
         render_invoice_row_table(cat_invoices, key_prefix=f"{scope_key}_{cat}", scope_key=scope_key)
         total = sum(inv.get("total_amount") or 0 for inv in cat_invoices)
-        st.caption(f"Subtotal for {cat}: {total:,.2f}")
+        st.caption(f"Sum of Total Amount Due: {total:,.2f}")
         # Only between categories, not after the last one — otherwise this
         # divider lands directly next to the page-level divider that comes
         # after render_category_tables() returns, drawing two lines in a row.
@@ -389,78 +534,95 @@ else:
 
 if invoices:
     st.divider()
+    st.markdown('<div id="invoice-detail-anchor"></div>', unsafe_allow_html=True)
 
-    selected_id = st.selectbox("View full details for invoice ID", [None] + [inv["id"] for inv in invoices])
-    if selected_id:
-        detail = get_invoice(selected_id)
-        st.subheader(f"Invoice {detail['invoice_number']}")
-        c1, c2 = st.columns(2)
-        c1.write(f"**Vendor:** {detail['vendor_name']}")
-        c1.write(f"**Customer:** {detail.get('customer_name') or '-'}")
-        c1.write(f"**Date:** {detail.get('invoice_date') or '-'}")
-        c1.write(f"**Filename:** {detail.get('original_filename') or '-'}")
-        c1.write(f"**Category:** {detail.get('category') or '-'}")
-        c2.write(f"**Net Amount:** {(detail.get('subtotal') or 0):,.2f} {detail.get('currency')}")
-        c2.write(f"**VAT:** {(detail.get('tax_amount') or 0):,.2f} {detail.get('currency')}")
-        c2.write(f"**Total Amount Due:** {(detail.get('total_amount') or 0):,.2f} {detail.get('currency')}")
-        c2.write(f"**Status:** {detail.get('status')}")
-        c2.write(f"**Confidence:** {(detail.get('confidence_score') or 0) * 100:.0f}%")
-        c2.write(f"**Locked:** {'🔒 Yes' if detail.get('locked') else '🔓 No'}")
+    valid_ids = [inv["id"] for inv in invoices]
+    selected_id = st.selectbox(
+        "View full details for invoice ID", [None] + valid_ids, key="detail_selected_id"
+    )
+    editing_id = st.session_state.get("editing_invoice_id")
 
-        line_items = detail.get("line_items") or []
-        if line_items:
-            st.markdown("**Items purchased:**")
-            st.dataframe(
-                [
-                    {
-                        "Item": li.get("description") or "-",
-                        "Qty": li.get("quantity") or 0,
-                        "Unit Price": f"{(li.get('unit_price') or 0):,.2f}",
-                        "Amount": f"{(li.get('amount') or 0):,.2f}",
-                    }
-                    for li in line_items
-                ],
-                hide_index=True,
-                use_container_width=True,
+    if editing_id is not None and selected_id != editing_id:
+        # The dropdown (directly, or via a row-table ✏️ button on a
+        # different invoice) was changed while an edit was still open —
+        # don't silently discard it.
+        st.warning(
+            f"⚠️ You have unsaved edits open for invoice ID {editing_id}. "
+            "Switching now will discard them."
+        )
+        wc1, wc2 = st.columns(2)
+        if wc1.button("Discard changes and switch", type="primary", key="discard_switch"):
+            st.session_state["editing_invoice_id"] = (
+                selected_id if st.session_state.pop("pending_enter_edit", False) else None
             )
-        else:
-            st.caption("No individual line items were extracted for this invoice.")
-
-        b1, b2, b3 = st.columns(3)
-        if b1.button("✏️ Edit this invoice", disabled=bool(detail.get("locked")), use_container_width=True):
-            edit_invoice_dialog(detail)
-        lock_label = "🔓 Unlock this invoice" if detail.get("locked") else "🔒 Lock this invoice"
-        if b2.button(lock_label, use_container_width=True):
-            if detail.get("locked"):
-                unlock_invoice(detail["id"])
-            else:
-                lock_invoice(detail["id"])
             st.rerun()
-        if b3.button(
-            "🗑️ Delete this invoice", disabled=bool(detail.get("locked")), use_container_width=True
-        ):
-            delete_invoice_dialog(detail)
+        wc2.button("Keep editing", key="keep_editing", on_click=_keep_editing_callback, args=(editing_id,))
+    elif selected_id:
+        detail = get_invoice(selected_id)
 
-        if detail.get("vision_notes"):
-            st.warning("🔍 **Vision cross-check flagged possible mismatches:**\n\n"
-                       + "\n".join(f"- {line}" for line in detail["vision_notes"].split("\n")))
+        if editing_id == selected_id:
+            render_edit_form(detail)
+        else:
+            st.subheader(f"Invoice {detail['invoice_number']}")
+            c1, c2 = st.columns(2)
+            c1.write(f"**Vendor:** {detail['vendor_name']}")
+            c1.write(f"**Customer:** {detail.get('customer_name') or '-'}")
+            c1.write(f"**Date:** {detail.get('invoice_date') or '-'}")
+            c1.write(f"**Filename:** {detail.get('original_filename') or '-'}")
+            c1.write(f"**Category:** {detail.get('category') or '-'}")
+            c2.write(f"**Net Amount:** {(detail.get('subtotal') or 0):,.2f} {detail.get('currency')}")
+            c2.write(f"**VAT:** {(detail.get('tax_amount') or 0):,.2f} {detail.get('currency')}")
+            c2.write(f"**Total Amount Due:** {(detail.get('total_amount') or 0):,.2f} {detail.get('currency')}")
+            c2.write(f"**Status:** {detail.get('status')}")
+            c2.write(f"**Confidence:** {(detail.get('confidence_score') or 0) * 100:.0f}%")
+            c2.write(f"**Locked:** {'🔒 Yes' if detail.get('locked') else '🔓 No'}")
 
-        with st.expander("🖼️ Invoice image"):
-            resolved_file = resolve_source_file(detail.get("source_file"))
-            if not resolved_file:
-                st.caption("(no image on disk for this invoice)")
-            elif resolved_file.suffix.lower() == ".pdf":
-                try:
-                    pages = pdf_to_images(str(resolved_file))
-                except Exception as e:
-                    st.caption(f"(couldn't render PDF preview: {e})")
-                    pages = []
-                if pages:
-                    _show_image(pages[0])
-                    if len(pages) > 1:
-                        st.caption(f"Showing page 1 of {len(pages)}.")
+            line_items = detail.get("line_items") or []
+            if line_items:
+                st.markdown("**Items purchased:**")
+                st.dataframe(
+                    [
+                        {
+                            "Item": li.get("description") or "-",
+                            "Qty": li.get("quantity") or 0,
+                            "Unit Price": f"{(li.get('unit_price') or 0):,.2f}",
+                            "Total Unit Price": f"{(li.get('amount') or 0):,.2f}",
+                        }
+                        for li in line_items
+                    ],
+                    hide_index=True,
+                    use_container_width=True,
+                )
+                items_sum = sum(li.get("amount") or 0 for li in line_items)
+                st.caption(f"Sum of Total Unit Price: {items_sum:,.2f} {detail.get('currency') or ''}".strip())
             else:
-                _show_image(str(resolved_file))
+                st.caption("No individual line items were extracted for this invoice.")
 
-        with st.expander("Raw OCR text (debug)"):
-            st.text(detail.get("raw_text") or "(no OCR text stored for this invoice)")
+            b1, b2, b3 = st.columns(3)
+            b1.button(
+                "✏️ Edit this invoice", disabled=bool(detail.get("locked")), use_container_width=True,
+                on_click=_request_detail_switch, args=(detail["id"],), kwargs={"enter_edit": True},
+            )
+            lock_label = "🔓 Unlock this invoice" if detail.get("locked") else "🔒 Lock this invoice"
+            if b2.button(lock_label, use_container_width=True):
+                if detail.get("locked"):
+                    unlock_invoice(detail["id"])
+                else:
+                    lock_invoice(detail["id"])
+                st.rerun()
+            if b3.button(
+                "🗑️ Delete this invoice", disabled=bool(detail.get("locked")), use_container_width=True
+            ):
+                delete_invoice_dialog(detail)
+
+            if detail.get("vision_notes"):
+                st.warning("🔍 **Vision cross-check flagged possible mismatches:**\n\n"
+                           + "\n".join(f"- {line}" for line in detail["vision_notes"].split("\n")))
+
+            with st.expander("🖼️ Invoice image"):
+                _render_invoice_image(detail)
+
+            with st.expander("Raw OCR text (debug)"):
+                st.text(detail.get("raw_text") or "(no OCR text stored for this invoice)")
+
+    _scroll_to_detail_if_needed()

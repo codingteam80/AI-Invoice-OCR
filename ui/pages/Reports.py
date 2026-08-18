@@ -199,3 +199,10 @@ if st.button("Generate Export", type="primary", disabled=not all_locked):
             )
     if fmt == "csv" and chart_path_for_export:
         st.caption("CSV is plain text, so the graph couldn't be embedded in it — it's included as a separate PNG above instead.")
+    if any(inv.get("line_items") for inv in invoices):
+        note = {
+            "xlsx": "Items purchased are included on a separate 'Line Items' sheet.",
+            "csv": "Items purchased are included in a second, separate CSV file.",
+            "pdf": "Items purchased are included as extra pages at the end of the PDF.",
+        }[fmt]
+        st.caption(f"📋 {note}")

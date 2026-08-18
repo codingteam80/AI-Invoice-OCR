@@ -32,7 +32,7 @@ class Settings:
     # real phone-photo receipts (faded thermal paper, glare, uneven
     # lighting) before OCR ever runs. Turn off only if you've confirmed it
     # hurts accuracy for your specific document source.
-    OCR_PREPROCESS_ENABLED: bool = os.getenv("OCR_PREPROCESS_ENABLED", "true").lower() == "true"
+    OCR_PREPROCESS_ENABLED: bool = os.getenv("OCR_PREPROCESS_ENABLED", "false").lower() == "true"
     # Off by default — see ocr/preprocessing.py docstring. Hard binarization
     # tends to hurt PaddleOCR/TrOCR on real phone photos more than it helps.
     OCR_PREPROCESS_BINARIZE: bool = os.getenv("OCR_PREPROCESS_BINARIZE", "false").lower() == "true"

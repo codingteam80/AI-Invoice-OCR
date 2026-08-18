@@ -128,7 +128,9 @@ class InvoiceRepository:
         `data` may include any of: invoice_number, invoice_date, due_date,
         vendor_name, vendor_address, vendor_tax_id, customer_name, subtotal,
         tax_amount, tax_rate, discount, total_amount, currency,
-        payment_terms, status. Unrecognized keys are ignored.
+        payment_terms, status, line_items (a full-replace list of
+        {description, quantity, unit_price, amount} dicts — see below).
+        Unrecognized keys are ignored.
 
         Raises DuplicateInvoiceError if the edit would rename invoice_number
         to one that already belongs to a *different* invoice.
@@ -156,11 +158,28 @@ class InvoiceRepository:
         editable_fields = [
             "invoice_number", "invoice_date", "due_date", "customer_name",
             "subtotal", "tax_amount", "tax_rate", "discount", "total_amount",
-            "currency", "payment_terms", "status",
+            "currency", "payment_terms", "status", "category",
         ]
         for field in editable_fields:
             if field in data:
                 setattr(obj, field, data[field])
+
+        if "line_items" in data:
+            # Full replace, not a merge — matches how the History page's
+            # line-items editor works (it always submits the complete,
+            # current set of rows). The relationship's cascade="all,
+            # delete-orphan" (see database/models.py) means reassigning
+            # this list is enough; SQLAlchemy deletes the rows that are no
+            # longer referenced and inserts the new ones on commit.
+            obj.line_items = [
+                LineItemORM(
+                    description=li.get("description") or "",
+                    quantity=li.get("quantity") or 0.0,
+                    unit_price=li.get("unit_price") or 0.0,
+                    amount=li.get("amount") or 0.0,
+                )
+                for li in (data["line_items"] or [])
+            ]
 
         try:
             self.session.commit()
