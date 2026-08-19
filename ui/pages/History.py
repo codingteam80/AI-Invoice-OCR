@@ -113,16 +113,16 @@ def _keep_editing_callback(editing_id: int) -> None:
     st.session_state["scroll_to_detail"] = True
 
 
-def _scroll_to_detail_if_needed() -> None:
+def _scroll_to_if_flagged(flag_key: str, anchor_id: str) -> None:
     """Streamlit has no built-in scroll-to-element — this is the standard
     workaround: an invisible component iframe that's same-origin with the
     main page, so it can reach into window.parent.document and scroll it.
-    Only fires once per switch request (the flag is popped, not just read)."""
-    if st.session_state.pop("scroll_to_detail", False):
+    Only fires once per request (the flag is popped, not just read)."""
+    if st.session_state.pop(flag_key, False):
         components.html(
-            """<script>
-                var el = window.parent.document.getElementById("invoice-detail-anchor");
-                if (el) { el.scrollIntoView({behavior: "smooth", block: "start"}); }
+            f"""<script>
+                var el = window.parent.document.getElementById("{anchor_id}");
+                if (el) {{ el.scrollIntoView({{behavior: "smooth", block: "start"}}); }}
             </script>""",
             height=0,
         )
@@ -290,7 +290,7 @@ def render_edit_form(inv: dict):
 
 
 @st.dialog("🗑️ Delete Invoice")
-def delete_invoice_dialog(inv: dict):
+def delete_invoice_dialog(inv: dict, scroll_to_prev_month: bool = False):
     st.warning(
         f"Delete invoice **{inv['invoice_number']}** (ID {inv['id']}, "
         f"{inv.get('vendor_name') or 'unknown vendor'})? This can't be undone."
@@ -305,6 +305,8 @@ def delete_invoice_dialog(inv: dict):
         except ValueError:
             st.error("Invoice not found — it may have already been deleted.")
             return
+        if scroll_to_prev_month:
+            st.session_state["scroll_to_prev_month"] = True
         st.success("Invoice deleted.")
         st.rerun()
     if c_cancel.button("Cancel", use_container_width=True):
@@ -375,12 +377,14 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str, scope_key: s
                 unlock_invoice(inv["id"])
             else:
                 lock_invoice(inv["id"])
+            if scope_key != "current":
+                st.session_state["scroll_to_prev_month"] = True
             st.rerun()
         if row_cols[10].button(
             "🗑️", key=f"delete_btn_{key_prefix}_{inv['id']}",
             disabled=locked, help="Unlock first to delete" if locked else "Delete",
         ):
-            delete_invoice_dialog(inv)
+            delete_invoice_dialog(inv, scroll_to_prev_month=(scope_key != "current"))
 
 
 def _select_all_callback(scope_key: str, invoice_ids: list[int], value: bool) -> None:
@@ -521,6 +525,7 @@ else:
     invoices = list(current_invoices)  # feeds the detail viewer below
 
     if past_keys:
+        st.markdown('<div id="prev-month-anchor"></div>', unsafe_allow_html=True)
         # Guard against a stale selection if the previously-chosen month's
         # last invoice just got deleted, leaving it no longer in past_keys.
         if st.session_state.get("prev_month_selected") not in ([None] + past_keys):
@@ -638,4 +643,5 @@ if invoices:
             with st.expander("Raw OCR text (debug)"):
                 st.text(detail.get("raw_text") or "(no OCR text stored for this invoice)")
 
-    _scroll_to_detail_if_needed()
+    _scroll_to_if_flagged("scroll_to_detail", "invoice-detail-anchor")
+    _scroll_to_if_flagged("scroll_to_prev_month", "prev-month-anchor")
