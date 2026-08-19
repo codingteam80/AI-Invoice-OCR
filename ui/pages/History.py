@@ -110,6 +110,7 @@ def _keep_editing_callback(editing_id: int) -> None:
     rendered once this run."""
     st.session_state["detail_selected_id"] = editing_id
     st.session_state.pop("pending_enter_edit", None)
+    st.session_state["scroll_to_detail"] = True
 
 
 def _scroll_to_detail_if_needed() -> None:
@@ -520,12 +521,23 @@ else:
     invoices = list(current_invoices)  # feeds the detail viewer below
 
     if past_keys:
-        label_map = {f"{_month_label(k)} ({len(by_month[k])})": k for k in past_keys}
-        chosen_label = st.selectbox(
-            "📂 View a previous month", ["Select a month..."] + list(label_map.keys())
+        # Guard against a stale selection if the previously-chosen month's
+        # last invoice just got deleted, leaving it no longer in past_keys.
+        if st.session_state.get("prev_month_selected") not in ([None] + past_keys):
+            st.session_state["prev_month_selected"] = None
+
+        chosen_key = st.selectbox(
+            "📂 View a previous month",
+            [None] + past_keys,
+            # format_func means the STORED value is the stable month key
+            # ("2026-06"), while only the DISPLAYED label embeds the live
+            # invoice count — so deleting/locking a row (which changes that
+            # count) can't break the identity match and reset the selection
+            # back to "Select a month...".
+            format_func=lambda k: "Select a month..." if k is None else f"{_month_label(k)} ({len(by_month[k])})",
+            key="prev_month_selected",
         )
-        if chosen_label != "Select a month...":
-            chosen_key = label_map[chosen_label]
+        if chosen_key:
             st.subheader(f"📅 {_month_label(chosen_key)}")
             prev_pool = by_month[chosen_key]
             prev_invoices = render_filters(chosen_key, prev_pool)
@@ -555,6 +567,7 @@ if invoices:
             st.session_state["editing_invoice_id"] = (
                 selected_id if st.session_state.pop("pending_enter_edit", False) else None
             )
+            st.session_state["scroll_to_detail"] = True
             st.rerun()
         wc2.button("Keep editing", key="keep_editing", on_click=_keep_editing_callback, args=(editing_id,))
     elif selected_id:
