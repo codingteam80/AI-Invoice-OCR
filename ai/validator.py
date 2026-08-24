@@ -4,6 +4,12 @@ from datetime import datetime
 from config.constants import REQUIRED_FIELDS
 
 _NET_TERMS_RE = re.compile(r"net\s*[:\-]?\s*(\d{1,3})\b", re.IGNORECASE)
+# Matches a description that's ENTIRELY a number/price — e.g. "225.00",
+# "2092500130408", "$2,445.00" — with nothing else. A real item name never
+# looks like this; it's the strongest available signal that the extraction
+# lost the item name in a multi-line layout (barcode/name/price on separate
+# lines) and used the code or price as the description instead.
+_BARE_NUMBER_DESCRIPTION_RE = re.compile(r"^[$₱P]?[\d,]+\.?\d*$")
 
 
 def validate_extraction(data: dict) -> list[str]:
@@ -47,22 +53,32 @@ def validate_extraction(data: dict) -> list[str]:
     line_items = data.get("line_items")
     if line_items is not None and not isinstance(line_items, list):
         issues.append("line_items must be a list")
-    elif line_items and subtotal is not None:
-        # Cross-check: do the line items actually add up to the claimed
-        # subtotal? This catches the common failure mode where the LLM
-        # (usually because OCR reading order scrambled the layout) mistakes
-        # a single line item's amount for the invoice-level subtotal.
-        try:
-            items_sum = sum(float(li.get("amount", 0) or 0) for li in line_items)
-            subtotal_f = float(subtotal)
-            if subtotal_f and abs(items_sum - subtotal_f) > 0.05 * subtotal_f:
+    elif isinstance(line_items, list):
+        for li in line_items:
+            desc = str((li or {}).get("description") or "").strip()
+            if desc and _BARE_NUMBER_DESCRIPTION_RE.match(desc):
                 issues.append(
-                    f"line_items sum to {items_sum:.2f}, which does not match "
-                    f"subtotal ({subtotal_f}) â€” subtotal may have been misread "
-                    f"as one of the individual line amounts"
+                    f"line item description '{desc}' is just a number/code, not a product "
+                    f"name — likely a barcode or price that got used as the description "
+                    f"instead of the actual item name (see prompt_builder rule 9)"
                 )
-        except (TypeError, ValueError, AttributeError):
-            pass
+
+        if line_items and subtotal is not None:
+            # Cross-check: do the line items actually add up to the claimed
+            # subtotal? This catches the common failure mode where the LLM
+            # (usually because OCR reading order scrambled the layout) mistakes
+            # a single line item's amount for the invoice-level subtotal.
+            try:
+                items_sum = sum(float(li.get("amount", 0) or 0) for li in line_items)
+                subtotal_f = float(subtotal)
+                if subtotal_f and abs(items_sum - subtotal_f) > 0.05 * subtotal_f:
+                    issues.append(
+                        f"line_items sum to {items_sum:.2f}, which does not match "
+                        f"subtotal ({subtotal_f}) â€” subtotal may have been misread "
+                        f"as one of the individual line amounts"
+                    )
+            except (TypeError, ValueError, AttributeError):
+                pass
 
     # Cross-check: if payment_terms says "Net N", the gap between
     # invoice_date and due_date should be N days. Invoices frequently state

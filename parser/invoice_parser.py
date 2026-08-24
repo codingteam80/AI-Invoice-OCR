@@ -7,7 +7,11 @@ from ocr.ocr_engine import extract_from_file
 from ai.extractor import extract_invoice_data, ExtractionError
 from ai.validator import validate_extraction
 from ai.confidence import score_extraction
-from ai.post_processing import post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax
+from ai.post_processing import (
+    post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax, reconcile_subtotal,
+    clean_line_items, reconcile_vendor_name, reconcile_invoice_date, reconcile_swapped_subtotal_total,
+    reconcile_invoice_number,
+)
 from ai.vision_verifier import verify_against_image
 from parser.table_parser import parse_line_items_from_text
 from models.invoice import Invoice
@@ -54,6 +58,22 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     # 4. Post-process / normalize values
     cleaned = post_process(extracted)
 
+    # 4a. Heuristic backstop: drop line items whose "description" is
+    # actually a bare price or product code (see ai/post_processing.
+    # clean_line_items — confirmed recurring across several real receipts
+    # with multi-line item layouts: code line, then name, then price).
+    cleaned, line_item_notes = clean_line_items(cleaned)
+
+    # 4a-2. Heuristic backstop, MUST run before reconcile_subtotal/tax/
+    # total below: catch subtotal and total_amount being SWAPPED with each
+    # other outright (see ai/post_processing.reconcile_swapped_subtotal_total
+    # — confirmed on a real Ace Hardware receipt that had no vision_notes
+    # at all and the highest confidence score in an entire test batch,
+    # despite being wrong). Testing confirmed running the other reconcile
+    # steps first would let reconcile_subtotal quietly "fix" subtotal to
+    # equal the still-wrong total_amount, permanently hiding the swap.
+    cleaned, swap_notes = reconcile_swapped_subtotal_total(cleaned, ocr_text)
+
     # 4b. Heuristic backstop: catch cases where total_amount actually matches
     # a CASH/CHANGE line in the OCR text instead of the real TOTAL line
     # (see ai/post_processing.reconcile_total_amount). Auto-corrects when
@@ -66,7 +86,37 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     # clearly-labeled VAT/tax line in the OCR text (see
     # ai/post_processing.reconcile_tax).
     cleaned, tax_notes = reconcile_tax(cleaned, ocr_text)
-    reconciliation_notes = total_notes + tax_notes
+
+    # 4c-2. Heuristic backstop: catch subtotal getting set to a
+    # VAT-INCLUSIVE figure (the receipt's printed "SUBTOTAL" line) instead
+    # of the true net-of-VAT amount — a confirmed recurring failure mode,
+    # and one the vision cross-check below doesn't reliably catch either
+    # (see ai/post_processing.reconcile_subtotal).
+    cleaned, subtotal_notes = reconcile_subtotal(cleaned, ocr_text)
+
+    # 4c-3. Heuristic backstop: catch vendor_name getting set to
+    # POS-provider/permit-accreditation footer boilerplate instead of the
+    # actual merchant name (see ai/post_processing.reconcile_vendor_name —
+    # confirmed on real parking-ticket receipts where an unrelated
+    # "PTU"/"ACC:"-adjacent company name got picked over the one explicitly
+    # labeled "Name:" higher up).
+    cleaned, vendor_notes = reconcile_vendor_name(cleaned, ocr_text)
+
+    # 4c-5. Heuristic backstop: catch invoice_number getting set to a
+    # Transaction#/terminal-ID instead of the real Official-Receipt/Sales-
+    # Invoice number (see ai/post_processing.reconcile_invoice_number).
+    cleaned, invnum_notes = reconcile_invoice_number(cleaned, ocr_text)
+
+    # 4c-4. Heuristic backstop: catch invoice_date being a permit/
+    # accreditation issuance date instead of the actual transaction date,
+    # or a plain LLM digit-transcription error on an otherwise-correct OCR
+    # read (see ai/post_processing.reconcile_invoice_date).
+    cleaned, date_notes = reconcile_invoice_date(cleaned, ocr_text)
+
+    reconciliation_notes = (
+        line_item_notes + swap_notes + total_notes + tax_notes + subtotal_notes
+        + vendor_notes + invnum_notes + date_notes
+    )
 
     # 4d. Vision cross-check: an independent second look at the actual
     # IMAGE (not the OCR text) for the fields where a misread is costliest.

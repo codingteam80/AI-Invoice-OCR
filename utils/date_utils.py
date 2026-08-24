@@ -6,6 +6,10 @@ _FORMATS = [
     "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y", "%m-%d-%Y",
     "%d %b %Y", "%d %B %Y", "%b %d, %Y", "%B %d, %Y",
     "%Y/%m/%d", "%d.%m.%Y",
+    # Added after testing against real receipts: compact no-separator dates
+    # ("16AUG2026") and month-name dates without a comma ("Nov 5 2025") —
+    # both appear on real receipts and weren't matched by any format above.
+    "%d%b%Y", "%b %d %Y", "%B %d %Y",
 ]
 
 

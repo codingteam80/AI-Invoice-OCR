@@ -35,7 +35,7 @@ def process_invoice_file(
         return {"success": False, "error": str(e), "file": file_path}
 
     invoice.original_filename = original_filename or Path(file_path).name
-    invoice.category = auto_categorize(invoice.vendor_name)
+    invoice.category = auto_categorize(invoice.vendor_name, invoice.line_items)
 
     session = SessionLocal()
     try:
@@ -113,7 +113,13 @@ def _archive_json(invoice) -> str:
     # see utils.file_utils.sanitize_filename_component).
     safe_invoice_number = sanitize_filename_component(invoice.invoice_number or "unknown")
     out_path = Path(settings.JSON_DIR) / f"invoice_{safe_invoice_number}_{invoice.id}.json"
-    out_path.write_text(invoice.model_dump_json(indent=2, exclude={"raw_text"}), encoding="utf-8")
+    # raw_text is included (previously excluded) so this dump is enough on
+    # its own to diagnose a bad extraction: the raw OCR output next to what
+    # the LLM did with it shows whether a wrong value came from the OCR
+    # engine misreading the page or from the LLM misinterpreting text that
+    # was actually correct. Without it, storage/json/ + data/processed/
+    # only show the "after" picture, not the "why".
+    out_path.write_text(invoice.model_dump_json(indent=2), encoding="utf-8")
     return str(out_path)
 
 

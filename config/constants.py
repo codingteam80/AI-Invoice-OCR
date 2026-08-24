@@ -110,4 +110,7 @@ EXTRACTION_SCHEMA = {
 }
 
 
-CATEGORY_OPTIONS = ["Utilities", "Food", "Office Supplies", "Others"]
+CATEGORY_OPTIONS = [
+    "Food", "Utilities", "Furnitures", "Office Supplies", "Transportation",
+    "Insurance", "Medical & Health Supplies", "Others",
+]

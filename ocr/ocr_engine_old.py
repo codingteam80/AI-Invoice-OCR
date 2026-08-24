@@ -49,30 +49,52 @@ def _crop_bgr(img_bgr: np.ndarray, bbox: list) -> np.ndarray:
     return img_bgr[top:bottom, left:right]
 
 
-def _reading_order_key(line: dict, bucket_height: float) -> tuple:
+def _reading_order_key(line: dict) -> tuple:
     """Sort top-to-bottom, then left-to-right, tolerating small y jitter
-    between glyphs on the same visual line.
-
-    bucket_height is shared across the whole page (see _median_line_height)
-    rather than each line computing its own — using each line's own height
-    let two boxes that are genuinely side-by-side on the same physical row
-    (e.g. an item name and its price) round to different y-buckets whenever
-    their two heights happened to differ slightly, occasionally splitting
-    a single row into two."""
+    between glyphs on the same visual line."""
     ys = [p[1] for p in line["bbox"]]
     xs = [p[0] for p in line["bbox"]]
     y_center = sum(ys) / len(ys)
     x_center = sum(xs) / len(xs)
-    return (round(y_center / bucket_height), x_center)
+    line_height = max(ys) - min(ys) or 1
+    return (round(y_center / max(line_height, 20)), x_center)
 
 
-def _median_line_height(lines: list[dict]) -> float:
-    heights = [max(p[1] for p in l["bbox"]) - min(p[1] for p in l["bbox"]) for l in lines]
-    heights = [h for h in heights if h > 0]
-    if not heights:
-        return 20.0
-    heights.sort()
-    return max(heights[len(heights) // 2], 1.0)
+def _assign_columns(lines: list[dict], page_width: float, gap_ratio: float = 0.06) -> list[int]:
+    """
+    Cluster boxes into columns by x-position (e.g. a left "client info"
+    column vs a right "invoice metadata" column), using a simple 1D gap
+    scan over x-centers rather than a fixed column count.
+
+    Sorting purely by (y_bucket, x) — the previous behaviour — silently
+    breaks on multi-column templates: on a two-column invoice, two boxes
+    that are logically unrelated (one from each column) can land in the
+    same y-bucket purely from page skew/curvature (very common on phone
+    photos of a notebook, like a curled page), and then get interleaved
+    by x instead of being read one column fully, then the next. That
+    interleaving is what scrambles output like "Due Date" appearing next
+    to "quantity" instead of both invoice-metadata lines staying together.
+
+    This clusters x-centers into columns first (any gap between sorted
+    x-centers wider than `gap_ratio` of the page width starts a new
+    column), then reading order sorts by (column, y) within each column
+    — so a whole column is read top-to-bottom before moving to the next.
+    Single-column documents are unaffected: everything just falls into
+    column 0.
+    """
+    if not lines:
+        return []
+    x_centers = [sum(p[0] for p in l["bbox"]) / len(l["bbox"]) for l in lines]
+    order = sorted(range(len(lines)), key=lambda i: x_centers[i])
+    gap_threshold = max(page_width * gap_ratio, 1.0)
+
+    columns = [0] * len(lines)
+    current_col = 0
+    for prev_i, cur_i in zip(order, order[1:]):
+        if x_centers[cur_i] - x_centers[prev_i] > gap_threshold:
+            current_col += 1
+        columns[cur_i] = current_col
+    return columns
 
 
 def _hybrid_extract(image_path: str) -> dict:
@@ -128,35 +150,19 @@ def _hybrid_extract(image_path: str) -> dict:
             "engine": engine_tag,
         })
 
-    # Row-major reading order: top-to-bottom, then left-to-right within
-    # each row band (see _reading_order_key/_median_line_height above).
-    #
-    # An earlier version of this function tried to detect genuine 2-column
-    # layouts (e.g. a "Bill To" block next to an "Invoice Date/Terms"
-    # block) and read column-by-column instead. That was removed: on a
-    # receipt, an item row is itself two x-groups on the same line
-    # ("ITEM NAME .......... P225.00" — label far left, price far right),
-    # and any gap-based column detector reliably mistakes that for a page
-    # column boundary. The result was reading ALL item labels top-to-
-    # bottom, then ALL prices top-to-bottom, completely severing every
-    # item from its own price — which is silently self-consistent enough
-    # to survive the subtotal cross-check in ai/validator.py and produce a
-    # wrong-but-confident extraction (e.g. a barcode number ending up as
-    # an item "description", or the real subtotal being read as a 3rd
-    # line item's price).
-    #
-    # A workable "is this really two blocks, or one table row" signal
-    # would need actual layout/semantic understanding, not just bounding
-    # box geometry — even a neatly template-aligned 2-column header (both
-    # blocks starting at nearly the same y, which is common) is
-    # geometrically indistinguishable from a table row. Given that
-    # trade-off, this deliberately favors getting line-item tables and
-    # receipts right (the core feature) over the rarer case of a 2-column
-    # header occasionally reading interleaved — which the extraction
-    # prompt's per-field label matching, plus ai/validator.py's
-    # date/terms cross-check, already partially compensate for anyway.
-    bucket_height = _median_line_height(lines)
-    lines.sort(key=lambda l: _reading_order_key(l, bucket_height))
+    page_width = img_bgr.shape[1] if img_bgr is not None else 0
+    columns = _assign_columns(lines, page_width)
+    for line, col in zip(lines, columns):
+        line["_column"] = col
+
+    def _column_reading_order_key(line: dict) -> tuple:
+        ys = [p[1] for p in line["bbox"]]
+        line_height = max(ys) - min(ys) or 1
+        return (line["_column"], round(sum(ys) / len(ys) / max(line_height, 20)))
+
+    lines.sort(key=_column_reading_order_key)
+    for line in lines:
+        line.pop("_column", None)
 
     confidences = [l["confidence"] for l in lines]
     engines_used = sorted(set(l["engine"] for l in lines))
