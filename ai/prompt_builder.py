@@ -20,18 +20,47 @@ fields as accurately as possible. Follow these rules strictly:
    Never use CASH or TENDERED (what the customer handed over) or CHANGE
    (money handed back) as total_amount, even if that number is larger or
    appears more prominently on the receipt.
-9. For line_items: `description` must be the actual product/service name.
-   A bare number by itself (e.g. a barcode, SKU, or product code like
-   "2092500130408") is NEVER a valid description — if OCR text shows a
-   code like that, find the real item name printed near it and use that
-   instead; if you genuinely cannot find a name for it, omit that line
-   rather than using the code as the description.
-10. Never turn the invoice's own SUBTOTAL, NET AMOUNT, TOTAL, TAX/VAT,
+9. Line items are frequently OCR'd as SEPARATE lines per item rather than
+   one row — a barcode/product-code line, then the item name, then the
+   price, e.g.:
+       2092500130408
+       ATC FISH OIL SOFTGEL
+       P225.00
+   Associate each code/name/price group correctly: the item's
+   `description` is the descriptive TEXT ("ATC FISH OIL SOFTGEL"), never
+   a bare product code or price. If you cannot confidently match a real
+   description to a price, leave that line item out entirely rather than
+   inventing one with a numeric "description" like "2092500130408" or
+   "225.00". A line item's `amount` must be that single item's price —
+   never the receipt's overall subtotal or total figure.
+10. Philippine BIR-compliant receipts print PERMIT/ACCREDITATION METADATA
+    near the bottom — things like "PTU:", "ACC:", "Accreditation No.",
+    "BIR Authority to Print No.", "DATE ISSUED" (for the permit, not the
+    sale), and a company name/TIN attached to that block. This is almost
+    always the POS-TERMINAL or RECEIPT-PRINTING SOFTWARE PROVIDER, not the
+    actual merchant — e.g. a parking receipt whose real merchant is
+    "SM DEVELOPMENT CORPORATION" (labeled "Name:" near the top) may ALSO
+    show "CHASE TECHNOLOGIES CORPORATION" further down next to a "PTU:"
+    number — that second company is not the vendor. Prefer the business
+    name/address block near the TOP of the receipt (or explicitly labeled
+    "Name:"/"Business Name:") for vendor_name, not one sitting next to
+    permit/accreditation text. Apply the same logic to invoice_date: prefer
+    a date near "Date:", "Trans. Date", or a transaction timestamp over a
+    "DATE ISSUED" near permit/accreditation text (that's when the permit
+    was issued, not when the sale happened) — they are frequently
+    different dates on the same receipt.
+11. When several ID-like numbers appear (a "Transaction#", a "Terminal#"
+    or series code, and an actual "Invoice No."/"Sales Invoice No."/"OR#"/
+    "Official Receipt #"), invoice_number must come from the one
+    explicitly labeled as the invoice/receipt/OR number — never a
+    "Transaction#" or terminal/series code, even if it's printed more
+    prominently or closer to the top.
+12. Never turn the invoice's own SUBTOTAL, NET AMOUNT, TOTAL, TAX/VAT,
     DISCOUNT, CASH/TENDERED, or CHANGE line into a fake line_item. Those
     values belong ONLY in their own top-level fields (subtotal,
     tax_amount, total_amount, discount) — a summary/payment line is not a
     purchased item, even if OCR text placed it near the item list.
-11. If OCR text clearly shows only some of quantity/unit_price/amount for
+13. If OCR text clearly shows only some of quantity/unit_price/amount for
     a given item, leave the missing one(s) null rather than guessing —
     e.g. don't invent quantity: 1 just to fill the field.
 """
