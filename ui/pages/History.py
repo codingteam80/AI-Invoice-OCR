@@ -588,7 +588,12 @@ if invoices:
             c1.write(f"**Date:** {detail.get('invoice_date') or '-'}")
             c1.write(f"**Filename:** {detail.get('original_filename') or '-'}")
             c1.write(f"**Category:** {detail.get('category') or '-'}")
-            c2.write(f"**Net Amount:** {(detail.get('subtotal') or 0):,.2f} {detail.get('currency')}")
+            _subtotal = detail.get("subtotal")
+            _subtotal_display = (
+                f"{_subtotal:,.2f} {detail.get('currency')}" if _subtotal is not None
+                else "— (not extracted)"
+            )
+            c2.write(f"**Net Amount:** {_subtotal_display}")
             c2.write(f"**VAT:** {(detail.get('tax_amount') or 0):,.2f} {detail.get('currency')}")
             c2.write(f"**Total Amount Due:** {(detail.get('total_amount') or 0):,.2f} {detail.get('currency')}")
             c2.write(f"**Status:** {detail.get('status')}")

@@ -11,6 +11,32 @@ _NET_TERMS_RE = re.compile(r"net\s*[:\-]?\s*(\d{1,3})\b", re.IGNORECASE)
 # lines) and used the code or price as the description instead.
 _BARE_NUMBER_DESCRIPTION_RE = re.compile(r"^[$₱P]?[\d,]+\.?\d*$")
 
+_VOWELS = set("AEIOU")
+# Real business names — however abbreviation-heavy ("PC WORTH", "LBC
+# EXPRESS", "NTT DoCoMo") — never run more than ~5 consonants in a row.
+# A vendor_name that's actually garbled OCR noise (e.g. a stylized logo
+# PaddleOCR couldn't read: a real DITO Telecom receipt came back as
+# "DONRNTTNRN PPIATTRNNNNPPNNN") blows way past that — 12+ in a row in
+# that real example. Checked against a batch of real vendor names
+# (Philippine Seven Corporation, ACE HARDWARE, CGD MEDICAL DEPOT, DATA
+# BLITZ, LBC EXPRESS, PC WORTH, DITO TELECOMMUNITY CORPORATION, SM
+# DEVELOPMENT CORPORATION, BDO Unibank, PLDT Home, GCash) — max run was 5
+# ("PLDT Home"), so 7 leaves comfortable margin without false-flagging
+# legitimate abbreviation-style names.
+_GIBBERISH_CONSONANT_RUN_THRESHOLD = 7
+
+
+def _longest_consonant_run(text: str) -> int:
+    letters = re.sub(r"[^A-Za-z]", "", text or "").upper()
+    best = current = 0
+    for ch in letters:
+        if ch in _VOWELS:
+            current = 0
+        else:
+            current += 1
+            best = max(best, current)
+    return best
+
 
 def validate_extraction(data: dict) -> list[str]:
     """Returns a list of human-readable issues; empty list means it's valid."""
@@ -45,10 +71,44 @@ def validate_extraction(data: dict) -> list[str]:
                 )
         except (TypeError, ValueError):
             issues.append("subtotal/tax/discount are not numeric")
+    elif subtotal is None and total is not None:
+        # subtotal isn't in REQUIRED_FIELDS (a handful of legitimate
+        # documents genuinely have none, e.g. a plain payment/collection
+        # receipt with no VAT breakdown), so a missing subtotal alone
+        # doesn't fail extraction. But when it's null, the cross-check
+        # above never runs at all — so a real invoice whose subtotal the
+        # LLM simply failed to find sails through with zero issues raised,
+        # and the History UI's `(subtotal or 0)` display then renders that
+        # missing value as a confident-looking "0.00" (see a real CGD
+        # Medical Depot receipt: subtotal null, tax_amount 160.71, total
+        # 1,500.00 — displayed as Net Amount 0.00 PHP, status "processed",
+        # never reviewed). Flag it explicitly instead so it forces
+        # needs_review and the reviewer knows to check the source image,
+        # rather than trusting a silently-defaulted zero.
+        try:
+            total_f = float(total)
+            if total_f > 0:
+                issues.append(
+                    "subtotal/net amount is missing (null) — could not verify against "
+                    f"total_amount ({total}); check the source document manually."
+                )
+        except (TypeError, ValueError):
+            pass
 
     currency = data.get("currency")
     if currency and (not isinstance(currency, str) or len(currency) != 3):
         issues.append("currency must be a 3-letter ISO code")
+
+    vendor_name = data.get("vendor_name")
+    if vendor_name and isinstance(vendor_name, str):
+        run = _longest_consonant_run(vendor_name)
+        if run >= _GIBBERISH_CONSONANT_RUN_THRESHOLD:
+            issues.append(
+                f"vendor_name '{vendor_name}' looks like garbled OCR text, not a real "
+                f"business name (a {run}-letter unbroken consonant run) — likely a "
+                f"stylized logo/heading the OCR engine couldn't read; check the source "
+                f"image manually."
+            )
 
     line_items = data.get("line_items")
     if line_items is not None and not isinstance(line_items, list):

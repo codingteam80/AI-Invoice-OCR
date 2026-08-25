@@ -136,7 +136,25 @@ def verify_against_image(file_path: str, extracted: dict) -> tuple[dict, list[st
         old_value = fields_to_check.get(field)
 
         new_value = to_float(seen) if field in _MONEY_FIELDS else (str(seen).strip() or None)
+
+        # Skip no-op "corrections": the vision model sometimes reports a
+        # field as a mismatch even though its own image_shows reading is
+        # functionally identical to what was already extracted (e.g.
+        # tax_amount '6.11' -> '6.11', invoice_number '2919051' ->
+        # '2919051', total_amount 57.0 -> '57.0' as a string). Confirmed on
+        # a real 7-Eleven receipt where 3 of 4 flagged "corrections" were
+        # exactly this — each one still added a note and counted toward
+        # needs_review/confidence scoring for a value that never actually
+        # changed. Compare as floats for money fields (so '57.0' vs 57.0
+        # doesn't look like a change) and as stripped strings otherwise.
         if new_value is not None:
+            if field in _MONEY_FIELDS:
+                old_comparable = to_float(old_value) if old_value is not None else None
+            else:
+                old_comparable = str(old_value).strip() if old_value is not None else None
+            if old_comparable is not None and new_value == old_comparable:
+                continue
+
             corrections[field] = new_value
             notes.append(
                 f"Vision check: auto-corrected '{field}' from '{old_value}' to '{new_value}' "

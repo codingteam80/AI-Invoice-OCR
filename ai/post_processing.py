@@ -364,16 +364,51 @@ def reconcile_subtotal(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
 
 
 _LETTERS_RE = re.compile(r"[A-Za-z]")
+_DIGITS_RE = re.compile(r"[0-9]")
+_SERIAL_PREFIX_RE = re.compile(r"^\s*S\s*/?\s*N\s*[:#.]?\s*", re.IGNORECASE)
+
+# A real product description is mostly letters, with digits limited to a
+# model number here and there (e.g. 'UGEE S1060W10 WIRELESS PEN' is 26%
+# digits, 'ACER NITRO VG271U M3BMIIPX2' is 21%). A serial number or
+# barcode — even one with several letters mixed in, like
+# 'SNUG8P10116122402436' (5 letters) or 'W2M0KC00478544L' (5 letters) —
+# runs 65-100% digits. Confirmed on real Datablitz/PCworth receipts where
+# the letter-count-only check below (< 3 letters) let these slip through
+# and get kept as a second, bogus line item.
+_SERIAL_DIGIT_RATIO_THRESHOLD = 0.5
 
 
 def _looks_like_bare_number_or_code(description: str) -> bool:
-    """True for descriptions like '5250.00', '2092500130408', or
-    '37,390.00-VA' — a real product description always contains actual
-    words; a barcode or price, once you strip everything non-alphabetic
-    away, leaves fewer than 3 letters (the '-VA'/'V' VATable-sale suffix
-    OCR sometimes tacks onto a price is exactly why the threshold is 3,
-    not 1 — 'VA' alone would otherwise slip through)."""
-    return len(_LETTERS_RE.findall(description or "")) < 3
+    """True for descriptions like '5250.00', '2092500130408',
+    '37,390.00-VA', or a serial/barcode string like
+    'SNUG8P10116122402436' — a real product description always contains
+    actual words with a normal letter-to-digit ratio; a barcode, price, or
+    serial number doesn't.
+
+    Three independent signals, any one of which is disqualifying:
+      1. Explicit 'S/N:' (or 'SN:', 'Serial No.') prefix — unambiguous.
+      2. Fewer than 3 letters total (catches pure numbers/prices like
+         '5250.00' — the '-VA'/'V' VATable-sale suffix OCR sometimes tacks
+         onto a price is why the threshold is 3, not 1).
+      3. Digits make up >=50% of the alphanumeric characters — catches
+         serial numbers that happen to contain a handful of letters (see
+         module comment above) without misflagging real model numbers
+         like 'VG271U', which stay embedded in a mostly-letter description.
+    """
+    text = description or ""
+    if _SERIAL_PREFIX_RE.match(text):
+        return True
+
+    letters = len(_LETTERS_RE.findall(text))
+    if letters < 3:
+        return True
+
+    digits = len(_DIGITS_RE.findall(text))
+    alnum = letters + digits
+    if alnum > 0 and (digits / alnum) >= _SERIAL_DIGIT_RATIO_THRESHOLD:
+        return True
+
+    return False
 
 
 def clean_line_items(data: dict) -> tuple[dict, list[str]]:
@@ -904,5 +939,27 @@ def reconcile_total_amount(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
                 f"a TOTAL line, but multiple candidate TOTAL values were found in the OCR text "
                 f"({distinct_totals}) — needs manual review."
             )
+    elif total_lines and not matches_total_line and not matches_cash and not matches_change:
+        # Broader, non-CASH/CHANGE case: the OCR text DOES contain a
+        # clearly TOTAL/AMOUNT-DUE-labeled figure, but it's neither what
+        # the LLM extracted nor a CASH/CHANGE mixup — total_amount just
+        # doesn't match anything recognizable. Confirmed on a real LBC
+        # Express courier receipt: total_amount came out as 298.01 (a
+        # Freight+VAT-only figure — the LLM silently dropped the
+        # "VATable(Valuation)" fee component from the total), while the
+        # OCR text separately captured "Amount Due: 374.00" verbatim.
+        # Deliberately NOT auto-corrected the way the CASH/CHANGE case is:
+        # with courier/utility-style multi-fee invoices there's a real
+        # chance the labeled figure itself is a sub-component rather than
+        # the true grand total, so guessing wrong here could silently
+        # replace one wrong number with another. Surfacing it and forcing
+        # needs_review is the safe move; a human with the image in front
+        # of them resolves it in seconds.
+        distinct_totals = sorted(set(round(t, 2) for t in total_lines))
+        notes.append(
+            f"total_amount ({total_f}) doesn't match any TOTAL/AMOUNT DUE line found in the "
+            f"OCR text ({distinct_totals}) — needs manual review; the extraction may have "
+            f"missed a fee/charge component."
+        )
 
     return data, notes
