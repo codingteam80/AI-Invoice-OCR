@@ -9,8 +9,12 @@ logger = get_logger("ocr.paddleocr")
 @lru_cache(maxsize=1)
 def _get_paddle_instance():
     from paddleocr import PaddleOCR
-    logger.info(f"Loading PaddleOCR (lang={settings.OCR_LANG})...")
-    return PaddleOCR(use_angle_cls=True, lang=settings.OCR_LANG, show_log=False)
+    kwargs = dict(use_angle_cls=True, lang=settings.OCR_LANG, show_log=False)
+    if settings.OCR_DET_LIMIT_SIDE_LEN is not None:
+        kwargs["det_limit_side_len"] = settings.OCR_DET_LIMIT_SIDE_LEN
+    side_len_desc = kwargs.get("det_limit_side_len", "library default (960)")
+    logger.info(f"Loading PaddleOCR (lang={settings.OCR_LANG}, det_limit_side_len={side_len_desc})...")
+    return PaddleOCR(**kwargs)
 
 
 def extract_text(image_path: str) -> dict:

@@ -18,6 +18,33 @@ class Settings:
     OCR_LANG: str = os.getenv("OCR_LANG", "en")
     TROCR_MODEL_NAME: str = os.getenv("TROCR_MODEL_NAME", "microsoft/trocr-base-handwritten")
 
+    # PaddleOCR's detector downsizes the image before finding text regions
+    # (default det_limit_side_len=960px on the longest side). A dense,
+    # full-page multi-item invoice (e.g. PC Worth's 9-row parts list) can
+    # lose whole lines of small print once shrunk that far.
+    #
+    # REVERTED to the library default (960, via None below) after testing
+    # against a real 10-invoice batch showed raising this globally to 2400
+    # is a net regression: it did fix PC Worth's missing item rows, but it
+    # also changed box detection/segmentation on 6 of the other 9 receipts
+    # in ways that broke previously-correct extractions — e.g. a
+    # crossed-out header line that was correctly ignored before started
+    # getting picked up as a phantom line item (Datablitz1), a barcode
+    # fused directly onto its item description with no separating space
+    # where before OCR kept them apart (Datablitz3), and a "2 @ P399.75"
+    # quantity line got split differently and lost its quantity (ACE
+    # Hardware). Net effect across the batch: 6 regressions to fix 1
+    # document. A global resolution bump isn't the right lever — it needs
+    # to be applied selectively (e.g. only when initial detection at
+    # default resolution looks sparse relative to image size/density),
+    # which is a real feature to design and test properly, not a one-line
+    # settings change. Left here, defaulted OFF (None = library default),
+    # as an opt-in override for anyone who wants to test raising it
+    # against their own specific document set.
+    OCR_DET_LIMIT_SIDE_LEN: int | None = (
+        int(os.getenv("OCR_DET_LIMIT_SIDE_LEN")) if os.getenv("OCR_DET_LIMIT_SIDE_LEN") else None
+    )
+
     # Handwriting detection (stroke-width-variance heuristic, see
     # ocr/handwriting_detector.py). Higher threshold = harder to classify
     # as handwritten = more documents stay on PaddleOCR.

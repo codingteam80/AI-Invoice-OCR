@@ -312,13 +312,17 @@ def reconcile_subtotal(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
     Otherwise just notes the disagreement.
     """
     notes = []
-    if not ocr_text or data.get("subtotal") is None:
+    if not ocr_text:
         return data, notes
 
-    try:
-        subtotal_f = float(data["subtotal"])
-    except (TypeError, ValueError):
-        return data, notes
+    subtotal_was_missing = data.get("subtotal") is None
+    if subtotal_was_missing:
+        subtotal_f = None
+    else:
+        try:
+            subtotal_f = float(data["subtotal"])
+        except (TypeError, ValueError):
+            return data, notes
 
     total_amount = data.get("total_amount")
     tax_amount, discount = data.get("tax_amount") or 0, data.get("discount") or 0
@@ -340,22 +344,50 @@ def reconcile_subtotal(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
         return data, notes
 
     distinct_candidates = sorted(candidates)
-    if any(abs(subtotal_f - c) < 0.01 for c in distinct_candidates):
-        return data, notes  # already matches a candidate
+
+    # subtotal was present and already matches a candidate -> nothing to do.
+    if not subtotal_was_missing and any(abs(subtotal_f - c) < 0.01 for c in distinct_candidates):
+        return data, notes
 
     if len(distinct_candidates) == 1:
         corrected = distinct_candidates[0]
-        notes.append(
-            f"subtotal auto-corrected from {subtotal_f} to {corrected}: the original value "
-            f"didn't match a net-of-VAT-labeled line, but {corrected} was either found on one "
-            f"(e.g. 'VATable Sales' / 'Net of VAT') or derived as total - tax + discount and "
-            f"confirmed to appear elsewhere in the OCR text."
-        )
+        if subtotal_was_missing:
+            # FILL, not correct — the field was null going in, not wrong.
+            # Confirmed on a real CGD Medical Depot receipt: subtotal was
+            # entirely missing (LLM left it null), total_amount=1,500.00
+            # and tax_amount=160.71 were both correctly extracted, and
+            # derived = 1,500.00 - 160.71 = 1,339.29 — a figure that also
+            # appears verbatim elsewhere in the OCR text (PaddleOCR's
+            # column-major read of the tax-breakdown table put it right
+            # after the CASH line, positionally separated from its own
+            # "Non-Taxable Sales" label but still present in the text).
+            # Before this, a null subtotal short-circuited this whole
+            # function at the top (see the old `data.get("subtotal") is
+            # None: return` guard) — so a MISSING value never even got a
+            # chance at signals 2/3 below, only a WRONG one did. The
+            # ai/validator.py check added earlier correctly flags a null
+            # subtotal for needs_review, but flagging isn't fixing; this
+            # fills it in when the evidence is unambiguous, same
+            # unambiguous-or-don't-touch-it bar as the correction path.
+            notes.append(
+                f"subtotal filled in as {corrected}: it was missing from the extraction, but "
+                f"{corrected} was either found on a net-of-VAT-labeled line (e.g. 'VATable "
+                f"Sales' / 'Net of VAT') or derived as total - tax + discount and confirmed to "
+                f"appear elsewhere in the OCR text."
+            )
+        else:
+            notes.append(
+                f"subtotal auto-corrected from {subtotal_f} to {corrected}: the original value "
+                f"didn't match a net-of-VAT-labeled line, but {corrected} was either found on one "
+                f"(e.g. 'VATable Sales' / 'Net of VAT') or derived as total - tax + discount and "
+                f"confirmed to appear elsewhere in the OCR text."
+            )
         data = dict(data)
         data["subtotal"] = corrected
     else:
+        subject = "is missing" if subtotal_was_missing else f"({subtotal_f})"
         notes.append(
-            f"subtotal ({subtotal_f}) doesn't match any net-of-VAT-labeled line or the "
+            f"subtotal {subject} doesn't match any net-of-VAT-labeled line or the "
             f"total-minus-tax figure in the OCR text, but multiple candidates were found "
             f"({distinct_candidates}) — needs manual review."
         )
