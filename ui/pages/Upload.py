@@ -34,6 +34,18 @@ if override_enabled:
         "Treat these files as:", ["Printed", "Handwritten"], horizontal=True, disabled=locked
     ) == "Handwritten"
 
+enhance_image = st.checkbox(
+    "Auto-crop & enhance photos (CamScanner-style)",
+    value=settings.ENHANCE_IMAGE_ENABLED,
+    disabled=locked,
+    help=(
+        "Straightens and crops each uploaded photo to the receipt's edges "
+        "and boosts contrast, so History can show a cleaned-up version "
+        "alongside the original. Doesn't affect OCR accuracy — this is "
+        "purely a nicer view for you. Skipped for PDFs."
+    ),
+)
+
 files = st.file_uploader(
     "Drop invoice images or PDFs here",
     type=["png", "jpg", "jpeg", "tiff", "bmp", "pdf"],
@@ -48,6 +60,7 @@ if files and not locked and st.button("Process Invoices", type="primary"):
     st.session_state.pending_upload_files = [(f.name, f.read()) for f in files]
     st.session_state.upload_results = None
     st.session_state.force_handwritten = force_handwritten
+    st.session_state.enhance_image = enhance_image
     st.session_state.upload_in_progress = True
     st.rerun()
 
@@ -73,6 +86,7 @@ if locked and st.session_state.pending_upload_files:
             saved_path,
             force_handwritten=st.session_state.get("force_handwritten"),
             original_filename=name,
+            enhance_image=st.session_state.get("enhance_image"),
         )
         result["file"] = name
         result["elapsed_seconds"] = time.perf_counter() - file_start

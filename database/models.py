@@ -43,6 +43,11 @@ class InvoiceORM(Base):
     payment_terms = Column(String, nullable=True)
     category = Column(String, default="Others", nullable=False)
     source_file = Column(String, nullable=True)
+    # See models/invoice.py::Invoice.enhanced_image_path — mirrors that
+    # field so History can render a "cleaned-up" view alongside the
+    # original. Nullable: PDFs and photos where no document edge was
+    # confidently detected have no enhanced version.
+    enhanced_image_path = Column(String, nullable=True)
     original_filename = Column(String, nullable=True)
     ocr_engine_used = Column(String, nullable=True)
     confidence_score = Column(Float, nullable=True)

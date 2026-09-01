@@ -50,8 +50,33 @@ def _render_invoice_image(inv: dict) -> None:
     """Resolves and displays the source file for `inv` — first page only
     for PDFs. Shared by the invoice detail viewer and the Edit Invoice
     dialog, so a user can see the original document while correcting the
-    extracted fields next to it."""
-    resolved_file = resolve_source_file(inv.get("source_file"))
+    extracted fields next to it.
+
+    When an enhanced (auto-cropped/straightened) version exists — see
+    services/invoice_service.py::_generate_enhanced_image() — offers a
+    toggle so the person can compare it against the original photo,
+    CamScanner-style. Defaults to showing the enhanced version when one
+    exists, since that's usually the more useful/readable view; falls
+    back to the original silently if the enhanced file has since gone
+    missing from disk.
+    """
+    resolved_enhanced = resolve_source_file(inv.get("enhanced_image_path"))
+    resolved_original = resolve_source_file(inv.get("source_file"))
+
+    resolved_file = resolved_original
+    if resolved_enhanced:
+        # Keyed by invoice id so each invoice's toggle is independent and
+        # doesn't leak its state onto a different invoice's widget.
+        choice = st.radio(
+            "View",
+            ["Enhanced (auto-cropped)", "Original"],
+            horizontal=True,
+            key=f"img_view_choice_{inv.get('id')}",
+            label_visibility="collapsed",
+        )
+        if choice == "Enhanced (auto-cropped)":
+            resolved_file = resolved_enhanced
+
     if not resolved_file:
         st.caption("(no image on disk for this invoice)")
         return

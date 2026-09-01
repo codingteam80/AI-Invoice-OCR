@@ -1,6 +1,7 @@
 """Business logic layer: process an uploaded invoice end-to-end and persist it."""
 import json
 from pathlib import Path
+from config.constants import SUPPORTED_IMAGE_EXTS
 from config.settings import settings
 from config.logging import get_logger
 from database.database import SessionLocal
@@ -12,10 +13,38 @@ from utils.categorizer import auto_categorize
 logger = get_logger("services.invoice")
 
 
+def _generate_enhanced_image(file_path: str, enabled: bool | None = None) -> str | None:
+    """Best-effort CamScanner-style enhanced copy for History to display.
+    Returns the saved path, or None on any failure/skip — this must never
+    raise, since a cosmetic enhancement failing is not a reason to fail
+    processing the actual invoice.
+
+    enabled: None (default) follows settings.ENHANCE_IMAGE_ENABLED;
+    True/False overrides it for this call — lets the Upload page offer a
+    per-batch checkbox without flipping the global default for everyone
+    else, same pattern as force_handwritten below.
+    """
+    if enabled is None:
+        enabled = settings.ENHANCE_IMAGE_ENABLED
+    if not enabled:
+        return None
+    if Path(file_path).suffix.lower() not in SUPPORTED_IMAGE_EXTS:
+        return None  # camscan() works on photos; PDFs are handled separately for OCR
+    try:
+        from ocr.preprocessing import camscan
+        dest = Path(settings.ENHANCED_DIR) / f"{Path(file_path).stem}_scanned.jpg"
+        camscan(file_path, save_path=str(dest))
+        return str(dest)
+    except Exception as e:
+        logger.warning(f"Image enhancement failed for {file_path}, continuing without it: {e}")
+        return None
+
+
 def process_invoice_file(
     file_path: str,
     force_handwritten: bool | None = None,
     original_filename: str | None = None,
+    enhance_image: bool | None = None,
 ) -> dict:
     """
     Runs the full parsing pipeline on a saved file, persists the result to
@@ -27,6 +56,9 @@ def process_invoice_file(
 
     original_filename: the name the user actually uploaded (file_path itself
     is the on-disk, UUID-renamed copy) — stored so History can show it.
+
+    enhance_image: None (default) follows settings.ENHANCE_IMAGE_ENABLED,
+    or True/False to override per-call (see Upload.py's checkbox).
     """
     try:
         invoice = parse_invoice(file_path, force_handwritten=force_handwritten)
@@ -36,6 +68,9 @@ def process_invoice_file(
 
     invoice.original_filename = original_filename or Path(file_path).name
     invoice.category = auto_categorize(invoice.vendor_name, invoice.line_items)
+    # Enhance BEFORE move_to_processed() relocates file_path further down —
+    # camscan() needs to read the file from its current location.
+    invoice.enhanced_image_path = _generate_enhanced_image(file_path, enabled=enhance_image)
 
     session = SessionLocal()
     try:
@@ -236,6 +271,7 @@ def _orm_to_dict(row) -> dict:
         "customer_name": row.customer_name,
         "original_filename": row.original_filename,
         "source_file": row.source_file,
+        "enhanced_image_path": row.enhanced_image_path,
         "category": row.category,
         "created_at": row.created_at.isoformat() if row.created_at else None,
         "subtotal": row.subtotal,

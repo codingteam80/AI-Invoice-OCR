@@ -103,6 +103,12 @@ class Settings:
     UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", BASE_DIR / "data" / "uploads"))
     PROCESSED_DIR: Path = Path(os.getenv("PROCESSED_DIR", BASE_DIR / "data" / "processed"))
     TEMP_DIR: Path = Path(os.getenv("TEMP_DIR", BASE_DIR / "data" / "temp"))
+    # Auto-cropped/perspective-corrected "scanned" copies from
+    # ocr/preprocessing.py::camscan() — see services/invoice_service.py.
+    # Separate from PROCESSED_DIR (which holds the original upload) so a
+    # person can compare the two, and separate from TEMP_DIR since these
+    # are meant to persist and be shown in History, not get cleaned up.
+    ENHANCED_DIR: Path = Path(os.getenv("ENHANCED_DIR", BASE_DIR / "data" / "enhanced"))
     EXPORT_DIR: Path = Path(os.getenv("EXPORT_DIR", BASE_DIR / "storage" / "exports"))
     JSON_DIR: Path = BASE_DIR / "storage" / "json"
 
@@ -116,10 +122,19 @@ class Settings:
     # your invoices actually come from — e.g. PHP if you're processing
     # Philippine receipts, since "USD" would silently be wrong otherwise.
     DEFAULT_CURRENCY: str = os.getenv("DEFAULT_CURRENCY", "USD")
+    # New, off-by-default: run every uploaded photo (not PDFs) through
+    # ocr/preprocessing.py::camscan() — auto-crop to the receipt's edges,
+    # straighten, enhance contrast — and save the result for History to
+    # display, CamScanner-style. Purely cosmetic/for-the-person's-benefit;
+    # it does NOT feed into OCR itself (OCR runs its own, separate
+    # preprocessing pass — see OCR_PREPROCESS_ENABLED above). Defaults to
+    # False so it's an explicit opt-in, not a silent change to existing
+    # upload behavior.
+    ENHANCE_IMAGE_ENABLED: bool = os.getenv("ENHANCE_IMAGE_ENABLED", "false").lower() == "true"
 
     @classmethod
     def ensure_dirs(cls):
-        for d in [cls.UPLOAD_DIR, cls.PROCESSED_DIR, cls.TEMP_DIR, cls.EXPORT_DIR, cls.JSON_DIR]:
+        for d in [cls.UPLOAD_DIR, cls.PROCESSED_DIR, cls.TEMP_DIR, cls.ENHANCED_DIR, cls.EXPORT_DIR, cls.JSON_DIR]:
             Path(d).mkdir(parents=True, exist_ok=True)
 
 

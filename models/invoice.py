@@ -48,6 +48,14 @@ class Invoice(BaseModel):
     category: str = "Others"
 
     source_file: Optional[str] = None
+    # Path to the auto-cropped/perspective-corrected/contrast-enhanced
+    # version of source_file (see ocr/preprocessing.py::camscan()). None
+    # when the source is a PDF (camscan works on photos, not paginated
+    # documents) or when no confident document-edge crop was found for
+    # this particular photo. Never used for OCR itself — OCR runs against
+    # its own preprocessing pass — this is purely so History can show the
+    # person a cleaned-up "scanned" view of what they uploaded.
+    enhanced_image_path: Optional[str] = None
     original_filename: Optional[str] = None
     ocr_engine_used: Optional[str] = None
     confidence_score: Optional[float] = None

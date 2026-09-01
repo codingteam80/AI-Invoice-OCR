@@ -89,6 +89,7 @@ class InvoiceRepository:
             currency=invoice.currency,
             payment_terms=invoice.payment_terms,
             source_file=invoice.source_file,
+            enhanced_image_path=invoice.enhanced_image_path,
             original_filename=invoice.original_filename,
             ocr_engine_used=invoice.ocr_engine_used,
             confidence_score=invoice.confidence_score,

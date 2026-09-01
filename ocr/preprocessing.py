@@ -63,6 +63,138 @@ def deskew(img: np.ndarray) -> np.ndarray:
     return rotated
 
 
+def order_points(pts: np.ndarray) -> np.ndarray:
+    """Sort 4 corner points into [top-left, top-right, bottom-right, bottom-left]
+    order, regardless of what order find_document_contour() found them in.
+    Standard trick: top-left has the smallest x+y sum, bottom-right the
+    largest; top-right has the smallest x-y difference, bottom-left the
+    largest."""
+    rect = np.zeros((4, 2), dtype="float32")
+    s = pts.sum(axis=1)
+    rect[0] = pts[np.argmin(s)]
+    rect[2] = pts[np.argmax(s)]
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)]
+    rect[3] = pts[np.argmax(diff)]
+    return rect
+
+
+def find_document_contour(img: np.ndarray) -> np.ndarray | None:
+    """Find the 4-corner outline of a document/receipt against its
+    background. Returns 4 (x, y) points, or None if nothing convincingly
+    document-shaped was found (e.g. the receipt already fills the whole
+    frame edge-to-edge, or the background doesn't contrast with the paper)
+    — callers must treat None as "don't crop", not as an error, since a
+    wrong crop that cuts off real text is worse than no crop at all.
+    """
+    h, w = img.shape[:2]
+    # Work on a downscaled copy for speed/stability — contour detection on
+    # a full-resolution phone photo is slow and noisier (more small edge
+    # fragments from paper texture/print); scale back up at the end.
+    scale = 700.0 / max(h, w)
+    small = cv2.resize(img, (int(w * scale), int(h * scale))) if scale < 1 else img.copy()
+
+    gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges = cv2.Canny(blurred, 50, 150)
+    edges = cv2.dilate(edges, np.ones((5, 5), np.uint8), iterations=1)
+
+    contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+
+    small_area = small.shape[0] * small.shape[1]
+    best = None
+    for c in sorted(contours, key=cv2.contourArea, reverse=True)[:10]:
+        area = cv2.contourArea(c)
+        # A crop candidate must be a sizeable fraction of the frame (skip
+        # small noise contours) but not the ENTIRE frame (skip the image
+        # border itself, which Canny often outlines as a contour).
+        if area < 0.2 * small_area or area > 0.98 * small_area:
+            continue
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        if len(approx) == 4 and cv2.isContourConvex(approx):
+            best = approx
+            break
+
+    if best is None:
+        return None
+
+    pts = best.reshape(4, 2).astype("float32") / scale  # back to original resolution
+    return order_points(pts)
+
+
+def four_point_transform(img: np.ndarray, pts: np.ndarray) -> np.ndarray:
+    """Perspective-warp the quadrilateral `pts` (in original-image
+    coordinates, [tl, tr, br, bl] order) into a flat, upright rectangle —
+    the actual "scan" step: a receipt photographed at an angle, with
+    trapezoidal perspective distortion, comes out as a straight top-down
+    rectangle."""
+    (tl, tr, br, bl) = pts
+    width_a = np.linalg.norm(br - bl)
+    width_b = np.linalg.norm(tr - tl)
+    max_width = max(int(width_a), int(width_b))
+
+    height_a = np.linalg.norm(tr - br)
+    height_b = np.linalg.norm(tl - bl)
+    max_height = max(int(height_a), int(height_b))
+
+    if max_width < 10 or max_height < 10:
+        return img  # degenerate quad, e.g. contour was a sliver — bail out
+
+    dst = np.array([
+        [0, 0],
+        [max_width - 1, 0],
+        [max_width - 1, max_height - 1],
+        [0, max_height - 1],
+    ], dtype="float32")
+
+    M = cv2.getPerspectiveTransform(pts, dst)
+    return cv2.warpPerspective(img, M, (max_width, max_height))
+
+
+def camscan(
+    path: str,
+    save_path: str | None = None,
+    enhance: bool = True,
+) -> np.ndarray:
+    """CamScanner-style pipeline: detect the receipt's edges in the photo,
+    perspective-correct it to a flat top-down crop, then run the same
+    deskew/denoise/contrast steps as preprocess(). Falls back to the
+    uncropped, deskewed original if no confident 4-corner document outline
+    is found — this is deliberately conservative, since a bad automatic
+    crop that slices off part of the receipt is a worse failure mode than
+    just not cropping.
+
+    Returns a color (BGR) image, since this is meant to produce something
+    a person looks at (saved alongside the original upload, shown in
+    History) — unlike preprocess(), which hands PaddleOCR/TrOCR a
+    grayscale array it never needs to be color for.
+    """
+    img = load_image(path)
+    corners = find_document_contour(img)
+    if corners is not None:
+        img = four_point_transform(img, corners)
+        logger.debug("camscan: cropped to detected document contour")
+    else:
+        logger.debug("camscan: no confident document contour found, skipping crop")
+
+    img = deskew(img)
+    if enhance:
+        gray = to_grayscale(img)
+        gray = denoise(gray)
+        gray = enhance_contrast(gray)
+        # Blend the contrast-enhanced luminance back into the color image
+        # rather than discarding color entirely — this keeps it looking
+        # like a "scanned document", not a grayscale OCR-intermediate.
+        img = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+
+    if save_path:
+        cv2.imwrite(save_path, img)
+    return img
+
+
 def preprocess(
     path: str,
     save_path: str | None = None,
