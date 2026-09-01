@@ -63,7 +63,10 @@ def post_process(data: dict) -> dict:
         if data.get(date_field):
             data[date_field] = to_iso(str(data[date_field]))
 
-    for money_field in ("subtotal", "tax_amount", "discount", "total_amount", "tax_rate"):
+    for money_field in (
+        "subtotal", "tax_amount", "discount", "total_amount", "tax_rate",
+        "zero_rated_sales", "vat_exempt_sales",
+    ):
         if data.get(money_field) is not None:
             data[money_field] = to_float(data[money_field])
 
@@ -82,7 +85,9 @@ def post_process(data: dict) -> dict:
     data["line_items"] = cleaned_items
 
     for text_field in (
-        "vendor_name", "vendor_address", "customer_name", "customer_contact", "invoice_number",
+        "vendor_name", "vendor_address", "vendor_tax_id",
+        "customer_name", "customer_contact", "customer_address", "customer_tax_id",
+        "invoice_number",
     ):
         if data.get(text_field):
             data[text_field] = str(data[text_field]).strip()
@@ -160,6 +165,53 @@ def reconcile_tax(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
                 f"text found {regex_tax_amount} on a labeled VAT/tax line instead — needs "
                 f"manual review."
             )
+
+    return data, notes
+
+
+# Labels for the two Philippine BIR sales-breakdown columns that sit
+# alongside VATABLE SALES (-> subtotal) and VAT: ZERO-RATED SALES and
+# VAT-EXEMPT SALES. Ordered so the more specific "exempt sales"/"vat
+# exempt" labels are checked before a bare "exempt" would be, though
+# _amounts_near_label just does substring matching, not ordering.
+ZERO_RATED_LABELS = ("zero rated", "zero-rated", "zero rated sales")
+VAT_EXEMPT_LABELS = ("vat exempt", "vat-exempt", "exempt sales")
+
+
+def reconcile_zero_rated_exempt(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
+    """
+    Backstop for missing zero_rated_sales/vat_exempt_sales — same "fill
+    gaps only, never overwrite" precedent as reconcile_tax() above, for the
+    same reason: a prompt-level instruction (ai/prompt_builder.py rule 14)
+    already asks the LLM to separate these from subtotal/VATABLE SALES,
+    but a plain regex scan of clearly-labeled OCR lines is a reliable,
+    cheap way to catch it when the LLM leaves them null even though the
+    receipt actually prints a (non-zero) figure on that line.
+
+    Deliberately does NOT try to auto-fill these when the printed column is
+    genuinely blank (the common case — most invoices have no zero-rated or
+    VAT-exempt sales at all) — a blank column is not the same as a missing
+    extraction, and there's no OCR text to find a number in either way, so
+    the "no amount found near the label" case naturally leaves both fields
+    untouched at null, which is the correct result.
+    """
+    notes = []
+    if not ocr_text:
+        return data, notes
+
+    data = dict(data)
+
+    if data.get("zero_rated_sales") is None:
+        amounts = _amounts_near_label(ocr_text, ZERO_RATED_LABELS)
+        if amounts:
+            data["zero_rated_sales"] = amounts[0]
+            notes.append(f"zero_rated_sales filled from OCR text via regex fallback: {amounts[0]}")
+
+    if data.get("vat_exempt_sales") is None:
+        amounts = _amounts_near_label(ocr_text, VAT_EXEMPT_LABELS)
+        if amounts:
+            data["vat_exempt_sales"] = amounts[0]
+            notes.append(f"vat_exempt_sales filled from OCR text via regex fallback: {amounts[0]}")
 
     return data, notes
 

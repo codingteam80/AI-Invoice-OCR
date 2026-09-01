@@ -13,7 +13,9 @@ async def upload_invoice(file: UploadFile = File(...)):
     except UploadError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    result = process_invoice_file(saved_path)
-    if not result.get("success"):
-        raise HTTPException(status_code=422, detail=result.get("error"))
-    return result
+    results = process_invoice_file(saved_path, original_filename=file.filename)
+    if not any(r.get("success") for r in results):
+        # Every invoice found on this file failed or was a duplicate —
+        # surface the first error rather than a bare empty list.
+        raise HTTPException(status_code=422, detail=results[0].get("error"))
+    return {"invoices": results}

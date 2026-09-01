@@ -57,7 +57,7 @@ EXTRACTION_SCHEMA = {
         "multiple lines together as a fallback."
     ),
     "vendor_address": "string or null",
-    "vendor_tax_id": "string or null",
+    "vendor_tax_id": "string or null — the VENDOR's TIN (VAT Reg. TIN), from their own letterhead/header block.",
     "customer_name": (
         "string or null â€” the client/billed-to ORGANIZATION or COMPANY name, "
         "e.g. from a 'Client:', 'Bill To:', or 'Customer:' block. If the "
@@ -76,13 +76,30 @@ EXTRACTION_SCHEMA = {
         "customer, typically marked 'Attn:', 'ATTN:', or 'c/o'. Leave null "
         "if no individual contact is named separately from the company."
     ),
+    "customer_address": (
+        "string or null — the customer's/billed-to ADDRESS, usually printed "
+        "right below the 'Bill To'/'Sold To'/'Registered Name' block (often "
+        "under an 'ADDRESS:' label). Null if that block is blank (walk-in "
+        "customer with no billing info filled in)."
+    ),
+    "customer_tax_id": (
+        "string or null — the CUSTOMER's TIN, usually labeled 'TIN' or 'TIN "
+        "NO' right under the 'Bill To'/'Sold To' block. This is a different "
+        "number from vendor_tax_id (the vendor's own 'VAT Reg. TIN' printed "
+        "on their letterhead) — both commonly appear on the same invoice; "
+        "don't confuse or merge them."
+    ),
     "line_items": [
         {"description": "string", "quantity": "number", "unit_price": "number", "amount": "number"}
     ],
     "subtotal": (
         "number â€” the Net Amount: the sum of line items before tax/VAT and "
         "discount is applied. Look for labels like 'Subtotal', 'Net Amount', "
-        "or 'Net Total'."
+        "or 'Net Total'. On Philippine BIR-formatted invoices this "
+        "specifically corresponds to the 'VATABLE SALES' / 'Net of VAT' "
+        "figure — the portion of sales that VAT was actually charged on. "
+        "Do NOT include zero_rated_sales or vat_exempt_sales amounts here; "
+        "those are separate sales categories with their own fields below."
     ),
     "tax_amount": (
         "number or null â€” the VAT (Value Added Tax) amount added on top of "
@@ -91,6 +108,21 @@ EXTRACTION_SCHEMA = {
     ),
     "tax_rate": "number or null â€” the VAT/tax rate as a percentage (e.g. 12 for 12% VAT)",
     "discount": "number or null",
+    "zero_rated_sales": (
+        "number or null — Philippine BIR invoices often break sales into "
+        "THREE separate columns: VATABLE SALES (-> subtotal above), "
+        "ZERO-RATED SALES, and VAT-EXEMPT SALES. This field is the "
+        "'ZERO-RATED SALES' figure specifically (sales taxed at a 0% VAT "
+        "rate, e.g. exports) — null if that column is blank/not printed, "
+        "which is common; do not default it to 0 or to the vatable-sales "
+        "figure."
+    ),
+    "vat_exempt_sales": (
+        "number or null — the 'VAT-EXEMPT SALES' column (sales legally "
+        "exempt from VAT altogether, e.g. senior-citizen/PWD-discounted "
+        "purchases) — see zero_rated_sales above for the sibling column. "
+        "Null if that column is blank/not printed on this invoice."
+    ),
     "total_amount": (
         "number â€” the Total Amount Due: the final amount owed/payable for "
         "this transaction, i.e. the Net Amount plus VAT and any other "

@@ -31,9 +31,9 @@ def run_api():
 def run_process(file_path: str):
     init_db()
     from services.invoice_service import process_invoice_file
-    result = process_invoice_file(file_path)
+    results = process_invoice_file(file_path)
     import json
-    print(json.dumps(result, indent=2, default=str))
+    print(json.dumps(results, indent=2, default=str))
 
 
 def main():

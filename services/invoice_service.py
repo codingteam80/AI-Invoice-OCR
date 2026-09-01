@@ -6,7 +6,7 @@ from config.settings import settings
 from config.logging import get_logger
 from database.database import SessionLocal
 from database.repository import InvoiceRepository, DuplicateInvoiceError, InvoiceLockedError
-from parser.invoice_parser import parse_invoice, InvoiceParsingError
+from parser.invoice_parser import parse_invoice_pages, InvoiceParsingError
 from utils.file_utils import move_to_processed, sanitize_filename_component
 from utils.categorizer import auto_categorize
 
@@ -45,99 +45,134 @@ def process_invoice_file(
     force_handwritten: bool | None = None,
     original_filename: str | None = None,
     enhance_image: bool | None = None,
-) -> dict:
+) -> list[dict]:
     """
-    Runs the full parsing pipeline on a saved file, persists the result to
-    the database, archives a JSON copy, and moves the source file to
-    'processed'. Returns a plain dict summary (JSON-serializable).
+    Runs the full parsing pipeline on a saved file, persists EVERY invoice
+    found in it, archives a JSON copy of each, and moves the source file to
+    'processed'. Returns a list of plain dict summaries (JSON-serializable)
+    — one per invoice.
+
+    A file is not always exactly one invoice: a multi-page PDF may contain
+    several separate invoices, one per page (see
+    parser.invoice_parser.parse_invoice_pages). A single-page file/image
+    still returns a one-element list — callers must always iterate the
+    result rather than assume a single dict.
 
     force_handwritten: None to auto-detect the OCR engine (default), or
     True/False to override the handwriting detector.
 
     original_filename: the name the user actually uploaded (file_path itself
-    is the on-disk, UUID-renamed copy) — stored so History can show it.
+    is the on-disk, UUID-renamed copy) — stored so History can show it. For
+    a multi-invoice file, each invoice's stored original_filename gets a
+    "(page N/M)" suffix so they're distinguishable in History.
 
     enhance_image: None (default) follows settings.ENHANCE_IMAGE_ENABLED,
     or True/False to override per-call (see Upload.py's checkbox).
     """
     try:
-        invoice = parse_invoice(file_path, force_handwritten=force_handwritten)
+        invoices = parse_invoice_pages(file_path, force_handwritten=force_handwritten)
     except InvoiceParsingError as e:
         logger.error(f"Parsing failed for {file_path}: {e}")
-        return {"success": False, "error": str(e), "file": file_path}
+        return [{"success": False, "error": str(e), "file": file_path}]
 
-    invoice.original_filename = original_filename or Path(file_path).name
-    invoice.category = auto_categorize(invoice.vendor_name, invoice.line_items)
+    base_filename = original_filename or Path(file_path).name
+    multi_invoice = len(invoices) > 1
+
     # Enhance BEFORE move_to_processed() relocates file_path further down —
-    # camscan() needs to read the file from its current location.
-    invoice.enhanced_image_path = _generate_enhanced_image(file_path, enabled=enhance_image)
+    # camscan() needs to read the file from its current location. Only
+    # meaningful for a standalone photo (see _generate_enhanced_image);
+    # for a multi-page PDF this is just None for every invoice, same as
+    # before.
+    enhanced_image_path = _generate_enhanced_image(file_path, enabled=enhance_image)
 
+    results = []
     session = SessionLocal()
     try:
         repo = InvoiceRepository(session)
-        try:
-            orm_invoice = repo.save(invoice)
-        except DuplicateInvoiceError as e:
-            logger.warning(f"Duplicate invoice number skipped for {file_path}: {e}")
-            # Duplicate invoice numbers are never saved to the DB, so they
-            # never show up in History. Still move the source file out of
-            # the uploads folder so it isn't left sitting there / reprocessed.
+        for i, invoice in enumerate(invoices, start=1):
+            invoice.original_filename = (
+                f"{base_filename} (page {i}/{len(invoices)})" if multi_invoice else base_filename
+            )
+            invoice.category = auto_categorize(invoice.vendor_name, invoice.line_items)
+            invoice.enhanced_image_path = enhanced_image_path
+
             try:
-                move_to_processed(file_path)
-            except Exception as move_err:
-                logger.warning(f"Could not move duplicate file to processed dir: {move_err}")
-            return {
-                "success": False,
-                "duplicate": True,
+                orm_invoice = repo.save(invoice)
+            except DuplicateInvoiceError as e:
+                logger.warning(
+                    f"Duplicate invoice number skipped for {file_path} "
+                    f"(invoice {i}/{len(invoices)}): {e}"
+                )
+                # Duplicate invoice numbers are never saved to the DB, so
+                # they never show up in History.
+                results.append({
+                    "success": False,
+                    "duplicate": True,
+                    "invoice_number": invoice.invoice_number,
+                    "existing_invoice_id": e.existing_id,
+                    "error": (
+                        f"Duplicate invoice number '{invoice.invoice_number}' — "
+                        f"already exists as invoice #{e.existing_id}. Skipped; "
+                        "not added to History."
+                    ),
+                    "file": invoice.original_filename,
+                })
+                continue
+
+            invoice.id = orm_invoice.id
+            _archive_json(invoice)
+            results.append({
+                "success": True,
+                "invoice_id": invoice.id,
                 "invoice_number": invoice.invoice_number,
-                "existing_invoice_id": e.existing_id,
-                "error": (
-                    f"Duplicate invoice number '{invoice.invoice_number}' — "
-                    f"already exists as invoice #{e.existing_id}. Skipped; "
-                    "not added to History."
-                ),
-                "file": file_path,
-            }
-        invoice.id = orm_invoice.id
+                "vendor_name": invoice.vendor_name,
+                "vendor_address": invoice.vendor_address,
+                "vendor_tax_id": invoice.vendor_tax_id,
+                "customer_name": invoice.customer_name,
+                "customer_address": invoice.customer_address,
+                "customer_tax_id": invoice.customer_tax_id,
+                "original_filename": invoice.original_filename,
+                "subtotal": invoice.subtotal,
+                "tax_amount": invoice.tax_amount,
+                "zero_rated_sales": invoice.zero_rated_sales,
+                "vat_exempt_sales": invoice.vat_exempt_sales,
+                "total_amount": invoice.total_amount,
+                "currency": invoice.currency,
+                "confidence_score": invoice.confidence_score,
+                "status": invoice.status,
+                "ocr_engine_used": invoice.ocr_engine_used,
+                "vision_notes": invoice.vision_notes,
+            })
     finally:
         session.close()
 
-    _archive_json(invoice)
-
+    # Move the source file out of uploads/ ONCE (it's one physical file on
+    # disk regardless of how many invoices were extracted from it), then
+    # point every successfully-saved invoice's source_file at the final
+    # processed path — repo.save() above persisted them pointing at the
+    # (now-empty) upload path, since the move happens after saving.
     try:
         processed_path = move_to_processed(file_path)
     except Exception as e:
         logger.warning(f"Could not move file to processed dir: {e}")
         processed_path = file_path
-    else:
-        # move_to_processed() runs AFTER repo.save(), so the source_file
-        # persisted above still points at the (now-empty) upload path.
-        # Update it to the final processed path so History's image
-        # preview can actually find the file on disk.
-        session = SessionLocal()
-        try:
-            InvoiceRepository(session).update(invoice.id, {"source_file": processed_path})
-        except Exception as e:
-            logger.warning(f"Could not update source_file after move: {e}")
-        finally:
-            session.close()
 
-    return {
-        "success": True,
-        "invoice_id": invoice.id,
-        "invoice_number": invoice.invoice_number,
-        "vendor_name": invoice.vendor_name,
-        "original_filename": invoice.original_filename,
-        "subtotal": invoice.subtotal,
-        "tax_amount": invoice.tax_amount,
-        "total_amount": invoice.total_amount,
-        "currency": invoice.currency,
-        "confidence_score": invoice.confidence_score,
-        "status": invoice.status,
-        "processed_file": processed_path,
-        "ocr_engine_used": invoice.ocr_engine_used,
-        "vision_notes": invoice.vision_notes,
-    }
+    session = SessionLocal()
+    try:
+        repo = InvoiceRepository(session)
+        for r in results:
+            if r.get("success") and r.get("invoice_id"):
+                try:
+                    repo.update(r["invoice_id"], {"source_file": processed_path})
+                except Exception as e:
+                    logger.warning(f"Could not update source_file for invoice {r['invoice_id']}: {e}")
+    finally:
+        session.close()
+
+    for r in results:
+        r["processed_file"] = processed_path
+
+    return results
 
 
 def _archive_json(invoice) -> str:
@@ -268,7 +303,12 @@ def _orm_to_dict(row) -> dict:
         "invoice_date": row.invoice_date.isoformat() if row.invoice_date else None,
         "due_date": row.due_date.isoformat() if row.due_date else None,
         "vendor_name": row.vendor_name,
+        "vendor_address": row.vendor_address,
+        "vendor_tax_id": row.vendor_tax_id,
         "customer_name": row.customer_name,
+        "customer_contact": row.customer_contact,
+        "customer_address": row.customer_address,
+        "customer_tax_id": row.customer_tax_id,
         "original_filename": row.original_filename,
         "source_file": row.source_file,
         "enhanced_image_path": row.enhanced_image_path,
@@ -277,6 +317,8 @@ def _orm_to_dict(row) -> dict:
         "subtotal": row.subtotal,
         "tax_amount": row.tax_amount,
         "discount": row.discount,
+        "zero_rated_sales": row.zero_rated_sales,
+        "vat_exempt_sales": row.vat_exempt_sales,
         "total_amount": row.total_amount,
         "currency": row.currency,
         "status": row.status,

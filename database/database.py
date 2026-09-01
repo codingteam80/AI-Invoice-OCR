@@ -36,7 +36,12 @@ def _ensure_new_columns():
         return  # Non-sqlite deployments should use a real migration tool.
 
     new_columns = {
-        "invoices": [("vision_notes", "TEXT"), ("enhanced_image_path", "TEXT")],
+        "invoices": [
+            ("vision_notes", "TEXT"), ("enhanced_image_path", "TEXT"),
+            ("vendor_address", "TEXT"), ("vendor_tax_id", "TEXT"),
+            ("customer_contact", "TEXT"), ("customer_address", "TEXT"), ("customer_tax_id", "TEXT"),
+            ("zero_rated_sales", "REAL"), ("vat_exempt_sales", "REAL"),
+        ],
     }
     with engine.connect() as conn:
         for table, columns in new_columns.items():

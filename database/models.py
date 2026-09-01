@@ -30,13 +30,28 @@ class InvoiceORM(Base):
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
     vendor = relationship("VendorORM", back_populates="invoices")
     vendor_name = Column(String, nullable=False)
+    # Denormalized copies (same pattern as vendor_name above) so History/API
+    # can read these straight off the invoice row without a join — these
+    # were previously only written to the vendors dimension table (see
+    # InvoiceRepository.get_or_create_vendor) and never made it back out to
+    # the user anywhere, even though extraction was already capturing them.
+    vendor_address = Column(String, nullable=True)
+    vendor_tax_id = Column(String, nullable=True)
 
     customer_name = Column(String, nullable=True)
+    customer_contact = Column(String, nullable=True)
+    customer_address = Column(String, nullable=True)
+    customer_tax_id = Column(String, nullable=True)
 
     subtotal = Column(Float, default=0.0)
     tax_amount = Column(Float, nullable=True)
     tax_rate = Column(Float, nullable=True)
     discount = Column(Float, nullable=True)
+    # Philippine BIR sales-breakdown columns, sibling to `subtotal`
+    # (VATABLE SALES) — see models/invoice.py and config/constants.py's
+    # EXTRACTION_SCHEMA for what these represent.
+    zero_rated_sales = Column(Float, nullable=True)
+    vat_exempt_sales = Column(Float, nullable=True)
     total_amount = Column(Float, default=0.0)
     currency = Column(String, default="USD")
 

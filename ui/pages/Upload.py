@@ -82,15 +82,20 @@ if locked and st.session_state.pending_upload_files:
             })
             continue
 
-        result = process_invoice_file(
+        # A single uploaded file (especially a multi-page PDF) can contain
+        # more than one invoice — process_invoice_file() now returns a
+        # list, one entry per invoice found, instead of a single dict.
+        file_results = process_invoice_file(
             saved_path,
             force_handwritten=st.session_state.get("force_handwritten"),
             original_filename=name,
             enhance_image=st.session_state.get("enhance_image"),
         )
-        result["file"] = name
-        result["elapsed_seconds"] = time.perf_counter() - file_start
-        results.append(result)
+        elapsed = time.perf_counter() - file_start
+        for result in file_results:
+            result.setdefault("file", result.get("original_filename", name))
+            result["elapsed_seconds"] = elapsed
+            results.append(result)
 
     progress.progress(1.0, text="Done")
 
@@ -104,7 +109,7 @@ if locked and st.session_state.pending_upload_files:
 
 if st.session_state.upload_results:
     if st.session_state.get("upload_batch_seconds") is not None:
-        st.caption(f"⏱️ Total time: {st.session_state.upload_batch_seconds:.1f}s for {len(st.session_state.upload_results)} file(s).")
+        st.caption(f"⏱️ Total time: {st.session_state.upload_batch_seconds:.1f}s for {len(st.session_state.upload_results)} invoice(s).")
     for r in st.session_state.upload_results:
         elapsed = r.get("elapsed_seconds")
         elapsed_suffix = f" · ⏱️ {elapsed:.1f}s" if elapsed is not None else ""

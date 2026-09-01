@@ -263,3 +263,62 @@ def extract_from_file(
         }
 
     return extract_from_image(file_path, use_preprocessing=use_preprocessing, force_handwritten=force_handwritten)
+
+
+def extract_pages_from_file(
+    file_path: str,
+    force_handwritten: bool | None = None,
+    use_preprocessing: bool | None = None,
+) -> list[dict]:
+    """
+    Like extract_from_file(), but returns OCR results PER PAGE instead of
+    concatenating every page into one block of text.
+
+    Needed because a multi-page PDF is not always one invoice spread across
+    several pages — it's often several SEPARATE invoices stacked into one
+    file (e.g. a batch scan of a stack of receipts, or one PDF export
+    containing two unrelated service invoices). extract_from_file()'s
+    "join every page's text together" behavior silently collapses a
+    multi-invoice PDF into a single LLM extraction call, which can only
+    return one invoice's worth of fields — every invoice but whichever one
+    "won" the extraction gets dropped entirely, with no error or warning.
+    See parser/invoice_parser.py::parse_invoice_pages, which calls this and
+    runs the full per-invoice pipeline independently for each page.
+
+    For a non-PDF image, returns a single-element list (page 1 of 1) —
+    the "multiple invoices in one file" concept doesn't apply to a
+    standalone image.
+
+    Each element is the same shape returned by extract_from_image(), plus:
+      - page_number: 1-indexed position of this page in the file
+      - total_pages: total page count of the file
+      - image_path: the actual single-page image backing this page (the
+        rendered PNG for a PDF page, or file_path itself for a standalone
+        image) — always a real, static image, never a multi-page PDF.
+        Callers needing to re-look at "the picture for this specific
+        invoice" (e.g. ai/vision_verifier.py) should use this instead of
+        the original file_path, which for a multi-page PDF doesn't
+        identify any single page.
+    """
+    ext = Path(file_path).suffix.lower()
+
+    if ext != ".pdf":
+        result = extract_from_image(
+            file_path, use_preprocessing=use_preprocessing, force_handwritten=force_handwritten
+        )
+        result["page_number"] = 1
+        result["total_pages"] = 1
+        result["image_path"] = file_path
+        return [result]
+
+    image_paths = pdf_to_images(file_path)
+    pages = []
+    for i, img_path in enumerate(image_paths):
+        res = extract_from_image(
+            img_path, use_preprocessing=use_preprocessing, force_handwritten=force_handwritten
+        )
+        res["page_number"] = i + 1
+        res["total_pages"] = len(image_paths)
+        res["image_path"] = img_path
+        pages.append(res)
+    return pages

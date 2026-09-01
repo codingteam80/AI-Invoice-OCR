@@ -179,17 +179,32 @@ def render_edit_form(inv: dict):
         col1, col2 = st.columns(2)
         with col1:
             vendor_name = st.text_input("Vendor", value=inv.get("vendor_name") or "")
+            vendor_address = st.text_input("Vendor Address", value=inv.get("vendor_address") or "")
+            vendor_tax_id = st.text_input("Vendor TIN", value=inv.get("vendor_tax_id") or "")
             customer_name = st.text_input("Customer", value=inv.get("customer_name") or "")
+            customer_address = st.text_input("Customer Address", value=inv.get("customer_address") or "")
+            customer_tax_id = st.text_input("Customer TIN", value=inv.get("customer_tax_id") or "")
             invoice_date_str = st.text_input(
                 "Invoice Date (YYYY-MM-DD)", value=inv.get("invoice_date") or ""
             )
             currency = st.text_input("Currency", value=inv.get("currency") or "USD")
         with col2:
             subtotal = st.number_input(
-                "Net Amount (Subtotal)", value=float(inv.get("subtotal") or 0.0), step=0.01, format="%.2f"
+                "Net Amount (Vatable Sales / Subtotal)",
+                value=float(inv.get("subtotal") or 0.0), step=0.01, format="%.2f"
             )
             tax_amount = st.number_input(
                 "VAT", value=float(inv.get("tax_amount") or 0.0), step=0.01, format="%.2f"
+            )
+            zero_rated_sales = st.number_input(
+                "Zero-Rated Sales", value=float(inv.get("zero_rated_sales") or 0.0),
+                step=0.01, format="%.2f",
+                help="Leave at 0.00 if this invoice has no zero-rated sales column printed on it.",
+            )
+            vat_exempt_sales = st.number_input(
+                "VAT-Exempt Sales", value=float(inv.get("vat_exempt_sales") or 0.0),
+                step=0.01, format="%.2f",
+                help="Leave at 0.00 if this invoice has no VAT-exempt sales column printed on it.",
             )
             total_amount = st.number_input(
                 "Total Amount Due", value=float(inv.get("total_amount") or 0.0), step=0.01, format="%.2f"
@@ -206,11 +221,12 @@ def render_edit_form(inv: dict):
                 help="AI-assigned during processing — change it here if it's wrong.",
             )
 
-        computed = subtotal + tax_amount
+        computed = subtotal + tax_amount + zero_rated_sales + vat_exempt_sales
         if abs(computed - total_amount) > max(0.02 * total_amount, 0.01):
             st.warning(
-                f"Net Amount + VAT = {computed:,.2f}, which doesn't match Total Amount Due "
-                f"({total_amount:,.2f}). You can still save if that's correct for this invoice."
+                f"Net Amount + VAT + Zero-Rated + VAT-Exempt = {computed:,.2f}, which doesn't "
+                f"match Total Amount Due ({total_amount:,.2f}). You can still save if that's "
+                f"correct for this invoice."
             )
 
         st.markdown("**Items purchased**")
@@ -282,11 +298,17 @@ def render_edit_form(inv: dict):
             updates = {
                 "invoice_number": invoice_number.strip(),
                 "vendor_name": vendor_name.strip(),
+                "vendor_address": vendor_address.strip() or None,
+                "vendor_tax_id": vendor_tax_id.strip() or None,
                 "customer_name": customer_name.strip() or None,
+                "customer_address": customer_address.strip() or None,
+                "customer_tax_id": customer_tax_id.strip() or None,
                 "invoice_date": parsed_invoice_date,
                 "currency": currency.strip() or "USD",
                 "subtotal": subtotal,
                 "tax_amount": tax_amount,
+                "zero_rated_sales": zero_rated_sales or None,
+                "vat_exempt_sales": vat_exempt_sales or None,
                 "total_amount": total_amount,
                 "status": status,
                 "category": category,
@@ -609,7 +631,11 @@ if invoices:
             st.subheader(f"Invoice {detail['invoice_number']}")
             c1, c2 = st.columns(2)
             c1.write(f"**Vendor:** {detail['vendor_name']}")
+            c1.write(f"**Vendor Address:** {detail.get('vendor_address') or '-'}")
+            c1.write(f"**Vendor TIN:** {detail.get('vendor_tax_id') or '-'}")
             c1.write(f"**Customer:** {detail.get('customer_name') or '-'}")
+            c1.write(f"**Customer Address:** {detail.get('customer_address') or '-'}")
+            c1.write(f"**Customer TIN:** {detail.get('customer_tax_id') or '-'}")
             c1.write(f"**Date:** {detail.get('invoice_date') or '-'}")
             c1.write(f"**Filename:** {detail.get('original_filename') or '-'}")
             c1.write(f"**Category:** {detail.get('category') or '-'}")
@@ -618,8 +644,12 @@ if invoices:
                 f"{_subtotal:,.2f} {detail.get('currency')}" if _subtotal is not None
                 else "— (not extracted)"
             )
-            c2.write(f"**Net Amount:** {_subtotal_display}")
+            c2.write(f"**Net Amount (Vatable Sales):** {_subtotal_display}")
             c2.write(f"**VAT:** {(detail.get('tax_amount') or 0):,.2f} {detail.get('currency')}")
+            if detail.get("zero_rated_sales") is not None:
+                c2.write(f"**Zero-Rated Sales:** {detail['zero_rated_sales']:,.2f} {detail.get('currency')}")
+            if detail.get("vat_exempt_sales") is not None:
+                c2.write(f"**VAT-Exempt Sales:** {detail['vat_exempt_sales']:,.2f} {detail.get('currency')}")
             c2.write(f"**Total Amount Due:** {(detail.get('total_amount') or 0):,.2f} {detail.get('currency')}")
             c2.write(f"**Status:** {detail.get('status')}")
             c2.write(f"**Confidence:** {(detail.get('confidence_score') or 0) * 100:.0f}%")

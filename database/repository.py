@@ -80,11 +80,18 @@ class InvoiceRepository:
             due_date=invoice.due_date,
             vendor_id=vendor.id,
             vendor_name=invoice.vendor_name,
+            vendor_address=invoice.vendor_address,
+            vendor_tax_id=invoice.vendor_tax_id,
             customer_name=invoice.customer_name,
+            customer_contact=invoice.customer_contact,
+            customer_address=invoice.customer_address,
+            customer_tax_id=invoice.customer_tax_id,
             subtotal=invoice.subtotal,
             tax_amount=invoice.tax_amount,
             tax_rate=invoice.tax_rate,
             discount=invoice.discount,
+            zero_rated_sales=invoice.zero_rated_sales,
+            vat_exempt_sales=invoice.vat_exempt_sales,
             total_amount=invoice.total_amount,
             currency=invoice.currency,
             payment_terms=invoice.payment_terms,
@@ -127,11 +134,12 @@ class InvoiceRepository:
         invoices where labels/values are misaligned, or the scan is blurred.
 
         `data` may include any of: invoice_number, invoice_date, due_date,
-        vendor_name, vendor_address, vendor_tax_id, customer_name, subtotal,
-        tax_amount, tax_rate, discount, total_amount, currency,
-        payment_terms, status, line_items (a full-replace list of
-        {description, quantity, unit_price, amount} dicts — see below).
-        Unrecognized keys are ignored.
+        vendor_name, vendor_address, vendor_tax_id, customer_name,
+        customer_contact, customer_address, customer_tax_id, subtotal,
+        tax_amount, tax_rate, discount, zero_rated_sales, vat_exempt_sales,
+        total_amount, currency, payment_terms, status, line_items (a
+        full-replace list of {description, quantity, unit_price, amount}
+        dicts — see below). Unrecognized keys are ignored.
 
         Raises DuplicateInvoiceError if the edit would rename invoice_number
         to one that already belongs to a *different* invoice.
@@ -158,7 +166,10 @@ class InvoiceRepository:
 
         editable_fields = [
             "invoice_number", "invoice_date", "due_date", "customer_name",
-            "subtotal", "tax_amount", "tax_rate", "discount", "total_amount",
+            "customer_contact", "customer_address", "customer_tax_id",
+            "vendor_address", "vendor_tax_id",
+            "subtotal", "tax_amount", "tax_rate", "discount",
+            "zero_rated_sales", "vat_exempt_sales", "total_amount",
             "currency", "payment_terms", "status", "category",
         ]
         for field in editable_fields:

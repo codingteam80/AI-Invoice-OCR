@@ -2,15 +2,17 @@
 Top-level orchestrator: turns a raw invoice file into a validated Invoice
 object by chaining OCR -> LLM extraction -> validation -> post-processing.
 """
+from pathlib import Path
+
 from config.logging import get_logger
-from ocr.ocr_engine import extract_from_file
+from ocr.ocr_engine import extract_from_file, extract_pages_from_file
 from ai.extractor import extract_invoice_data, ExtractionError
 from ai.validator import validate_extraction
 from ai.confidence import score_extraction
 from ai.post_processing import (
     post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax, reconcile_subtotal,
     clean_line_items, reconcile_vendor_name, reconcile_invoice_date, reconcile_swapped_subtotal_total,
-    reconcile_invoice_number,
+    reconcile_invoice_number, reconcile_zero_rated_exempt,
 )
 from ai.vision_verifier import verify_against_image
 from parser.table_parser import parse_line_items_from_text
@@ -26,7 +28,15 @@ class InvoiceParsingError(Exception):
 
 def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invoice:
     """
-    Full pipeline for a single invoice file.
+    Full pipeline for a single invoice file, treating the ENTIRE file
+    (all pages, if any) as one invoice.
+
+    Kept for backward compatibility (single-invoice callers, tests) — for
+    a file that may contain several separate invoices across its pages
+    (e.g. a multi-page PDF batch scan), use parse_invoice_pages() instead,
+    which runs this same pipeline independently per page rather than
+    concatenating every page's OCR text into one extraction call.
+
     Raises InvoiceParsingError only on unrecoverable failure (e.g. OCR crash).
 
     force_handwritten: None to auto-detect (default), or True/False to
@@ -34,14 +44,110 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     """
     logger.info(f"Starting invoice parse: {file_path}")
 
-    # 1. OCR (auto-routes between PaddleOCR and TrOCR based on handwriting detection)
+    # OCR (auto-routes between PaddleOCR and TrOCR based on handwriting detection)
     ocr_result = extract_from_file(file_path, force_handwritten=force_handwritten)
-    ocr_text = ocr_result["text"]
-    ocr_confidence = ocr_result["avg_confidence"]
 
-    if not ocr_text.strip():
+    if not ocr_result["text"].strip():
         raise InvoiceParsingError("OCR produced no text — file may be blank or unreadable.")
 
+    return _build_invoice_from_ocr(
+        file_path=file_path,
+        image_path=file_path,
+        ocr_text=ocr_result["text"],
+        ocr_confidence=ocr_result["avg_confidence"],
+        ocr_engine=ocr_result.get("engine"),
+    )
+
+
+def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -> list[Invoice]:
+    """
+    Full pipeline for a file that may contain MULTIPLE, separate invoices
+    — one per page — rather than a single invoice spread across several
+    pages. This is the entrypoint services/invoice_service.py should use
+    for anything a user uploads.
+
+    Why this exists: a multi-page PDF is frequently a batch of unrelated
+    invoices stacked into one file (e.g. two different vendors' service
+    invoices scanned together), not one invoice split across pages. The
+    old parse_invoice() ran OCR once, concatenated every page's text into
+    a single blob, and asked the LLM for ONE JSON invoice object back —
+    which silently discarded every invoice on the file but whichever one
+    the extraction happened to latch onto, with no error raised. This
+    function instead runs OCR independently PER PAGE (see
+    ocr/ocr_engine.py::extract_pages_from_file) and the complete
+    extract -> reconcile -> validate -> score pipeline independently for
+    EACH page's text, so every invoice in the file gets its own result.
+
+    A single-page image still goes through this same path and simply
+    returns a one-element list — callers should always treat the result
+    as a list, never assume exactly one invoice per file.
+
+    A page whose OCR text is blank (e.g. a genuine blank divider/cover
+    page) is skipped rather than failing the whole batch. Raises
+    InvoiceParsingError only if EVERY page in the file failed or produced
+    no text — a partial batch (some pages good, some not) still returns
+    whatever succeeded.
+    """
+    logger.info(f"Starting multi-page invoice parse: {file_path}")
+    pages = extract_pages_from_file(file_path, force_handwritten=force_handwritten)
+
+    invoices: list[Invoice] = []
+    skip_reasons: list[str] = []
+    for page in pages:
+        page_number = page.get("page_number", 1)
+        total_pages = page.get("total_pages", len(pages))
+        ocr_text = page.get("text", "")
+
+        if not ocr_text.strip():
+            msg = f"page {page_number}/{total_pages}: OCR produced no text"
+            logger.warning(f"{file_path} — {msg}, skipping.")
+            skip_reasons.append(msg)
+            continue
+
+        try:
+            invoice = _build_invoice_from_ocr(
+                file_path=file_path,
+                image_path=page.get("image_path", file_path),
+                ocr_text=ocr_text,
+                ocr_confidence=page.get("avg_confidence", 0.0),
+                ocr_engine=page.get("engine"),
+            )
+        except InvoiceParsingError as e:
+            msg = f"page {page_number}/{total_pages}: {e}"
+            logger.warning(f"{file_path} — extraction failed for {msg}")
+            skip_reasons.append(msg)
+            continue
+
+        invoices.append(invoice)
+
+    if not invoices:
+        reasons = "; ".join(skip_reasons) if skip_reasons else "no pages found"
+        raise InvoiceParsingError(f"No invoice could be extracted from any page of {file_path} ({reasons}).")
+
+    return invoices
+
+
+def _build_invoice_from_ocr(
+    file_path: str,
+    image_path: str,
+    ocr_text: str,
+    ocr_confidence: float,
+    ocr_engine: str | None,
+) -> Invoice:
+    """
+    The shared per-invoice pipeline: takes OCR output already produced for
+    ONE invoice's worth of text (whether that's a whole single-page file
+    via parse_invoice(), or one page of a multi-invoice file via
+    parse_invoice_pages()) and runs extraction -> reconciliation ->
+    validation -> scoring -> model-building on it.
+
+    image_path is passed separately from file_path so the vision
+    cross-check step (ai/vision_verifier.py) always looks at the actual
+    single, static image for THIS invoice — for a multi-page PDF that's
+    the specific page's rendered PNG, not the original multi-page file
+    (which vision_verifier would otherwise always resolve to page 1 of,
+    regardless of which page is actually being verified).
+    """
     # 2. LLM extraction
     try:
         extracted = extract_invoice_data(ocr_text)
@@ -87,6 +193,12 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     # ai/post_processing.reconcile_tax).
     cleaned, tax_notes = reconcile_tax(cleaned, ocr_text)
 
+    # 4c-1. Heuristic backstop: fill zero_rated_sales/vat_exempt_sales from
+    # a regex scan of the raw OCR text when the LLM left them null, same
+    # fill-only pattern as reconcile_tax above (see
+    # ai/post_processing.reconcile_zero_rated_exempt).
+    cleaned, zero_exempt_notes = reconcile_zero_rated_exempt(cleaned, ocr_text)
+
     # 4c-2. Heuristic backstop: catch subtotal getting set to a
     # VAT-INCLUSIVE figure (the receipt's printed "SUBTOTAL" line) instead
     # of the true net-of-VAT amount — a confirmed recurring failure mode,
@@ -114,7 +226,7 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     cleaned, date_notes = reconcile_invoice_date(cleaned, ocr_text)
 
     reconciliation_notes = (
-        line_item_notes + swap_notes + total_notes + tax_notes + subtotal_notes
+        line_item_notes + swap_notes + total_notes + tax_notes + zero_exempt_notes + subtotal_notes
         + vendor_notes + invnum_notes + date_notes
     )
 
@@ -131,7 +243,7 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     # correction, which feeds into `issues` and forces needs_review=True
     # (see ai/confidence.py), so an auto-corrected value still requires a
     # human to review and lock it before it's treated as final.
-    vision_corrections, vision_issues = verify_against_image(file_path, cleaned)
+    vision_corrections, vision_issues = verify_against_image(image_path, cleaned)
     if vision_corrections:
         cleaned.update(vision_corrections)
 
@@ -152,7 +264,7 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
         raise InvoiceParsingError(f"Extracted data failed schema validation: {e}") from e
 
     invoice.source_file = file_path
-    invoice.ocr_engine_used = ocr_result.get("engine")
+    invoice.ocr_engine_used = ocr_engine
     invoice.confidence_score = prediction.overall_confidence
     invoice.raw_text = ocr_text
     invoice.vision_notes = "\n".join(vision_issues) if vision_issues else None

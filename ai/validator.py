@@ -61,13 +61,21 @@ def validate_extraction(data: dict) -> list[str]:
     subtotal = data.get("subtotal")
     tax = data.get("tax_amount") or 0
     discount = data.get("discount") or 0
+    # zero_rated_sales/vat_exempt_sales are separate BIR sales categories
+    # that still count toward total_amount alongside the VATable subtotal
+    # (see config/constants.py EXTRACTION_SCHEMA) — omitting them here
+    # would make a perfectly correct invoice that HAS one of these columns
+    # populated look like its numbers "don't add up".
+    zero_rated = data.get("zero_rated_sales") or 0
+    vat_exempt = data.get("vat_exempt_sales") or 0
     if subtotal is not None and total is not None:
         try:
-            computed = float(subtotal) + float(tax) - float(discount)
+            computed = float(subtotal) + float(tax) + float(zero_rated) + float(vat_exempt) - float(discount)
             if total and abs(computed - float(total)) > 0.05 * float(total):
                 issues.append(
-                    f"subtotal ({subtotal}) + tax ({tax}) - discount ({discount}) "
-                    f"= {computed:.2f}, which does not match total_amount ({total})"
+                    f"subtotal ({subtotal}) + tax ({tax}) + zero-rated ({zero_rated}) "
+                    f"+ vat-exempt ({vat_exempt}) - discount ({discount}) = {computed:.2f}, "
+                    f"which does not match total_amount ({total})"
                 )
         except (TypeError, ValueError):
             issues.append("subtotal/tax/discount are not numeric")

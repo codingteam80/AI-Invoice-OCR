@@ -63,6 +63,19 @@ fields as accurately as possible. Follow these rules strictly:
 13. If OCR text clearly shows only some of quantity/unit_price/amount for
     a given item, leave the missing one(s) null rather than guessing —
     e.g. don't invent quantity: 1 just to fill the field.
+14. Philippine BIR-formatted invoices commonly print a sales breakdown
+    with several columns: VATABLE SALES, VAT, ZERO-RATED SALES, and
+    VAT-EXEMPT SALES, followed by a separate TOTAL SALES / AMOUNT DUE
+    section. Match subtotal to VATABLE SALES specifically (not the
+    ZERO-RATED or VAT-EXEMPT figures), and put those two into their own
+    zero_rated_sales / vat_exempt_sales fields — never fold them into
+    subtotal or leave them un-placed. Note this breakdown table's own
+    columns are sometimes misprinted/misaligned by the source document
+    itself (labels and values off by one row) — if the numbers don't line
+    up with their labels in a way that makes arithmetic sense (e.g.
+    VATABLE SALES + VAT should roughly equal the printed subtotal/total
+    for that line), prefer the reading that IS arithmetically consistent
+    over reading the columns literally left-to-right.
 """
 
 

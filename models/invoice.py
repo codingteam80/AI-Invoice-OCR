@@ -34,6 +34,8 @@ class Invoice(BaseModel):
 
     customer_name: Optional[str] = None
     customer_contact: Optional[str] = None
+    customer_address: Optional[str] = None
+    customer_tax_id: Optional[str] = None
 
     line_items: list[LineItem] = Field(default_factory=list)
 
@@ -41,6 +43,8 @@ class Invoice(BaseModel):
     tax_amount: Optional[float] = None
     tax_rate: Optional[float] = None
     discount: Optional[float] = None
+    zero_rated_sales: Optional[float] = None
+    vat_exempt_sales: Optional[float] = None
     total_amount: float = 0.0
     currency: str = "USD"
 
