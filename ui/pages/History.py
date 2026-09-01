@@ -193,6 +193,10 @@ def render_edit_form(inv: dict):
                 "Net Amount (Vatable Sales / Subtotal)",
                 value=float(inv.get("subtotal") or 0.0), step=0.01, format="%.2f"
             )
+            discount = st.number_input(
+                "Discount", value=float(inv.get("discount") or 0.0), step=0.01, format="%.2f",
+                help="Enter the discount deducted from the invoice total. Leave at 0.00 if there is no discount.",
+            )
             tax_amount = st.number_input(
                 "VAT", value=float(inv.get("tax_amount") or 0.0), step=0.01, format="%.2f"
             )
@@ -221,10 +225,10 @@ def render_edit_form(inv: dict):
                 help="AI-assigned during processing — change it here if it's wrong.",
             )
 
-        computed = subtotal + tax_amount + zero_rated_sales + vat_exempt_sales
+        computed = subtotal + tax_amount + zero_rated_sales + vat_exempt_sales - discount
         if abs(computed - total_amount) > max(0.02 * total_amount, 0.01):
             st.warning(
-                f"Net Amount + VAT + Zero-Rated + VAT-Exempt = {computed:,.2f}, which doesn't "
+                f"Net Amount + VAT + Zero-Rated + VAT-Exempt - Discount = {computed:,.2f}, which doesn't "
                 f"match Total Amount Due ({total_amount:,.2f}). You can still save if that's "
                 f"correct for this invoice."
             )
@@ -307,6 +311,7 @@ def render_edit_form(inv: dict):
                 "currency": currency.strip() or "USD",
                 "subtotal": subtotal,
                 "tax_amount": tax_amount,
+                "discount": discount or None,
                 "zero_rated_sales": zero_rated_sales or None,
                 "vat_exempt_sales": vat_exempt_sales or None,
                 "total_amount": total_amount,
@@ -645,6 +650,7 @@ if invoices:
                 else "— (not extracted)"
             )
             c2.write(f"**Net Amount (Vatable Sales):** {_subtotal_display}")
+            c2.write(f"**Discount:** {(detail.get('discount') or 0):,.2f} {detail.get('currency')}")
             c2.write(f"**VAT:** {(detail.get('tax_amount') or 0):,.2f} {detail.get('currency')}")
             if detail.get("zero_rated_sales") is not None:
                 c2.write(f"**Zero-Rated Sales:** {detail['zero_rated_sales']:,.2f} {detail.get('currency')}")
