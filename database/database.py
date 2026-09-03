@@ -40,6 +40,7 @@ def _ensure_new_columns():
             ("vision_notes", "TEXT"), ("enhanced_image_path", "TEXT"),
             ("vendor_address", "TEXT"), ("vendor_tax_id", "TEXT"),
             ("customer_contact", "TEXT"), ("customer_address", "TEXT"), ("customer_tax_id", "TEXT"),
+            ("plate_number", "TEXT"),
             ("zero_rated_sales", "REAL"), ("vat_exempt_sales", "REAL"),
         ],
     }

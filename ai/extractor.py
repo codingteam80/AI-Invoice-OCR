@@ -8,6 +8,7 @@ from config.settings import settings
 from config.logging import get_logger
 from ai.prompt_builder import build_extraction_prompt, build_correction_prompt
 from ai.validator import validate_extraction
+from utils.invoice_template_detector import detect_invoice_template
 from utils.helpers import safe_json_loads
 
 logger = get_logger("ai.extractor")
@@ -56,7 +57,7 @@ def _call_ollama(prompt: str) -> str:
     ) from last_error
 
 
-def extract_invoice_data(ocr_text: str) -> dict:
+def extract_invoice_data(ocr_text: str, template_name: str | None = None) -> dict:
     """
     Runs the extraction prompt, validates the result, and retries with a
     correction prompt (up to LLM_MAX_RETRIES) if validation fails.
@@ -64,7 +65,11 @@ def extract_invoice_data(ocr_text: str) -> dict:
     if not ocr_text or not ocr_text.strip():
         raise ExtractionError("Empty OCR text — nothing to extract.")
 
-    prompt = build_extraction_prompt(ocr_text)
+    if template_name is None:
+        template_name = detect_invoice_template(ocr_text)
+    logger.info(f"Invoice template selected: {template_name}")
+
+    prompt = build_extraction_prompt(ocr_text, template_name=template_name)
     raw_response = _call_ollama(prompt)
     parsed = safe_json_loads(raw_response)
 
@@ -72,11 +77,11 @@ def extract_invoice_data(ocr_text: str) -> dict:
         raise ExtractionError("LLM did not return valid JSON.")
 
     for attempt in range(settings.LLM_MAX_RETRIES):
-        issues = validate_extraction(parsed)
+        issues = validate_extraction(parsed, template_name=template_name)
         if not issues:
             break
         logger.info(f"Validation issues (attempt {attempt+1}): {issues}")
-        correction_prompt = build_correction_prompt(ocr_text, parsed, issues)
+        correction_prompt = build_correction_prompt(ocr_text, parsed, issues, template_name=template_name)
         raw_response = _call_ollama(correction_prompt)
         corrected = safe_json_loads(raw_response)
         if corrected:

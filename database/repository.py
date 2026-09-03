@@ -86,6 +86,7 @@ class InvoiceRepository:
             customer_contact=invoice.customer_contact,
             customer_address=invoice.customer_address,
             customer_tax_id=invoice.customer_tax_id,
+            plate_number=invoice.plate_number,
             subtotal=invoice.subtotal,
             tax_amount=invoice.tax_amount,
             tax_rate=invoice.tax_rate,
@@ -135,7 +136,7 @@ class InvoiceRepository:
 
         `data` may include any of: invoice_number, invoice_date, due_date,
         vendor_name, vendor_address, vendor_tax_id, customer_name,
-        customer_contact, customer_address, customer_tax_id, subtotal,
+        customer_contact, customer_address, customer_tax_id, plate_number, subtotal,
         tax_amount, tax_rate, discount, zero_rated_sales, vat_exempt_sales,
         total_amount, currency, payment_terms, status, line_items (a
         full-replace list of {description, quantity, unit_price, amount}
@@ -166,7 +167,7 @@ class InvoiceRepository:
 
         editable_fields = [
             "invoice_number", "invoice_date", "due_date", "customer_name",
-            "customer_contact", "customer_address", "customer_tax_id",
+            "customer_contact", "customer_address", "customer_tax_id", "plate_number",
             "vendor_address", "vendor_tax_id",
             "subtotal", "tax_amount", "tax_rate", "discount",
             "zero_rated_sales", "vat_exempt_sales", "total_amount",

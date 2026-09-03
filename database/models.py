@@ -42,6 +42,7 @@ class InvoiceORM(Base):
     customer_contact = Column(String, nullable=True)
     customer_address = Column(String, nullable=True)
     customer_tax_id = Column(String, nullable=True)
+    plate_number = Column(String, nullable=True)
 
     subtotal = Column(Float, default=0.0)
     tax_amount = Column(Float, nullable=True)

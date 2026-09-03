@@ -98,6 +98,39 @@ def post_process(data: dict) -> dict:
     return data
 
 
+_PLATE_LABEL_RE = re.compile(
+    r"(?:plate\s*(?:#|no\.?|number)?|vehicle\s+plate)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\- ]{1,14})",
+    re.IGNORECASE,
+)
+
+
+def reconcile_plate_number(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
+    """Extract a vehicle plate only when it is explicitly labelled.
+
+    Parking tickets and vehicle-related receipts commonly contain many other
+    identifier-like values. This intentionally requires a plate label so a
+    ticket/transaction/OR number cannot be mistaken for the plate.
+    """
+    if not ocr_text:
+        return data, []
+    result = dict(data)
+    notes: list[str] = []
+    for line in str(ocr_text).splitlines():
+        m = _PLATE_LABEL_RE.search(line)
+        if not m:
+            continue
+        candidate = re.sub(r"\s+", " ", m.group(1)).strip(" .,:;|-\")")
+        # A plate should not be an obviously long numeric transaction/receipt ID.
+        if candidate.isdigit() and len(candidate) > 8:
+            continue
+        old = result.get("plate_number")
+        if candidate and str(old or "").strip().upper() != candidate.upper():
+            result["plate_number"] = candidate.upper()
+            notes.append(f"plate_number set from explicit Plate label: {candidate.upper()}")
+        return result, notes
+    return result, notes
+
+
 def _normalize_id_digits(value: str) -> str:
     """
     Invoice numbers like 'INV-001' are almost always digits after the

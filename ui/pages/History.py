@@ -184,6 +184,7 @@ def render_edit_form(inv: dict):
             customer_name = st.text_input("Customer", value=inv.get("customer_name") or "")
             customer_address = st.text_input("Customer Address", value=inv.get("customer_address") or "")
             customer_tax_id = st.text_input("Customer TIN", value=inv.get("customer_tax_id") or "")
+            plate_number = st.text_input("Plate #", value=inv.get("plate_number") or "")
             invoice_date_str = st.text_input(
                 "Invoice Date (YYYY-MM-DD)", value=inv.get("invoice_date") or ""
             )
@@ -307,6 +308,7 @@ def render_edit_form(inv: dict):
                 "customer_name": customer_name.strip() or None,
                 "customer_address": customer_address.strip() or None,
                 "customer_tax_id": customer_tax_id.strip() or None,
+                "plate_number": plate_number.strip().upper() or None,
                 "invoice_date": parsed_invoice_date,
                 "currency": currency.strip() or "USD",
                 "subtotal": subtotal,
@@ -641,6 +643,7 @@ if invoices:
             c1.write(f"**Customer:** {detail.get('customer_name') or '-'}")
             c1.write(f"**Customer Address:** {detail.get('customer_address') or '-'}")
             c1.write(f"**Customer TIN:** {detail.get('customer_tax_id') or '-'}")
+            c1.write(f"**Plate #:** {detail.get('plate_number') or '-'}")
             c1.write(f"**Date:** {detail.get('invoice_date') or '-'}")
             c1.write(f"**Filename:** {detail.get('original_filename') or '-'}")
             c1.write(f"**Category:** {detail.get('category') or '-'}")

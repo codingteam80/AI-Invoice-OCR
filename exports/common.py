@@ -9,7 +9,7 @@ data, and exporting is gated on every invoice already being locked, so a
 """
 
 EXPORT_COLUMNS = [
-    "ID", "Invoice #", "Vendor", "Customer", "Date", "Due Date", "Filename",
+    "ID", "Invoice #", "Vendor", "Customer", "Plate #", "Date", "Due Date", "Filename",
     "Category", "Net Amount", "VAT", "Discount", "Total Amount Due", "Currency",
 ]
 
@@ -59,6 +59,7 @@ def invoice_export_row(inv: dict) -> dict:
         "Invoice #": inv.get("invoice_number"),
         "Vendor": inv.get("vendor_name"),
         "Customer": inv.get("customer_name") or "-",
+        "Plate #": inv.get("plate_number") or "-",
         "Date": inv.get("invoice_date") or "-",
         "Due Date": inv.get("due_date") or "-",
         "Filename": inv.get("original_filename") or "-",

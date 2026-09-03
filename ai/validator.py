@@ -38,7 +38,7 @@ def _longest_consonant_run(text: str) -> int:
     return best
 
 
-def validate_extraction(data: dict) -> list[str]:
+def validate_extraction(data: dict, template_name: str | None = None) -> list[str]:
     """Returns a list of human-readable issues; empty list means it's valid."""
     issues = []
 
@@ -132,21 +132,26 @@ def validate_extraction(data: dict) -> list[str]:
                 )
 
         if line_items and subtotal is not None:
-            # Cross-check: do the line items actually add up to the claimed
-            # subtotal? This catches the common failure mode where the LLM
-            # (usually because OCR reading order scrambled the layout) mistakes
-            # a single line item's amount for the invoice-level subtotal.
-            try:
-                items_sum = sum(float(li.get("amount", 0) or 0) for li in line_items)
-                subtotal_f = float(subtotal)
-                if subtotal_f and abs(items_sum - subtotal_f) > 0.05 * subtotal_f:
-                    issues.append(
-                        f"line_items sum to {items_sum:.2f}, which does not match "
-                        f"subtotal ({subtotal_f}) â€” subtotal may have been misread "
-                        f"as one of the individual line amounts"
-                    )
-            except (TypeError, ValueError, AttributeError):
+            # Cross-check: for generic invoices, line-item amounts are expected
+            # to reconcile to subtotal. Watsons is different: its `subtotal`
+            # field is specifically the VAT SALE / AMOUNT net-of-VAT figure,
+            # while the line-item amounts are the transaction prices and the
+            # printed discount bridges line-items to Amount To Pay. The
+            # Watsons-specific validation below checks that exact identity.
+            if template_name == "watsons":
                 pass
+            else:
+                try:
+                    items_sum = sum(float(li.get("amount", 0) or 0) for li in line_items)
+                    subtotal_f = float(subtotal)
+                    if subtotal_f and abs(items_sum - subtotal_f) > 0.05 * subtotal_f:
+                        issues.append(
+                            f"line_items sum to {items_sum:.2f}, which does not match "
+                            f"subtotal ({subtotal_f}) â€” subtotal may have been misread "
+                            f"as one of the individual line amounts"
+                        )
+                except (TypeError, ValueError, AttributeError):
+                    pass
 
     # Cross-check: if payment_terms says "Net N", the gap between
     # invoice_date and due_date should be N days. Invoices frequently state
@@ -171,5 +176,48 @@ def validate_extraction(data: dict) -> list[str]:
                     )
             except (ValueError, TypeError):
                 pass
+
+    # Watsons has a stable financial identity: the VATable/net amount is
+    # explicitly the VAT SALE / AMOUNT figure, total is Amount To Pay, and
+    # the line-item total after the printed discount must equal Amount To Pay.
+    # These checks are intentionally template-specific; applying them to all
+    # invoices would reject legitimate invoices with service charges or other
+    # non-standard totals.
+    if template_name == "watsons":
+        try:
+            net = float(data.get("subtotal")) if data.get("subtotal") is not None else None
+            vat = float(data.get("tax_amount") or 0)
+            total = float(data.get("total_amount")) if data.get("total_amount") is not None else None
+            discount = float(data.get("discount") or 0)
+        except (TypeError, ValueError):
+            net = vat = total = discount = None
+
+        if net is not None and total is not None and vat is not None:
+            expected_net = round(total - vat, 2)
+            if abs(net - expected_net) > 0.01:
+                issues.append(
+                    f"Watsons validation: Net Amount (Vatable Sales) ({net:.2f}) must equal "
+                    f"Total Amount Due ({total:.2f}) - VAT ({vat:.2f}) = {expected_net:.2f}."
+                )
+            expected_total = round(net + vat, 2)
+            if abs(total - expected_total) > 0.01:
+                issues.append(
+                    f"Watsons validation: Total Amount Due ({total:.2f}) must equal "
+                    f"Net Amount (Vatable Sales) ({net:.2f}) + VAT ({vat:.2f}) = {expected_total:.2f}."
+                )
+
+        items = data.get("line_items")
+        if isinstance(items, list) and total is not None:
+            try:
+                items_sum = round(sum(float(li.get("amount") or 0) for li in items), 2)
+                expected_total = round(items_sum - discount, 2)
+                if abs(expected_total - total) > 0.01:
+                    issues.append(
+                        f"Watsons validation: sum of line-item Total Unit Price ({items_sum:.2f}) "
+                        f"- Discount ({discount:.2f}) = {expected_total:.2f}, but Total Amount Due "
+                        f"is {total:.2f}."
+                    )
+            except (TypeError, ValueError, AttributeError):
+                issues.append("Watsons validation: line-item amounts are not numeric; cannot verify line-item total minus discount.")
 
     return issues

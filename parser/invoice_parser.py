@@ -12,12 +12,14 @@ from ai.confidence import score_extraction
 from ai.post_processing import (
     post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax, reconcile_subtotal,
     clean_line_items, reconcile_vendor_name, reconcile_invoice_date, reconcile_swapped_subtotal_total,
-    reconcile_invoice_number, reconcile_zero_rated_exempt,
+    reconcile_invoice_number, reconcile_zero_rated_exempt, reconcile_plate_number,
 )
 from ai.vision_verifier import verify_against_image
 from parser.table_parser import parse_line_items_from_text
 from models.invoice import Invoice
 from config.constants import INVOICE_STATUS_PROCESSED, INVOICE_STATUS_REVIEW, INVOICE_STATUS_FAILED
+from utils.invoice_template_detector import detect_invoice_template
+from ai.invoice_templates import get_template
 
 logger = get_logger("parser.invoice")
 
@@ -148,9 +150,11 @@ def _build_invoice_from_ocr(
     (which vision_verifier would otherwise always resolve to page 1 of,
     regardless of which page is actually being verified).
     """
-    # 2. LLM extraction
+    # 2. Detect a stable vendor-specific invoice layout, then run the LLM
+    # extraction with that template injected into the prompt.
+    template_name = detect_invoice_template(ocr_text)
     try:
-        extracted = extract_invoice_data(ocr_text)
+        extracted = extract_invoice_data(ocr_text, template_name=template_name)
     except ExtractionError as e:
         logger.error(f"LLM extraction failed for {file_path}: {e}")
         raise InvoiceParsingError(str(e)) from e
@@ -163,6 +167,14 @@ def _build_invoice_from_ocr(
 
     # 4. Post-process / normalize values
     cleaned = post_process(extracted)
+
+    # 4a-v. Apply deterministic vendor-template corrections after generic
+    # normalization. The LLM remains the primary extractor; these rules only
+    # enforce high-confidence layout/business rules for a recognized template.
+    template = get_template(template_name)
+    template_notes: list[str] = []
+    if template and template.get("post_process"):
+        cleaned, template_notes = template["post_process"](cleaned, ocr_text)
 
     # 4a. Heuristic backstop: drop line items whose "description" is
     # actually a bare price or product code (see ai/post_processing.
@@ -225,9 +237,11 @@ def _build_invoice_from_ocr(
     # read (see ai/post_processing.reconcile_invoice_date).
     cleaned, date_notes = reconcile_invoice_date(cleaned, ocr_text)
 
+    cleaned, plate_notes = reconcile_plate_number(cleaned, ocr_text)
+
     reconciliation_notes = (
-        line_item_notes + swap_notes + total_notes + tax_notes + zero_exempt_notes + subtotal_notes
-        + vendor_notes + invnum_notes + date_notes
+        template_notes + line_item_notes + swap_notes + total_notes + tax_notes + zero_exempt_notes + subtotal_notes
+        + vendor_notes + invnum_notes + date_notes + plate_notes
     )
 
     # 4d. Vision cross-check: an independent second look at the actual
@@ -243,13 +257,29 @@ def _build_invoice_from_ocr(
     # correction, which feeds into `issues` and forces needs_review=True
     # (see ai/confidence.py), so an auto-corrected value still requires a
     # human to review and lock it before it's treated as final.
-    vision_corrections, vision_issues = verify_against_image(image_path, cleaned)
+    vision_corrections, vision_issues = verify_against_image(image_path, cleaned, template_name=template_name)
     if vision_corrections:
         cleaned.update(vision_corrections)
 
+    # Vision is an independent signal, but for a recognized Watsons invoice
+    # the printed Watsons labels are the deterministic source of truth for
+    # the fields covered by the template. Re-apply the template after vision
+    # so a vision model cannot reintroduce the exact CASH/SUBTOTAL mix-ups
+    # that the Watsons rules already corrected.
+    if template and template.get("post_process"):
+        cleaned, post_vision_template_notes = template["post_process"](cleaned, ocr_text)
+        if post_vision_template_notes:
+            reconciliation_notes.extend(post_vision_template_notes)
+
+    # Re-apply the explicit Plate label after vision verification so a generic
+    # vision reading cannot replace a plate number with another identifier.
+    cleaned, post_vision_plate_notes = reconcile_plate_number(cleaned, ocr_text)
+    if post_vision_plate_notes:
+        reconciliation_notes.extend(post_vision_plate_notes)
+
     # 5. Validate + score confidence — MUST run before sanitizing, so a
     #    genuinely-missing field still counts against confidence/needs_review.
-    issues = validate_extraction(cleaned) + reconciliation_notes + vision_issues
+    issues = validate_extraction(cleaned, template_name=template_name) + reconciliation_notes + vision_issues
     prediction = score_extraction(cleaned, ocr_confidence, issues)
 
     # 6. Build Invoice model. Sanitize placeholders now (not earlier) so

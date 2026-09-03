@@ -1,6 +1,7 @@
 """Builds prompts sent to the local LLM (via Ollama) for invoice extraction."""
 import json
 from config.constants import EXTRACTION_SCHEMA
+from ai.invoice_templates import get_template
 
 SYSTEM_PROMPT = """You are an expert invoice-data-extraction assistant.
 You will be given raw OCR text from a scanned invoice. Extract the requested
@@ -14,6 +15,11 @@ fields as accurately as possible. Follow these rules strictly:
    from currency symbols/context if not explicitly stated.
 6. line_items is a list of objects: description, quantity, unit_price, amount.
 7. Do not hallucinate values that are not supported by the text.
+7a. plate_number is ONLY for a vehicle plate explicitly printed on the document.
+    Prefer an explicitly labeled "Plate #", "Plate No.", "Plate Number",
+    "Plate:", or "Vehicle Plate" value. Never confuse it with a ticket number,
+    transaction number, invoice/receipt number, serial number, MIN, terminal ID,
+    or other identifier. If no plate is printed, return null.
 8. On receipts, several money amounts often appear close together (TOTAL,
    CASH/TENDERED, CHANGE, AMOUNT PAID). total_amount must ALWAYS be the
    TOTAL/AMOUNT DUE/AMOUNT PAYABLE — the actual price of the transaction.
@@ -79,9 +85,13 @@ fields as accurately as possible. Follow these rules strictly:
 """
 
 
-def build_extraction_prompt(ocr_text: str) -> str:
+def build_extraction_prompt(ocr_text: str, template_name: str | None = None) -> str:
     schema_str = json.dumps(EXTRACTION_SCHEMA, indent=2)
+    template = get_template(template_name)
+    template_instructions = template["prompt"] if template else ""
     return f"""{SYSTEM_PROMPT}
+
+{template_instructions}
 
 JSON schema to fill:
 {schema_str}
@@ -95,9 +105,13 @@ Return only the JSON object matching the schema above.
 """
 
 
-def build_correction_prompt(ocr_text: str, previous_json: dict, issues: list[str]) -> str:
+def build_correction_prompt(ocr_text: str, previous_json: dict, issues: list[str], template_name: str | None = None) -> str:
     """Used when validation finds problems and we want the LLM to self-correct."""
+    template = get_template(template_name)
+    template_instructions = template["prompt"] if template else ""
     return f"""{SYSTEM_PROMPT}
+
+{template_instructions}
 
 Your previous extraction had these issues:
 {chr(10).join(f"- {i}" for i in issues)}
@@ -114,7 +128,7 @@ Fix the issues and return only the corrected JSON object.
 """
 
 
-def build_vision_verification_prompt(extracted_fields: dict) -> str:
+def build_vision_verification_prompt(extracted_fields: dict, template_name: str | None = None) -> str:
     """Used by ai.vision_verifier — sent to a vision-capable model ALONGSIDE
     the invoice image itself, unlike build_extraction_prompt/
     build_correction_prompt above which only ever see OCR text.
@@ -126,6 +140,8 @@ def build_vision_verification_prompt(extracted_fields: dict) -> str:
     see the document does.
     """
     fields_str = json.dumps(extracted_fields, indent=2)
+    template = get_template(template_name)
+    template_instructions = template.get("vision_prompt", "") if template else ""
     return f"""You are double-checking a handful of values that were already
 extracted from this document image by a separate OCR + text-extraction
 process. Look ONLY at what is actually printed/written in the IMAGE —

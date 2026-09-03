@@ -35,6 +35,8 @@ import requests
 from config.logging import get_logger
 from config.settings import settings
 from ai.prompt_builder import build_vision_verification_prompt
+from ai.invoice_templates import get_template
+from utils.invoice_template_detector import detect_invoice_template
 from parser.currency_parser import to_float
 from utils.helpers import safe_json_loads
 from utils.pdf_utils import pdf_to_images, is_pdf
@@ -45,11 +47,16 @@ logger = get_logger("ai.vision_verifier")
 # enough to justify a second, slower model call (see scoping discussion).
 # Money fields drive real financial impact; invoice_number/vendor_name feed
 # the duplicate-detection and vendor-matching logic elsewhere in the app.
-VISION_CHECK_FIELDS = ["invoice_number", "vendor_name", "subtotal", "tax_amount", "total_amount"]
+VISION_CHECK_FIELDS = ["invoice_number", "vendor_name", "plate_number", "subtotal", "tax_amount", "total_amount"]
+WATSONS_VISION_CHECK_FIELDS = VISION_CHECK_FIELDS + [
+    "invoice_date", "vendor_address", "vendor_tax_id",
+    "customer_name", "customer_address", "customer_tax_id",
+    "discount", "zero_rated_sales", "vat_exempt_sales",
+]
 
 # Fields that need numeric parsing (image_shows comes back as text either
 # way, e.g. "1,200.00") before they can be written back onto the invoice.
-_MONEY_FIELDS = {"subtotal", "tax_amount", "total_amount"}
+_MONEY_FIELDS = {"subtotal", "tax_amount", "total_amount", "discount", "zero_rated_sales", "vat_exempt_sales"}
 
 
 def _image_to_base64(file_path: str) -> str | None:
@@ -69,7 +76,7 @@ def _image_to_base64(file_path: str) -> str | None:
         return None
 
 
-def verify_against_image(file_path: str, extracted: dict) -> tuple[dict, list[str]]:
+def verify_against_image(file_path: str, extracted: dict, template_name: str | None = None) -> tuple[dict, list[str]]:
     """
     Sends the source image + the already-extracted VISION_CHECK_FIELDS
     values to settings.VISION_MODEL, and asks it to flag any it believes
@@ -95,8 +102,11 @@ def verify_against_image(file_path: str, extracted: dict) -> tuple[dict, list[st
     if not image_b64:
         return {}, []
 
-    fields_to_check = {f: extracted.get(f) for f in VISION_CHECK_FIELDS}
-    prompt = build_vision_verification_prompt(fields_to_check)
+    if template_name is None:
+        template_name = detect_invoice_template(str(extracted.get("vendor_name") or ""))
+    fields = WATSONS_VISION_CHECK_FIELDS if template_name == "watsons" else VISION_CHECK_FIELDS
+    fields_to_check = {f: extracted.get(f) for f in fields}
+    prompt = build_vision_verification_prompt(fields_to_check, template_name=template_name)
 
     url = f"{settings.OLLAMA_HOST}/api/generate"
     payload = {
@@ -129,7 +139,7 @@ def verify_against_image(file_path: str, extracted: dict) -> tuple[dict, list[st
         if not isinstance(m, dict):
             continue
         field = m.get("field")
-        if field not in VISION_CHECK_FIELDS:
+        if field not in fields:
             continue  # ignore hallucinated field names, per the prompt's rule 4
         seen = m.get("image_shows", "?")
         note = m.get("note", "")

@@ -89,6 +89,14 @@ EXTRACTION_SCHEMA = {
         "on their letterhead) — both commonly appear on the same invoice; "
         "don't confuse or merge them."
     ),
+    "plate_number": (
+        "string or null — the vehicle plate/plate number when the document "
+        "contains one, especially parking tickets or vehicle-related receipts. "
+        "Look for explicit labels such as 'Plate #', 'Plate No.', 'Plate Number', "
+        "'Plate:', or 'Vehicle Plate'. Do not use ticket numbers, transaction "
+        "numbers, OR/invoice numbers, MIN numbers, serial numbers, or other IDs. "
+        "If no plate number is printed, return null."
+    ),
     "line_items": [
         {"description": "string", "quantity": "number", "unit_price": "number", "amount": "number"}
     ],

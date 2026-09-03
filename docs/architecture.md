@@ -63,3 +63,21 @@ for manual correction.
 Invoices often contain sensitive financial data. Using a local model (Qwen 2.5
 or Llama 3 via Ollama) keeps all document content on-premises — no data leaves
 the machine running the pipeline.
+
+
+## Vendor-specific invoice templates
+
+The extraction pipeline supports vendor-specific templates in `ai/invoice_templates/`.
+The current template is `watsons`, selected by `utils/invoice_template_detector.py` when
+multiple Watsons-specific OCR signals are present. The selected template is injected into
+`ai/prompt_builder.py` for both the initial Qwen2.5:7b extraction and validation-correction
+prompts. A conservative deterministic post-processing step then applies high-confidence
+Watsons rules such as vendor normalization, labeled financial fields, category assignment,
+and the known `185TH POUCH BAG WITH SHOPPING BAG` line-item correction.
+
+When vision verification is enabled, `ai/vision_verifier.py` also passes the Watsons-specific
+visual rules to Qwen2.5-VL:7b and checks additional Watsons fields. Generic invoices continue
+to use the existing generic prompt and verification fields.
+
+## Plate number
+The invoice model optionally stores `plate_number` for parking tickets and other vehicle-related documents. Extraction requires an explicit plate label (for example `Plate #`) to avoid confusing ticket or transaction IDs with the vehicle plate. The field is shown in History and included in all generated export formats.
