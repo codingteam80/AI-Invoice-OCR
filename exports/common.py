@@ -10,7 +10,7 @@ data, and exporting is gated on every invoice already being locked, so a
 
 EXPORT_COLUMNS = [
     "ID", "Invoice #", "Vendor", "Customer", "Plate #", "Date", "Due Date", "Filename",
-    "Category", "Net Amount", "VAT", "Discount", "Total Amount Due", "Currency",
+    "Category", "Net Amount", "VAT", "Discount", "Current Charges Total", "Previous Balance", "Total Amount Due", "Currency",
 ]
 
 
@@ -46,6 +46,8 @@ def invoice_totals_row(invoices: list[dict]) -> dict:
     row["Net Amount"] = sum(inv.get("subtotal") or 0 for inv in invoices)
     row["VAT"] = sum(inv.get("tax_amount") or 0 for inv in invoices)
     row["Discount"] = sum(inv.get("discount") or 0 for inv in invoices)
+    row["Current Charges Total"] = sum(inv.get("current_charges_total") or 0 for inv in invoices)
+    row["Previous Balance"] = sum(inv.get("previous_balance") or 0 for inv in invoices)
     row["Total Amount Due"] = sum(inv.get("total_amount") or 0 for inv in invoices)
     return row
 
@@ -67,6 +69,8 @@ def invoice_export_row(inv: dict) -> dict:
         "Net Amount": inv.get("subtotal") or 0,
         "VAT": inv.get("tax_amount") or 0,
         "Discount": inv.get("discount") or 0,
+        "Current Charges Total": inv.get("current_charges_total") if inv.get("current_charges_total") is not None else "",
+        "Previous Balance": inv.get("previous_balance") if inv.get("previous_balance") is not None else "",
         "Total Amount Due": inv.get("total_amount") or 0,
         "Currency": inv.get("currency") or "-",
     }

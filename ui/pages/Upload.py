@@ -120,8 +120,9 @@ if st.session_state.upload_results:
                 c1, c2, c3, c4 = st.columns(4)
                 c1.metric("Vendor", r.get("vendor_name", "-"))
                 c2.metric("Total", f"{r.get('total_amount', 0):,.2f} {r.get('currency', '')}")
-                c3.metric("Confidence", f"{(r.get('confidence_score') or 0)*100:.0f}%")
+                c3.metric("Final Confidence", f"{(r.get('confidence_score') or 0)*100:.0f}%")
                 c4.metric("Status", r.get("status", "-"))
+                st.caption("Final Confidence estimates support for the final reconciled information using completeness, OCR quality, validation, and accounting/line-item consistency.")
                 st.caption(f"OCR engine used: `{r.get('ocr_engine_used', '-')}`")
                 if elapsed is not None:
                     st.caption(f"Uploaded and processed in {elapsed:.2f} seconds.")

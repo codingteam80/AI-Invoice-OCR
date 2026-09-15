@@ -39,6 +39,8 @@ data/logs/*
 !data/logs/.gitkeep
 data/enhanced/*
 !data/enhanced/.gitkeep
+storage/debug/*
+!storage/debug/.gitkeep
 storage/exports/*
 !storage/exports/.gitkeep
 storage/json/*

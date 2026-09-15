@@ -17,6 +17,32 @@ def _get_paddle_instance():
     return PaddleOCR(**kwargs)
 
 
+def _reading_order_key(line: dict, bucket_height: float) -> tuple:
+    """Sort top-to-bottom, then left-to-right, tolerating small y jitter
+    between glyphs on the same visual line.
+
+    bucket_height is shared across the whole page (see _median_line_height)
+    rather than each line computing its own — using each line's own height
+    let two boxes that are genuinely side-by-side on the same physical row
+    (e.g. an item name and its price) round to different y-buckets whenever
+    their two heights happened to differ slightly, occasionally splitting
+    a single row into two."""
+    ys = [p[1] for p in line["bbox"]]
+    xs = [p[0] for p in line["bbox"]]
+    y_center = sum(ys) / len(ys)
+    x_center = sum(xs) / len(xs)
+    return (round(y_center / bucket_height), x_center)
+
+
+def _median_line_height(lines: list[dict]) -> float:
+    heights = [max(p[1] for p in l["bbox"]) - min(p[1] for p in l["bbox"]) for l in lines]
+    heights = [h for h in heights if h > 0]
+    if not heights:
+        return 20.0
+    heights.sort()
+    return max(heights[len(heights) // 2], 1.0)
+
+
 def extract_text(image_path: str) -> dict:
     """
     Run full PaddleOCR (detection + recognition) on an image.
@@ -35,19 +61,46 @@ def extract_text(image_path: str) -> dict:
 
     lines = []
     confidences = []
-    full_text_parts = []
 
     for page in result or []:
         for entry in page or []:
             bbox, (text, conf) = entry
             lines.append({"text": text, "confidence": float(conf), "bbox": bbox})
             confidences.append(conf)
-            full_text_parts.append(text)
+
+    # Sort into top-to-bottom, left-to-right reading order before joining —
+    # PaddleOCR's own detection-result order is NOT reading order (it
+    # reflects whatever internal box-proposal order its detector happened
+    # to produce, which can start anywhere on the page). Confirmed on real
+    # North Star Travel invoices: the resulting `text` started with the
+    # tiny "LL No.LLAR-049-06/2024-001213 Date Issued: June 20, 2024"
+    # boilerplate line printed at the very BOTTOM of the page, and ended
+    # with "NORTH STAR INTERNATIONAL TRAVEL INC." from the very TOP — the
+    # actual invoice number ("No. 52091", also near the top) got buried in
+    # the middle. Since ai/extractor.py's prompt presents this text to the
+    # LLM roughly in the order it appears, a scrambled reading order
+    # doesn't just look odd — it actively misleads which "No."-labeled
+    # value the model treats as most salient/first-encountered, and
+    # disrupts the LABEL-VALUE proximity that field extraction depends on
+    # throughout the whole document, not just for invoice_number.
+    #
+    # This exact sort (_reading_order_key/_median_line_height) already
+    # existed and was applied correctly in ocr/ocr_engine.py's hybrid
+    # per-region extraction path (see _hybrid_extract) — it just wasn't
+    # ALSO applied here, in the plain whole-page PaddleOCR path, which is
+    # the one actually used for most printed (non-handwriting-routed)
+    # documents (ocr_engine_used: "paddleocr", not "paddleocr+trocr").
+    # Moved the two helpers here as the single shared implementation so
+    # both callers apply the identical sort — see ocr/ocr_engine.py, which
+    # now imports them from this module instead of duplicating them.
+    if lines:
+        bucket_height = _median_line_height(lines)
+        lines.sort(key=lambda l: _reading_order_key(l, bucket_height))
 
     avg_conf = sum(confidences) / len(confidences) if confidences else 0.0
 
     return {
-        "text": "\n".join(full_text_parts),
+        "text": "\n".join(l["text"] for l in lines),
         "lines": lines,
         "avg_confidence": round(avg_conf, 4),
     }

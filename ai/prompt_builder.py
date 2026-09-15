@@ -2,6 +2,7 @@
 import json
 from config.constants import EXTRACTION_SCHEMA
 from ai.invoice_templates import get_template
+from ai.pre_extraction import pre_extract_hints
 
 SYSTEM_PROMPT = """You are an expert invoice-data-extraction assistant.
 You will be given raw OCR text from a scanned invoice. Extract the requested
@@ -81,7 +82,70 @@ fields as accurately as possible. Follow these rules strictly:
     up with their labels in a way that makes arithmetic sense (e.g.
     VATABLE SALES + VAT should roughly equal the printed subtotal/total
     for that line), prefer the reading that IS arithmetically consistent
-    over reading the columns literally left-to-right.
+    over reading the columns literally left-to-right. Also never turn a
+    VATABLE SALES / ZERO-RATED SALES / TOTAL SALES column label itself
+    into a fake line_item (same rule as #12, for this table's labels
+    specifically).
+15. A line-item row that quotes a price in a FOREIGN currency will often
+    print several money-like numbers side by side: a foreign-currency
+    UNIT COST, a rate of exchange (ROE/exchange rate — a number like
+    "61.70", NOT a price), and a TOTAL AMOUNT already converted to the
+    invoice's own currency (matching its `currency` field). That
+    TOTAL AMOUNT column — never the ROE, and never the foreign UNIT
+    COST — is this item's `amount`. Also: a booking/ticket/transaction
+    reference number printed near that row (e.g. "SERVICE FEE OF BS
+    #B0280034", "EBC # 0000328802") is metadata about the item above it,
+    never a second line item of its own — do not create a separate
+    line_item for it, with or without a number attached.
+16. A wide, multi-column BREAKDOWN table (e.g. a professional-fee invoice
+    with columns like Description | Fee | Expense | Professional
+    Services | Unit Cost | Quantity | Net | Tax | Rate | Tax Amount |
+    Total) is frequently OCR'd with its rows and columns out of their
+    true alignment — the header row's own column LABELS can end up
+    sitting next to a completely unrelated number rather than their real
+    data row. If a candidate line_item's `description` is just a bare
+    column-header word by itself ("Fee", "Expense", "Professional
+    Services", "Description", "Unit Cost", "Net", "Tax", "Total",
+    "Amount") rather than an actual item/service name, do NOT create a
+    line_item for it — that is the table's own header, not a purchased
+    item, even if a number happens to sit next to it in the OCR text.
+    The real item is whatever full description appears in the table's
+    actual data row (e.g. "Our retainer fee for the month of August
+    2026"). Apply the same caution to `customer_name`: on this kind of
+    invoice, an unrelated "Nature of Services:"/"Engagement" field
+    (describing what KIND of work was done, e.g. "Business Tax
+    Services") is never the customer's name — the customer is whoever is
+    named after "Bill To:"/"Billed To:", even if the Nature-of-Services
+    value happens to be positioned closer to it in the OCR text.
+"""
+
+
+def _format_pre_extraction_hints(hints: dict) -> str:
+    """
+    Formats pre_extract_hints() output as a prompt section. Deliberately
+    worded as candidates to VERIFY, not facts to copy — these come from
+    plain label-proximity regex, which can and does pick the wrong
+    occurrence of a label or a neighboring column's figure by mistake.
+    The instruction to actively cross-check (not just "consider") matters:
+    a passively-worded hint risks being copied uncritically the same way
+    prompt rules 1-16 above have repeatedly not been enough on their own.
+    """
+    if not hints:
+        return ""
+    lines = "\n".join(f"- {field}: {value}" for field, value in hints.items())
+    return f"""
+Pattern-matched candidates (found automatically by scanning for known label
+text near a value — NOT guaranteed correct, and NOT a substitute for
+reading the OCR text yourself):
+{lines}
+
+For each candidate above, actively check it against the OCR text below
+before using it — confirm the label really is followed by that exact
+value, and that it isn't actually a different field's value, a neighboring
+column's figure, or an unrelated boilerplate number (e.g. a printer's own
+accreditation number rather than either party's TIN). Only put a candidate
+into your JSON once you've verified it this way; if it looks wrong, use
+what you read directly from the OCR text instead.
 """
 
 
@@ -89,10 +153,11 @@ def build_extraction_prompt(ocr_text: str, template_name: str | None = None) -> 
     schema_str = json.dumps(EXTRACTION_SCHEMA, indent=2)
     template = get_template(template_name)
     template_instructions = template["prompt"] if template else ""
+    hints_block = _format_pre_extraction_hints(pre_extract_hints(ocr_text))
     return f"""{SYSTEM_PROMPT}
 
 {template_instructions}
-
+{hints_block}
 JSON schema to fill:
 {schema_str}
 
@@ -129,41 +194,24 @@ Fix the issues and return only the corrected JSON object.
 
 
 def build_vision_verification_prompt(extracted_fields: dict, template_name: str | None = None) -> str:
-    """Used by ai.vision_verifier — sent to a vision-capable model ALONGSIDE
-    the invoice image itself, unlike build_extraction_prompt/
-    build_correction_prompt above which only ever see OCR text.
-
-    This is what lets the pipeline catch OCR misreads: the text-only
-    extraction/correction steps can only be internally self-consistent with
-    whatever the OCR already produced, they have no independent way to
-    notice the OCR itself misread a character. A model that can actually
-    see the document does.
-    """
-    fields_str = json.dumps(extracted_fields, indent=2)
-    template = get_template(template_name)
-    template_instructions = template.get("vision_prompt", "") if template else ""
-    return f"""You are double-checking a handful of values that were already
-extracted from this document image by a separate OCR + text-extraction
-process. Look ONLY at what is actually printed/written in the IMAGE —
-the values below are just a reference point to check against, not
-necessarily correct.
-
-Extracted values to verify:
+    """Compact vision cross-check prompt. Keep prompt tokens low because image
+    tokens also consume the Ollama context window."""
+    fields_str = json.dumps(extracted_fields, separators=(",", ":"), ensure_ascii=False)
+    return f"""Read the invoice IMAGE independently and verify these extracted fields:
 {fields_str}
 
-Respond with ONLY a single valid JSON object — no markdown, no commentary —
-in exactly this shape:
-{{
-  "mismatches": [
-    {{"field": "<field name from the list above>", "image_shows": "<what the image actually shows for this field>", "note": "<optional short reason, e.g. digit misread>"}}
-  ]
-}}
+Return ONLY JSON in this exact form:
+{{"mismatches":[{{"field":"field_name","image_shows":"actual value","note":"short reason"}}]}}
 
-Rules:
-1. Only include a field in "mismatches" if you are reasonably confident the
-   image shows something DIFFERENT from the extracted value.
-2. If a field looks correct, or the image is too unclear/cropped to tell,
-   leave it out entirely — do not guess.
-3. If every field matches, return {{"mismatches": []}}.
-4. Never invent a field that is not in the list above.
+Important financial-reading rules:
+- Do NOT assume the supplied extracted values are correct and do NOT make the numbers balance by arithmetic.
+- Read each amount from the value visibly attached to its own printed label/row/column.
+- Distinguish TOTAL AMOUNT DUE / Amount to Pay from intermediate Amount Due, Total Sales, Less VAT, or Amount Net of VAT.
+- A blank Discount, Zero-Rated, VAT-Exempt, or Withholding row is 0 only when that row is visibly blank; never borrow a nearby amount from another column.
+- A percentage such as 12% is a tax rate, not a monetary tax_amount.
+- For handwritten/poor OCR forms, zoom attention to the lower financial-summary box and read the printed/handwritten digits directly.
+
+Include only fields that are clearly different. Omit correct/unclear fields.
+Use only field names present in the input. If all match, return {{"mismatches":[]}}.
 """
+

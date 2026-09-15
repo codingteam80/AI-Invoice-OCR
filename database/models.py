@@ -54,6 +54,8 @@ class InvoiceORM(Base):
     zero_rated_sales = Column(Float, nullable=True)
     vat_exempt_sales = Column(Float, nullable=True)
     total_amount = Column(Float, default=0.0)
+    current_charges_total = Column(Float, nullable=True)
+    previous_balance = Column(Float, nullable=True)
     currency = Column(String, default="USD")
 
     payment_terms = Column(String, nullable=True)

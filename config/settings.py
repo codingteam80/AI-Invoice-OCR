@@ -64,6 +64,16 @@ class Settings:
     # tends to hurt PaddleOCR/TrOCR on real phone photos more than it helps.
     OCR_PREPROCESS_BINARIZE: bool = os.getenv("OCR_PREPROCESS_BINARIZE", "false").lower() == "true"
 
+    # On by default: detects a full 90/180/270-degree page rotation (a
+    # photo/scan taken sideways or upside-down) and corrects it BEFORE OCR
+    # runs — see ocr/ocr_engine.py::correct_page_orientation. This is
+    # different from (and runs before) deskew() in ocr/preprocessing.py,
+    # which only fixes a few degrees of camera tilt on an already-upright
+    # page. Costs up to 4 cheap detection-only PaddleOCR passes per page;
+    # turn off only for a document source that's guaranteed to always
+    # already be upright (e.g. a scanner with a fixed feed orientation).
+    OCR_AUTO_ORIENT_ENABLED: bool = os.getenv("OCR_AUTO_ORIENT_ENABLED", "true").lower() == "true"
+
     # LLM / Ollama
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
@@ -95,6 +105,24 @@ class Settings:
     VISION_VERIFICATION_ENABLED: bool = os.getenv("VISION_VERIFICATION_ENABLED", "false").lower() == "true"
     VISION_MODEL: str = os.getenv("VISION_MODEL", "qwen2.5vl:7b")
     VISION_TIMEOUT_SECONDS: int = int(os.getenv("VISION_TIMEOUT_SECONDS", "180"))
+    VISION_NUM_CTX: int = int(os.getenv("VISION_NUM_CTX", "8192"))
+
+    # 1.52: generic high-resolution vendor-header recovery. This runs only
+    # when vendor_address/vendor_tax_id are missing or suspicious after the
+    # normal whole-page pass. The crop is intentionally generic (top portion
+    # of the page), not tied to any vendor template.
+    VENDOR_HEADER_RECOVERY_ENABLED: bool = os.getenv("VENDOR_HEADER_RECOVERY_ENABLED", "true").lower() == "true"
+    VENDOR_HEADER_CROP_RATIO: float = float(os.getenv("VENDOR_HEADER_CROP_RATIO", "0.28"))
+    VENDOR_HEADER_UPSCALE: float = float(os.getenv("VENDOR_HEADER_UPSCALE", "3.0"))
+
+    # 1.54: dedicated high-resolution image crop for handwritten/garbled invoice dates.
+    HANDWRITTEN_DATE_VERIFY_ENABLED: bool = os.getenv("HANDWRITTEN_DATE_VERIFY_ENABLED", "true").lower() == "true"
+    # 1.55: dedicated crops for dense statement-summary and customer-address regions.
+    STATEMENT_SUMMARY_VERIFY_ENABLED: bool = os.getenv("STATEMENT_SUMMARY_VERIFY_ENABLED", "true").lower() == "true"
+    CUSTOMER_ADDRESS_VERIFY_ENABLED: bool = os.getenv("CUSTOMER_ADDRESS_VERIFY_ENABLED", "true").lower() == "true"
+    # 1.60: focused final-field crops for ambiguous vendor-header text and vehicle plates.
+    VENDOR_ADDRESS_VERIFY_ENABLED: bool = os.getenv("VENDOR_ADDRESS_VERIFY_ENABLED", "true").lower() == "true"
+    PLATE_NUMBER_VERIFY_ENABLED: bool = os.getenv("PLATE_NUMBER_VERIFY_ENABLED", "true").lower() == "true"
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/data/invoices.db")
@@ -111,6 +139,11 @@ class Settings:
     ENHANCED_DIR: Path = Path(os.getenv("ENHANCED_DIR", BASE_DIR / "data" / "enhanced"))
     EXPORT_DIR: Path = Path(os.getenv("EXPORT_DIR", BASE_DIR / "storage" / "exports"))
     JSON_DIR: Path = BASE_DIR / "storage" / "json"
+    DEBUG_DIR: Path = Path(os.getenv("DEBUG_DIR", BASE_DIR / "storage" / "debug"))
+    # Keep a complete per-invoice trace (OCR regions + LLM/vision responses +
+    # reconciliation/validation). This is intentionally on by default for
+    # development/audit builds; set false in production if storage is a concern.
+    DIAGNOSTIC_TRACE_ENABLED: bool = os.getenv("DIAGNOSTIC_TRACE_ENABLED", "true").lower() == "true"
 
     # App behaviour
     APP_ENV: str = os.getenv("APP_ENV", "development")
@@ -134,7 +167,7 @@ class Settings:
 
     @classmethod
     def ensure_dirs(cls):
-        for d in [cls.UPLOAD_DIR, cls.PROCESSED_DIR, cls.TEMP_DIR, cls.ENHANCED_DIR, cls.EXPORT_DIR, cls.JSON_DIR]:
+        for d in [cls.UPLOAD_DIR, cls.PROCESSED_DIR, cls.TEMP_DIR, cls.ENHANCED_DIR, cls.EXPORT_DIR, cls.JSON_DIR, cls.DEBUG_DIR]:
             Path(d).mkdir(parents=True, exist_ok=True)
 
 

@@ -94,8 +94,11 @@ class InvoiceRepository:
             zero_rated_sales=invoice.zero_rated_sales,
             vat_exempt_sales=invoice.vat_exempt_sales,
             total_amount=invoice.total_amount,
+            current_charges_total=invoice.current_charges_total,
+            previous_balance=invoice.previous_balance,
             currency=invoice.currency,
             payment_terms=invoice.payment_terms,
+            category=invoice.category,
             source_file=invoice.source_file,
             enhanced_image_path=invoice.enhanced_image_path,
             original_filename=invoice.original_filename,
@@ -171,6 +174,7 @@ class InvoiceRepository:
             "vendor_address", "vendor_tax_id",
             "subtotal", "tax_amount", "tax_rate", "discount",
             "zero_rated_sales", "vat_exempt_sales", "total_amount",
+            "current_charges_total", "previous_balance",
             "currency", "payment_terms", "status", "category",
         ]
         for field in editable_fields:

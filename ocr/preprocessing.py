@@ -43,6 +43,28 @@ def enhance_contrast(img: np.ndarray) -> np.ndarray:
     return clahe.apply(img)
 
 
+def rotate_90(img: np.ndarray, quarter_turns: int) -> np.ndarray:
+    """
+    Rotate `img` by a multiple of 90 degrees, clockwise, `quarter_turns`
+    times (0-3). Lossless and interpolation-free (unlike deskew()'s
+    warpAffine, which is for small sub-degree corrections) — this is for
+    correcting a document that's a full 90/180/270 off, e.g. a portrait
+    invoice photographed/scanned sideways in landscape orientation. See
+    ocr/ocr_engine.py::_detect_page_orientation, which tries all 4
+    quarter-turns and picks whichever one PaddleOCR's text detector finds
+    the most text in.
+    """
+    quarter_turns %= 4
+    if quarter_turns == 0:
+        return img
+    rotate_code = {
+        1: cv2.ROTATE_90_CLOCKWISE,
+        2: cv2.ROTATE_180,
+        3: cv2.ROTATE_90_COUNTERCLOCKWISE,
+    }[quarter_turns]
+    return cv2.rotate(img, rotate_code)
+
+
 def deskew(img: np.ndarray) -> np.ndarray:
     """Estimate skew angle from text contours and rotate to correct it."""
     gray = img if len(img.shape) == 2 else to_grayscale(img)
@@ -54,6 +76,13 @@ def deskew(img: np.ndarray) -> np.ndarray:
     angle = cv2.minAreaRect(coords)[-1]
     angle = -(90 + angle) if angle < -45 else -angle
     if abs(angle) < 0.3:
+        return img
+    # deskew is only for small camera/scanner tilt. Full 90/180/270 page
+    # orientation is handled separately in ocr/ocr_engine.py. minAreaRect
+    # can occasionally report a large angle for an already-upright page;
+    # applying that here rotates a valid invoice sideways.
+    if abs(angle) > 10.0:
+        logger.warning(f"Deskew estimated {angle:.2f} degrees; skipping because it exceeds the 10-degree safe limit")
         return img
     (h, w) = img.shape[:2]
     center = (w // 2, h // 2)

@@ -47,6 +47,9 @@ class Invoice(BaseModel):
     zero_rated_sales: Optional[float] = None
     vat_exempt_sales: Optional[float] = None
     total_amount: float = 0.0
+    # 1.55: billing statements can carry an old balance in addition to current charges.
+    current_charges_total: Optional[float] = None
+    previous_balance: Optional[float] = None
     currency: str = "USD"
 
     payment_terms: Optional[str] = None
@@ -74,7 +77,8 @@ class Invoice(BaseModel):
 
     def validate_totals(self, tolerance: float = 0.02) -> bool:
         """Sanity check: subtotal + tax - discount ≈ total."""
-        computed = self.subtotal + (self.tax_amount or 0) - (self.discount or 0)
-        if self.total_amount == 0:
+        computed = self.subtotal + (self.tax_amount or 0) + (self.zero_rated_sales or 0) + (self.vat_exempt_sales or 0) - (self.discount or 0)
+        target = self.current_charges_total if self.current_charges_total is not None else self.total_amount
+        if target == 0:
             return False
-        return abs(computed - self.total_amount) <= tolerance * self.total_amount
+        return abs(computed - target) <= tolerance * target

@@ -50,7 +50,12 @@ CATEGORY_KEYWORDS = {
         "phoenix petroleum", "courier", "delivery fee", "freight", "cargo",
         "lbc", "jrs express", "2go", "j&t express", "ninja van", "grab",
         "lalamove", "vehicle maintenance", "car repair", "auto repair",
-        "tire", "oil change", "toll fee",
+        "tire", "oil change", "toll fee", "parking", "parking fee",
+        "parking ticket", "parking charge", "car park",
+        # Travel/ticketing services are transportation expenses when the
+        # vendor/items clearly describe travel rather than lodging/tours.
+        "travel agency", "travel", "air ticket", "airfare", "flight",
+        "ticketing", "service fee (ticket)", "ticket fee", "booking fee",
     ],
     "Insurance": [
         # property, health, vehicle

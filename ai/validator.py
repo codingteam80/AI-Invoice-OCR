@@ -11,6 +11,70 @@ _NET_TERMS_RE = re.compile(r"net\s*[:\-]?\s*(\d{1,3})\b", re.IGNORECASE)
 # lines) and used the code or price as the description instead.
 _BARE_NUMBER_DESCRIPTION_RE = re.compile(r"^[$₱P]?[\d,]+\.?\d*$")
 
+# A common PH-receipt itemized-table footer marking the end of the list
+# (variants: "*** NOTHING FOLLOWS ***", "NOTHING FOLLOWS", "X** NOTHING
+# FOLLOWS **X" once OCR mangles the asterisks into letters) — never an
+# actual purchased item. Confirmed on a real Gliptic Art Enterprise
+# service invoice where this footer got extracted as a phantom line item
+# with a fabricated price.
+_NOTHING_FOLLOWS_RE = re.compile(r"nothing\s+follow", re.IGNORECASE)
+
+# Checkbox/option-label boilerplate that sits right next to the item table
+# on many PH BIR invoice forms ("☐ CASH SALES  ☐ CHARGE SALES") — never a
+# real purchased item, but easy to grab by mistake since it's printed in
+# the same visual area as the actual service/item description. Confirmed
+# on a real Emerald Mansion Condominium Association invoice where the item
+# description came back as "CHARGE SALES" instead of the handwritten
+# "utilities for Aug 2026" actually printed on the line below it.
+_CHECKBOX_BOILERPLATE_DESCRIPTIONS = {"cash sales", "charge sales", "cash", "charge"}
+
+# A monetary amount formatted as a document number, e.g. invoice_number
+# came back as "50,920.00" — always wrong; no real invoice number is
+# written with a decimal point and exactly 2 fractional digits. Confirmed
+# on a real PC Worth sales invoice where invoice_number was extracted as
+# the printed TOTAL AMOUNT DUE figure instead of the actual "Nº 08758"
+# printed at the top of the document.
+_MONEY_LIKE_RE = re.compile(r"^[$₱P]?[\d,]+\.\d{2}$")
+
+# Boilerplate compliance/registration numbers printed on nearly EVERY PH
+# BIR-formatted invoice, near the bottom, and never the document's own
+# identifier — but formatted just like one ("<Label> No. <alphanumeric
+# code>"), so easy to mistake for it. Confirmed on two separate real North
+# Star Travel invoices where invoice_number came back as
+# "LL No.LLAR-049-06/2024-001213" (or, once the LLM dropped the label
+# text, just the bare code "LLAR-049-06/2024-001213") — the printer's
+# Loose-Leaf accreditation number printed in tiny text at the very bottom
+# next to "Date Issued: June 20, 2024" — instead of the actual invoice
+# number ("52091"/"44072") printed in red at the top of the document.
+# "llar-" is included as a direct value-prefix check (not just a
+# label-context check) specifically because the LLM sometimes returns
+# only the bare code with the "LL No." label already stripped off.
+_BOILERPLATE_ID_LABELS = (
+    "ll no", "llar-", "loose-leaf", "looseleaf", "loose leaf",
+    "printer's accreditation", "printers accreditation",
+    "bir authority to print", "authority to print",
+    "permit no", "ocn:", "ocn ", "date of atp", "atp:",
+    "machine serial", "min:", "min #", "pos s/n", "s/n:",
+)
+
+# Form-section labels that occasionally get extracted as if they were the
+# actual value of the field they introduce (e.g. customer_name coming back
+# as "Received By:" — the printed line ABOVE the actual name, not a name
+# itself). Confirmed on a real (very poor-quality) Gliptic Art Enterprise
+# scan. Checked as an exact (case-insensitive, punctuation-stripped) match
+# rather than substring, since a genuine name could legitimately contain
+# one of these words elsewhere.
+_FORM_LABEL_BOILERPLATE = {
+    "received by", "sold to", "bill to", "billed to", "customer",
+    "registered name", "business address", "business name",
+    "customer signature over printed name", "attention",
+}
+
+
+def _looks_like_form_label(value: str) -> bool:
+    return value.strip().lower().rstrip(":").strip() in _FORM_LABEL_BOILERPLATE
+
+
 _VOWELS = set("AEIOU")
 # Real business names — however abbreviation-heavy ("PC WORTH", "LBC
 # EXPRESS", "NTT DoCoMo") — never run more than ~5 consonants in a row.
@@ -26,6 +90,18 @@ _VOWELS = set("AEIOU")
 _GIBBERISH_CONSONANT_RUN_THRESHOLD = 7
 
 
+def _amount_appears_in_ocr_text(ocr_text: str, value: float) -> bool:
+    """Whether `value` shows up verbatim anywhere in the OCR text, comma-
+    formatted or not (same check as ai/post_processing.py::
+    _amount_appears_in_text, duplicated locally rather than imported to
+    keep this module's only dependency on config/constants — see the
+    ai/post_processing.py note on why ZERO_RATED_LABELS/VAT_EXEMPT_LABELS
+    must not be silently re-shadowed; the same "one accidental copy can
+    drift from the other" risk doesn't apply to a two-line pure function
+    like this one)."""
+    return f"{value:.2f}" in ocr_text or f"{value:,.2f}" in ocr_text
+
+
 def _longest_consonant_run(text: str) -> int:
     letters = re.sub(r"[^A-Za-z]", "", text or "").upper()
     best = current = 0
@@ -38,7 +114,9 @@ def _longest_consonant_run(text: str) -> int:
     return best
 
 
-def validate_extraction(data: dict, template_name: str | None = None) -> list[str]:
+def validate_extraction(
+    data: dict, template_name: str | None = None, ocr_text: str | None = None,
+) -> list[str]:
     """Returns a list of human-readable issues; empty list means it's valid."""
     issues = []
 
@@ -50,6 +128,7 @@ def validate_extraction(data: dict, template_name: str | None = None) -> list[st
             issues.append(f"Missing required field: '{field}'")
 
     total = data.get("total_amount")
+    total_f = None
     if total is not None:
         try:
             total_f = float(total)
@@ -57,6 +136,32 @@ def validate_extraction(data: dict, template_name: str | None = None) -> list[st
                 issues.append("total_amount must be greater than 0")
         except (TypeError, ValueError):
             issues.append("total_amount is not numeric")
+
+    # Anti-hallucination check: the printed total is a real number sitting
+    # somewhere on the page, so a correctly-read total_amount should appear
+    # verbatim in the OCR text. This is DELIBERATELY independent of every
+    # arithmetic cross-check elsewhere in this function — those only catch
+    # the extraction disagreeing with ITSELF (subtotal+tax != total), which
+    # does nothing when the LLM invents a total_amount that's internally
+    # consistent with an ALSO-wrong subtotal/tax it derived from
+    # double-counted line items. Confirmed on a real SGV (SyCip Gorres
+    # Velayo & Co.) invoice: the printed Total Amount was PHP 11,760.00
+    # (also printed a second time in the remittance box), but two separate
+    # extraction runs each invented a different total (13,520.00 and
+    # 13,020.00) that agreed perfectly with THAT run's own subtotal+tax —
+    # neither figure ever appears anywhere in the OCR text at all, yet
+    # both runs scored "processed" with no arithmetic issues raised. Only
+    # checked when ocr_text is actually supplied (existing callers that
+    # don't pass it keep their previous behavior unchanged), and only for a
+    # total_amount that parsed as a valid positive number above.
+    if total_f is not None and total_f > 0 and ocr_text:
+        if not _amount_appears_in_ocr_text(ocr_text, total_f):
+            issues.append(
+                f"total_amount ({total_f:.2f}) does not appear verbatim anywhere in the OCR "
+                f"text — it may have been invented/derived rather than read directly off the "
+                f"document (even if it's internally consistent with subtotal/tax); check the "
+                f"source image manually."
+            )
 
     subtotal = data.get("subtotal")
     tax = data.get("tax_amount") or 0
@@ -68,15 +173,31 @@ def validate_extraction(data: dict, template_name: str | None = None) -> list[st
     # populated look like its numbers "don't add up".
     zero_rated = data.get("zero_rated_sales") or 0
     vat_exempt = data.get("vat_exempt_sales") or 0
-    if subtotal is not None and total is not None:
+    # 1.55: billing statements may carry a previous balance. Validate current-period
+    # accounting against current_charges_total, then separately check that the
+    # payable total includes the carried balance. Ordinary invoices still use
+    # total_amount exactly as before.
+    current_charges_total = data.get("current_charges_total")
+    previous_balance = data.get("previous_balance")
+    accounting_target = current_charges_total if current_charges_total is not None else total
+    if subtotal is not None and accounting_target is not None:
         try:
             computed = float(subtotal) + float(tax) + float(zero_rated) + float(vat_exempt) - float(discount)
-            if total and abs(computed - float(total)) > 0.05 * float(total):
+            target_f = float(accounting_target)
+            if target_f and abs(computed - target_f) > 0.05 * abs(target_f):
+                target_name = "current_charges_total" if current_charges_total is not None else "total_amount"
                 issues.append(
                     f"subtotal ({subtotal}) + tax ({tax}) + zero-rated ({zero_rated}) "
                     f"+ vat-exempt ({vat_exempt}) - discount ({discount}) = {computed:.2f}, "
-                    f"which does not match total_amount ({total})"
+                    f"which does not match {target_name} ({accounting_target})"
                 )
+            if current_charges_total is not None and previous_balance is not None and total is not None:
+                payable = round(float(current_charges_total) + float(previous_balance), 2)
+                if abs(payable - float(total)) > 0.05 * max(abs(float(total)), 1.0):
+                    issues.append(
+                        f"current_charges_total ({current_charges_total}) + previous_balance ({previous_balance}) "
+                        f"= {payable:.2f}, which does not match total_amount/Amount to Pay ({total})"
+                    )
         except (TypeError, ValueError):
             issues.append("subtotal/tax/discount are not numeric")
     elif subtotal is None and total is not None:
@@ -107,16 +228,78 @@ def validate_extraction(data: dict, template_name: str | None = None) -> list[st
     if currency and (not isinstance(currency, str) or len(currency) != 3):
         issues.append("currency must be a 3-letter ISO code")
 
+    invoice_number = data.get("invoice_number")
+    if invoice_number and isinstance(invoice_number, str):
+        inv_num_stripped = invoice_number.strip()
+        inv_num_lower = inv_num_stripped.lower()
+
+        if any(label in inv_num_lower for label in _BOILERPLATE_ID_LABELS):
+            issues.append(
+                f"invoice_number '{invoice_number}' contains boilerplate compliance/"
+                f"registration text (e.g. printer's accreditation, BIR authority-to-print, "
+                f"or 'LL No.' loose-leaf permit number) — these are printed near the bottom "
+                f"of nearly every PH BIR invoice and are never the document's own invoice "
+                f"number; check the source image manually for the real one (usually near "
+                f"the top, often in red/bold, labeled 'No.', 'Invoice #', 'SI No.', or "
+                f"'OR #')."
+            )
+        elif _MONEY_LIKE_RE.match(inv_num_stripped):
+            as_amount = None
+            try:
+                as_amount = float(inv_num_stripped.lstrip("$₱P").replace(",", ""))
+            except (TypeError, ValueError):
+                pass
+            matched_field = None
+            for money_field in ("total_amount", "subtotal", "tax_amount"):
+                candidate = data.get(money_field)
+                if as_amount is None or candidate is None:
+                    continue
+                try:
+                    candidate_f = float(candidate)
+                except (TypeError, ValueError):
+                    continue
+                if abs(as_amount - candidate_f) < 0.01:
+                    matched_field = money_field
+                    break
+            if matched_field:
+                issues.append(
+                    f"invoice_number '{invoice_number}' is formatted as a monetary "
+                    f"amount and matches {matched_field} ({data.get(matched_field)}) exactly "
+                    f"— likely picked up a total/amount figure instead of the actual "
+                    f"printed invoice/document number; check the source image manually."
+                )
+            else:
+                issues.append(
+                    f"invoice_number '{invoice_number}' is formatted like a monetary amount "
+                    f"(e.g. '50,920.00') rather than a document number — likely misread; "
+                    f"check the source image manually."
+                )
+
     vendor_name = data.get("vendor_name")
     if vendor_name and isinstance(vendor_name, str):
-        run = _longest_consonant_run(vendor_name)
-        if run >= _GIBBERISH_CONSONANT_RUN_THRESHOLD:
+        if _looks_like_form_label(vendor_name):
             issues.append(
-                f"vendor_name '{vendor_name}' looks like garbled OCR text, not a real "
-                f"business name (a {run}-letter unbroken consonant run) — likely a "
-                f"stylized logo/heading the OCR engine couldn't read; check the source "
-                f"image manually."
+                f"vendor_name '{vendor_name}' is a form-section label (e.g. 'Received By:', "
+                f"'Registered Name'), not an actual business name — the real name is usually "
+                f"printed on the line right after this label; check the source image manually."
             )
+        else:
+            run = _longest_consonant_run(vendor_name)
+            if run >= _GIBBERISH_CONSONANT_RUN_THRESHOLD:
+                issues.append(
+                    f"vendor_name '{vendor_name}' looks like garbled OCR text, not a real "
+                    f"business name (a {run}-letter unbroken consonant run) — likely a "
+                    f"stylized logo/heading the OCR engine couldn't read; check the source "
+                    f"image manually."
+                )
+
+    customer_name = data.get("customer_name")
+    if customer_name and isinstance(customer_name, str) and _looks_like_form_label(customer_name):
+        issues.append(
+            f"customer_name '{customer_name}' is a form-section label (e.g. 'Received By:', "
+            f"'Sold To:'), not an actual customer name — the real name is usually printed on "
+            f"the line right after this label; check the source image manually."
+        )
 
     line_items = data.get("line_items")
     if line_items is not None and not isinstance(line_items, list):
@@ -124,12 +307,66 @@ def validate_extraction(data: dict, template_name: str | None = None) -> list[st
     elif isinstance(line_items, list):
         for li in line_items:
             desc = str((li or {}).get("description") or "").strip()
-            if desc and _BARE_NUMBER_DESCRIPTION_RE.match(desc):
+            if not desc:
+                continue
+            if _BARE_NUMBER_DESCRIPTION_RE.match(desc):
                 issues.append(
                     f"line item description '{desc}' is just a number/code, not a product "
                     f"name — likely a barcode or price that got used as the description "
                     f"instead of the actual item name (see prompt_builder rule 9)"
                 )
+            elif _NOTHING_FOLLOWS_RE.search(desc):
+                issues.append(
+                    f"line item description '{desc}' looks like a misread \"*** NOTHING "
+                    f"FOLLOWS ***\" table-footer marker, not a real purchased item — this "
+                    f"end-of-list marker (common on PH BIR-formatted invoices) should never "
+                    f"be extracted as a line item; check the source image manually."
+                )
+            elif desc.lower() in _CHECKBOX_BOILERPLATE_DESCRIPTIONS:
+                issues.append(
+                    f"line item description '{desc}' looks like a 'CASH SALES'/'CHARGE "
+                    f"SALES' checkbox option label from the invoice form itself, not a real "
+                    f"item/service description — check the source image manually for the "
+                    f"actual handwritten/printed description nearby."
+                )
+            else:
+                run = _longest_consonant_run(desc)
+                if run >= _GIBBERISH_CONSONANT_RUN_THRESHOLD:
+                    issues.append(
+                        f"line item description '{desc}' looks like garbled OCR text, not a "
+                        f"real product name (a {run}-letter unbroken consonant run) — likely "
+                        f"illegible handwriting/printing the OCR engine couldn't read; check "
+                        f"the source image manually."
+                    )
+
+        # Cross-check: a line item whose amount equals the sum of the OTHER
+        # line items is almost certainly an aggregate/subtotal row that got
+        # included as if it were its own separate purchased item — not a
+        # genuine additional charge. Confirmed on a real SGV invoice: a
+        # table listing "Fee" (11,200.00) and "Expense" (560.00) rows was
+        # followed by a bold "Professional Services" row printing their
+        # SUM (11,760.00) as the category subtotal — that third row got
+        # extracted as a third line item, double-counting the invoice and
+        # corrupting the subtotal reconciliation below.
+        if len(line_items) >= 2:
+            try:
+                amounts = [float(li.get("amount", 0) or 0) for li in line_items]
+                for i, amt in enumerate(amounts):
+                    if amt <= 0:
+                        continue
+                    others_sum = sum(a for j, a in enumerate(amounts) if j != i)
+                    if others_sum > 0 and abs(amt - others_sum) < 0.01:
+                        desc = (line_items[i].get("description") or "").strip()
+                        issues.append(
+                            f"line item '{desc}' ({amt:.2f}) equals the sum of every other "
+                            f"line item combined — this is almost always a printed category "
+                            f"subtotal/aggregate row (e.g. a bold summary row under separate "
+                            f"'Fee'/'Expense' rows), not a genuine additional purchased item; "
+                            f"including it double-counts the invoice. Check the source image "
+                            f"manually."
+                        )
+            except (TypeError, ValueError, AttributeError):
+                pass
 
         if line_items and subtotal is not None:
             # Cross-check: for generic invoices, line-item amounts are expected
@@ -142,7 +379,8 @@ def validate_extraction(data: dict, template_name: str | None = None) -> list[st
                 pass
             else:
                 try:
-                    items_sum = sum(float(li.get("amount", 0) or 0) for li in line_items)
+                    current_items = [li for li in line_items if str((li or {}).get("description") or "").strip().lower() not in {"remaining balance", "previous balance", "carried balance", "balance forward"}]
+                    items_sum = sum(float(li.get("amount", 0) or 0) for li in current_items)
                     subtotal_f = float(subtotal)
                     if subtotal_f and abs(items_sum - subtotal_f) > 0.05 * subtotal_f:
                         issues.append(

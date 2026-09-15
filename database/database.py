@@ -42,6 +42,16 @@ def _ensure_new_columns():
             ("customer_contact", "TEXT"), ("customer_address", "TEXT"), ("customer_tax_id", "TEXT"),
             ("plate_number", "TEXT"),
             ("zero_rated_sales", "REAL"), ("vat_exempt_sales", "REAL"),
+            ("current_charges_total", "REAL"), ("previous_balance", "REAL"),
+            # raw_text has been on the Invoice/InvoiceORM models since
+            # before this migration list existed, so it was never added
+            # here — but a sqlite file created before raw_text was on the
+            # model (very early deployments) would still be missing the
+            # column, and every subsequent save would silently insert NULL
+            # into it instead of the actual OCR text. Listed here as a
+            # safety net so a legacy DB gets the column added on next app
+            # startup, same as the others above.
+            ("raw_text", "TEXT"),
         ],
     }
     with engine.connect() as conn:

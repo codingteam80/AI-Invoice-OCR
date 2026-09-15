@@ -23,6 +23,7 @@ def test_totals_mismatch():
 def test_valid_extraction():
     data = {
         "invoice_number": "INV-1", "vendor_name": "Acme", "currency": "USD",
+        "invoice_date": "2026-01-01",
         "subtotal": 100, "tax_amount": 10, "discount": 0, "total_amount": 110,
     }
     assert validate_extraction(data) == []

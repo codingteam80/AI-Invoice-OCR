@@ -26,16 +26,18 @@ handled here too:
 """
 import re
 
+from config.field_aliases import TAX_AMOUNT_LABELS as _TAX_LABELS, TAX_AMOUNT_EXCLUDE as _TAX_LABEL_EXCLUDE
+
 _RATE_ON_LINE_RE = re.compile(r"(\d{1,2}(?:\.\d+)?)\s?%")
 _AMOUNT_ON_LINE_RE = re.compile(r"[\d,]+\.\d{2}")
 
-# Lines that actually state the tax/VAT/GST charge itself. "amoun" (not
-# "amount") deliberately matches both the correctly-OCR'd word and the
-# common truncation that drops the trailing "t" before "(12%)".
-_TAX_LABELS = ("vat amoun", "tax amoun", "gst amoun", "vat:", "tax:", "gst:")
-# Lines that mention tax terminology but are NOT the tax figure — the
-# taxable/exempt sales base, not the tax charged on it.
-_TAX_LABEL_EXCLUDE = ("vatable", "vat-exempt", "vat exempt", "zero rated", "non-vat")
+# _TAX_LABELS / _TAX_LABEL_EXCLUDE now come from config/field_aliases.py
+# (the shared label-alias library — see that module's docstring) rather
+# than being defined here separately. "amoun" (not "amount") deliberately
+# matches both the correctly-OCR'd word and the common truncation that
+# drops the trailing "t" before "(12%)". _TAX_LABEL_EXCLUDE keeps lines
+# that mention tax terminology but are NOT the tax figure itself — the
+# taxable/exempt sales base, not the tax charged on it — from matching.
 
 
 def _tax_line_indices(text: str) -> list[tuple[int, str]]:

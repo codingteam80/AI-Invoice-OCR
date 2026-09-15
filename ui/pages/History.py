@@ -31,9 +31,9 @@ STATUS_OPTIONS = ["processed", "needs_review", "failed", "pending"]
 # ID column width is left untouched; the action-button columns are sized
 # tight to their icon-only buttons, and the freed-up space is redistributed
 # across the remaining data columns.
-ROW_WIDTHS = [0.4, 0.5, 1.3, 1.6, 1.1, 1.3, 1.1, 1.0, 0.5, 0.5, 0.5]
+ROW_WIDTHS = [0.4, 0.5, 1.2, 1.5, 1.0, 1.25, 1.15, 1.0, 1.0, 0.5, 0.5, 0.5]
 COLUMN_LABELS = [
-    "", "ID", "Invoice #", "Vendor", "Date", "Total Amount Due", "Status", "Confidence", "", "", "",
+    "", "ID", "Invoice #", "Vendor", "Date", "Total Amount Due", "Category", "Status", "Final Confidence", "", "", "",
 ]
 
 
@@ -416,14 +416,15 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str, scope_key: s
         row_cols[3].write(inv["vendor_name"])
         row_cols[4].write(inv.get("invoice_date") or "-")
         row_cols[5].write(f"{(inv.get('total_amount') or 0):,.2f} {inv.get('currency') or ''}".strip())
-        row_cols[6].write(inv.get("status") or "-")
-        row_cols[7].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
-        row_cols[8].button(
+        row_cols[6].write(inv.get("category") or "Others")
+        row_cols[7].write(inv.get("status") or "-")
+        row_cols[8].write(f"{(inv.get('confidence_score') or 0) * 100:.0f}%")
+        row_cols[9].button(
             "✏️", key=f"edit_btn_{key_prefix}_{inv['id']}", disabled=locked, help="Edit",
             on_click=_request_detail_switch, args=(inv["id"],), kwargs={"enter_edit": True},
         )
         lock_icon = "🔓" if locked else "🔒"
-        if row_cols[9].button(
+        if row_cols[10].button(
             lock_icon, key=f"lock_btn_{key_prefix}_{inv['id']}",
             help="Unlock" if locked else "Lock (confirm this row is correct)",
         ):
@@ -434,7 +435,7 @@ def render_invoice_row_table(invoices: list[dict], key_prefix: str, scope_key: s
             if scope_key != "current":
                 st.session_state["scroll_to_prev_month"] = True
             st.rerun()
-        if row_cols[10].button(
+        if row_cols[11].button(
             "🗑️", key=f"delete_btn_{key_prefix}_{inv['id']}",
             disabled=locked, help="Unlock first to delete" if locked else "Delete",
         ):
@@ -446,15 +447,14 @@ def _select_all_callback(scope_key: str, invoice_ids: list[int], value: bool) ->
         st.session_state[f"sel_{scope_key}_{inv_id}"] = value
 
 
-def render_category_tables(invoices: list[dict], scope_key: str) -> None:
-    """Splits `invoices` into one table per category (Foods, Office Supplies,
-    Furnitures, Others, ...). Status/category/vendor filtering happens one
-    level up (see render_filters below) before invoices ever reach here.
+def render_invoice_table(invoices: list[dict], scope_key: str) -> None:
+    """Render ONE filtered table for a month.
 
-    Also renders a "select all" checkbox and "delete selected" button
-    covering every unlocked invoice currently shown for this scope (i.e.
-    across all its category tables, not just one) — see suggestion #1
-    (bulk select/delete)."""
+    Category is a normal column and the existing category multiselect remains
+    the single way to narrow by category.  This avoids the previous redundant
+    UI where the page both filtered by category and split the result into one
+    separate table per category.
+    """
     if not invoices:
         st.info("No invoices for this period.")
         return
@@ -475,28 +475,11 @@ def render_category_tables(invoices: list[dict], scope_key: str) -> None:
     ):
         bulk_delete_dialog(selected)
 
-    by_category: dict[str, list[dict]] = {}
-    for inv in invoices:
-        cat = inv.get("category") or "Others"
-        by_category.setdefault(cat, []).append(inv)
-
-    # Known categories first (in their fixed order), then any surprises last.
-    ordered_categories = [c for c in CATEGORY_OPTIONS if c in by_category]
-    ordered_categories += [c for c in by_category if c not in CATEGORY_OPTIONS]
-
-    for i, cat in enumerate(ordered_categories):
-        cat_invoices = by_category[cat]
-        locked_count = sum(1 for inv in cat_invoices if inv.get("locked"))
-        st.markdown(f"#### 🏷️ {cat} — {len(cat_invoices)} invoice(s), {locked_count} locked")
-
-        render_invoice_row_table(cat_invoices, key_prefix=f"{scope_key}_{cat}", scope_key=scope_key)
-        total = sum(inv.get("total_amount") or 0 for inv in cat_invoices)
-        st.caption(f"Sum of Total Amount Due: {total:,.2f}")
-        # Only between categories, not after the last one — otherwise this
-        # divider lands directly next to the page-level divider that comes
-        # after render_category_tables() returns, drawing two lines in a row.
-        if i < len(ordered_categories) - 1:
-            st.divider()
+    locked_count = sum(1 for inv in invoices if inv.get("locked"))
+    st.caption(f"{len(invoices)} invoice(s) shown • {locked_count} locked")
+    render_invoice_row_table(invoices, key_prefix=scope_key, scope_key=scope_key)
+    total = sum(inv.get("total_amount") or 0 for inv in invoices)
+    st.caption(f"Sum of Total Amount Due: {total:,.2f}")
 
 
 def render_filters(scope_key: str, invoices_pool: list[dict]) -> list[dict]:
@@ -571,7 +554,7 @@ else:
 
     st.subheader(f"📅 {_month_label(current_key)} — Current Month")
     current_invoices = render_filters("current", current_pool)
-    render_category_tables(current_invoices, scope_key="current")
+    render_invoice_table(current_invoices, scope_key="current")
 
     past_keys = sorted(
         (k for k in by_month if k != current_key and k != "unknown"), reverse=True
@@ -600,7 +583,7 @@ else:
             st.subheader(f"📅 {_month_label(chosen_key)}")
             prev_pool = by_month[chosen_key]
             prev_invoices = render_filters(chosen_key, prev_pool)
-            render_category_tables(prev_invoices, scope_key=chosen_key)
+            render_invoice_table(prev_invoices, scope_key=chosen_key)
             invoices += prev_invoices
 
 if invoices:
@@ -661,7 +644,7 @@ if invoices:
                 c2.write(f"**VAT-Exempt Sales:** {detail['vat_exempt_sales']:,.2f} {detail.get('currency')}")
             c2.write(f"**Total Amount Due:** {(detail.get('total_amount') or 0):,.2f} {detail.get('currency')}")
             c2.write(f"**Status:** {detail.get('status')}")
-            c2.write(f"**Confidence:** {(detail.get('confidence_score') or 0) * 100:.0f}%")
+            c2.write(f"**Final Final Confidence:** {(detail.get('confidence_score') or 0) * 100:.0f}%")
             c2.write(f"**Locked:** {'🔒 Yes' if detail.get('locked') else '🔓 No'}")
 
             line_items = detail.get("line_items") or []

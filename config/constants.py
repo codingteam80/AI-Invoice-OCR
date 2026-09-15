@@ -115,7 +115,15 @@ EXTRACTION_SCHEMA = {
         "'Tax', 'GST', or 'Sales Tax' if VAT isn't explicitly used."
     ),
     "tax_rate": "number or null â€” the VAT/tax rate as a percentage (e.g. 12 for 12% VAT)",
-    "discount": "number or null",
+    "discount": (
+        "number or null — the total amount DEDUCTED from the sale (senior/"
+        "PWD discount, promo discount, 'Less: Discount', etc.). Look for "
+        "labels like 'Discount', 'Less: Discount', or 'Total Discounts'. "
+        "ALWAYS return this as a POSITIVE number (the magnitude of the "
+        "deduction) even if it is printed with a minus sign or in "
+        "parentheses, e.g. '(400.00)' or '40.15-' both mean discount=400.00 "
+        "/ discount=40.15 — never a negative number here."
+    ),
     "zero_rated_sales": (
         "number or null — Philippine BIR invoices often break sales into "
         "THREE separate columns: VATABLE SALES (-> subtotal above), "
@@ -138,6 +146,14 @@ EXTRACTION_SCHEMA = {
         "like TOTAL, AMOUNT DUE, AMOUNT PAYABLE, or GRAND TOTAL. Do NOT use "
         "CASH/TENDERED (money handed over by the customer) or CHANGE (money "
         "handed back) â€” those are payment mechanics, not the total."
+    ),
+    "current_charges_total": (
+        "number or null — on billing statements, the current-period Statement Summary total before any carried previous balance. "
+        "Do not confuse it with Amount to Pay when a Remaining Balance from a previous bill is also present."
+    ),
+    "previous_balance": (
+        "number or null — unpaid/carry-forward balance from earlier billing periods, usually labeled Remaining Balance. "
+        "This is not a current-period sale and must not be forced into VAT/discount buckets."
     ),
     "currency": "3-letter ISO code",
     "payment_terms": (

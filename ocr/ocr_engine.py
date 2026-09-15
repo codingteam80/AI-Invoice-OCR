@@ -33,7 +33,7 @@ from PIL import Image
 from config.logging import get_logger
 from config.settings import settings
 from ocr import paddleocr_engine, trocr_engine, handwriting_detector
-from ocr.preprocessing import preprocess
+from ocr.preprocessing import preprocess, rotate_90
 from utils.pdf_utils import pdf_to_images
 
 logger = get_logger("ocr.engine")
@@ -50,29 +50,17 @@ def _crop_bgr(img_bgr: np.ndarray, bbox: list) -> np.ndarray:
 
 
 def _reading_order_key(line: dict, bucket_height: float) -> tuple:
-    """Sort top-to-bottom, then left-to-right, tolerating small y jitter
-    between glyphs on the same visual line.
-
-    bucket_height is shared across the whole page (see _median_line_height)
-    rather than each line computing its own — using each line's own height
-    let two boxes that are genuinely side-by-side on the same physical row
-    (e.g. an item name and its price) round to different y-buckets whenever
-    their two heights happened to differ slightly, occasionally splitting
-    a single row into two."""
-    ys = [p[1] for p in line["bbox"]]
-    xs = [p[0] for p in line["bbox"]]
-    y_center = sum(ys) / len(ys)
-    x_center = sum(xs) / len(xs)
-    return (round(y_center / bucket_height), x_center)
+    """Thin re-export — see ocr/paddleocr_engine.py for the implementation
+    and full rationale. Kept here so existing call sites below don't need
+    updating, but paddleocr_engine.py is the single source of truth (its
+    own extract_text() needs the same sort and can't import it back from
+    here without a circular import)."""
+    return paddleocr_engine._reading_order_key(line, bucket_height)
 
 
 def _median_line_height(lines: list[dict]) -> float:
-    heights = [max(p[1] for p in l["bbox"]) - min(p[1] for p in l["bbox"]) for l in lines]
-    heights = [h for h in heights if h > 0]
-    if not heights:
-        return 20.0
-    heights.sort()
-    return max(heights[len(heights) // 2], 1.0)
+    """Thin re-export — see ocr/paddleocr_engine.py."""
+    return paddleocr_engine._median_line_height(lines)
 
 
 def _hybrid_extract(image_path: str) -> dict:
@@ -111,10 +99,38 @@ def _hybrid_extract(image_path: str) -> dict:
 
         if is_handwritten:
             crop_pil = img_rgb_pil.crop(_bbox_pil_box(bbox))
-            res = trocr_engine.recognize_crop(crop_pil)
+            try:
+                res = trocr_engine.recognize_crop(crop_pil)
+            except Exception as e:
+                # Confirmed real failure mode: a single degenerate/tiny
+                # crop (very common on messy handwritten layouts, e.g. a
+                # real Gliptic Art Enterprise invoice) can make TrOCR throw
+                # — a shape mismatch in the vision transformer's patch
+                # embedding on a too-small crop, a decoder error, etc.
+                # Before this fix, that ONE bad region's exception was
+                # UNCAUGHT here, so it propagated all the way out of
+                # _hybrid_extract() and was caught only by the outer
+                # try/except in extract_from_file() — which discarded every
+                # OTHER successfully-read region on the page (often the
+                # large majority of them) and fell back to whole-page plain
+                # PaddleOCR, which can't read handwriting at all. Skipping
+                # just this one region keeps everything else the page
+                # already read correctly.
+                logger.warning(f"TrOCR recognition failed for one region ({e}), skipping that region")
+                continue
             engine_tag = "trocr"
         else:
-            res = paddleocr_engine.recognize_crop(crop_bgr)
+            try:
+                res = paddleocr_engine.recognize_crop(crop_bgr)
+            except Exception as e:
+                # Same reasoning as the TrOCR branch above — confirmed real
+                # failure mode on a sideways-scanned page (e.g. a real SGV
+                # Gorres Velayo invoice photographed in landscape): a
+                # rotated/degenerate crop can make PaddleOCR's recognizer
+                # throw (e.g. a near-zero-height crop breaking its internal
+                # resize step) instead of just returning low confidence.
+                logger.warning(f"PaddleOCR recognition failed for one region ({e}), skipping that region")
+                continue
             engine_tag = "paddleocr"
 
         if not res["text"]:
@@ -176,6 +192,121 @@ def _bbox_pil_box(bbox: list) -> tuple:
     return (max(0, int(min(xs))), max(0, int(min(ys))), int(max(xs)), int(max(ys)))
 
 
+def _bbox_area(bbox: list) -> float:
+    xs = [p[0] for p in bbox]
+    ys = [p[1] for p in bbox]
+    return max(0.0, max(xs) - min(xs)) * max(0.0, max(ys) - min(ys))
+
+
+def _orientation_score(image_path: str) -> tuple[float, dict]:
+    """Score a candidate page orientation by *readable text quality*.
+
+    Detection count alone is unreliable for sideways pages: Paddle can detect
+    many vertical boxes but recognize almost no useful text. We therefore
+    recognize a capped sample of detected regions and reward meaningful words,
+    alphanumeric characters, confidence, and horizontal geometry.
+    """
+    try:
+        boxes = paddleocr_engine.detect_boxes(image_path)
+    except Exception as e:
+        logger.warning(f"Orientation probe failed for {image_path}: {e}")
+        return 0.0, {"boxes": 0, "readable": 0, "chars": 0, "avg_conf": 0.0}
+    if not boxes:
+        return 0.0, {"boxes": 0, "readable": 0, "chars": 0, "avg_conf": 0.0}
+
+    img = cv2.imread(image_path)
+    if img is None:
+        return 0.0, {"boxes": len(boxes), "readable": 0, "chars": 0, "avg_conf": 0.0}
+
+    # Largest regions are most informative; cap work so auto-orient stays cheap.
+    sample = sorted(boxes, key=_bbox_area, reverse=True)[:24]
+    readable = chars = words = horizontal = 0
+    confs = []
+    for bbox in sample:
+        try:
+            xs=[float(p[0]) for p in bbox]; ys=[float(p[1]) for p in bbox]
+            w=max(xs)-min(xs); h=max(ys)-min(ys)
+            if w >= h * 1.15:
+                horizontal += 1
+            crop = _crop_bgr(img, bbox)
+            if crop.size == 0:
+                continue
+            res = paddleocr_engine.recognize_crop(crop)
+            text = str(res.get("text") or "").strip()
+            conf = float(res.get("confidence") or 0.0)
+            meaningful = [c for c in text if c.isalnum()]
+            alpha_words = [w for w in text.split() if sum(ch.isalpha() for ch in w) >= 2]
+            if len(meaningful) >= 2:
+                readable += 1
+                chars += len(meaningful)
+                words += len(alpha_words)
+                confs.append(conf)
+        except Exception:
+            continue
+    avg_conf = sum(confs)/len(confs) if confs else 0.0
+    # Readability dominates; geometry is only supporting evidence.
+    score = readable*12.0 + words*3.0 + min(chars, 300)*0.22 + avg_conf*20.0 + horizontal*0.8
+    return score, {"boxes": len(boxes), "readable": readable, "chars": chars,
+                   "words": words, "avg_conf": round(avg_conf,4), "horizontal": horizontal}
+
+
+_ORIENTATION_MIN_SCORE_RATIO = 1.18
+_ORIENTATION_MIN_SCORE_MARGIN = 12.0
+
+
+def _detect_page_orientation(image_path: str) -> int:
+    """Try 0/90/180/270 and choose a rotation only when recognized-text
+    quality is clearly better than the uploaded orientation."""
+    img = cv2.imread(image_path)
+    if img is None:
+        return 0
+    scores = {}
+    for quarter_turns in range(4):
+        candidate_path=image_path; tmp_path=None
+        if quarter_turns:
+            rotated=rotate_90(img, quarter_turns)
+            tmp_path=str(Path(settings.TEMP_DIR) / f"orient_probe_{quarter_turns}_{Path(image_path).name}")
+            cv2.imwrite(tmp_path, rotated); candidate_path=tmp_path
+        scores[quarter_turns]=_orientation_score(candidate_path)
+        if tmp_path:
+            try: Path(tmp_path).unlink(missing_ok=True)
+            except OSError: pass
+
+    base=scores[0][0]
+    best_turn=max(scores, key=lambda k: scores[k][0])
+    best=scores[best_turn][0]
+    if best_turn and best >= base*_ORIENTATION_MIN_SCORE_RATIO and best >= base+_ORIENTATION_MIN_SCORE_MARGIN:
+        logger.info(f"Auto-rotated {image_path} by {best_turn*90} degrees clockwise; "
+                    f"readability score {base:.1f}->{best:.1f}; probes={scores}")
+        return best_turn
+    logger.info(f"Auto-orientation kept 0 degrees; probes={scores}")
+    return 0
+
+def correct_page_orientation(image_path: str, save_path: str | None = None, return_turns: bool = False):
+    """
+    Detects and corrects a full 90/180/270-degree page rotation (see
+    _detect_page_orientation above). Returns image_path unchanged if the
+    page is already upright or orientation correction is disabled via
+    settings.OCR_AUTO_ORIENT_ENABLED; otherwise writes the rotated image to
+    `save_path` (or a temp-dir path if not given) and returns that path.
+    """
+    if not settings.OCR_AUTO_ORIENT_ENABLED:
+        return (image_path, 0) if return_turns else image_path
+
+    quarter_turns = _detect_page_orientation(image_path)
+    if quarter_turns == 0:
+        return (image_path, 0) if return_turns else image_path
+
+    img = cv2.imread(image_path)
+    if img is None:
+        return (image_path, 0) if return_turns else image_path
+    rotated = rotate_90(img, quarter_turns)
+
+    out_path = save_path or str(Path(settings.TEMP_DIR) / f"oriented_{Path(image_path).name}")
+    cv2.imwrite(out_path, rotated)
+    return (out_path, quarter_turns) if return_turns else out_path
+
+
 def extract_from_image(
     image_path: str,
     use_preprocessing: bool | None = None,
@@ -197,13 +328,25 @@ def extract_from_image(
                  it off. Explicit True/False overrides the setting.
     """
     target_path = image_path
+    orientation_turns = 0
+    oriented_path = image_path
     if use_preprocessing is None:
         use_preprocessing = settings.OCR_PREPROCESS_ENABLED
 
+    # Whole-page 90/180/270 rotation correction runs FIRST, before deskew/
+    # denoise/contrast — deskew() only handles small camera-tilt angles and
+    # would otherwise be trying to fine-tune a page that's fundamentally
+    # sideways to begin with. See correct_page_orientation() above.
+    try:
+        target_path, orientation_turns = correct_page_orientation(target_path, return_turns=True)
+        oriented_path = target_path
+    except Exception as e:
+        logger.warning(f"Page orientation correction failed, using original image: {e}")
+
     if use_preprocessing:
         try:
-            processed_path = str(Path(settings.TEMP_DIR) / f"pre_{Path(image_path).name}")
-            preprocess(image_path, save_path=processed_path, binarize=settings.OCR_PREPROCESS_BINARIZE)
+            processed_path = str(Path(settings.TEMP_DIR) / f"pre_{Path(target_path).name}")
+            preprocess(target_path, save_path=processed_path, binarize=settings.OCR_PREPROCESS_BINARIZE)
             target_path = processed_path
         except Exception as e:
             logger.warning(f"Preprocessing failed, using original image: {e}")
@@ -211,19 +354,24 @@ def extract_from_image(
     if force_handwritten is True:
         result = trocr_engine.extract_text(target_path)
         result["engine"] = "trocr"
+        result.update({"original_image_path": image_path, "oriented_image_path": oriented_path, "processed_image_path": target_path, "orientation_quarter_turns": orientation_turns})
         return result
 
     if force_handwritten is False:
         result = paddleocr_engine.extract_text(target_path)
         result["engine"] = "paddleocr"
+        result.update({"original_image_path": image_path, "oriented_image_path": oriented_path, "processed_image_path": target_path, "orientation_quarter_turns": orientation_turns})
         return result
 
     try:
-        return _hybrid_extract(target_path)
+        result = _hybrid_extract(target_path)
+        result.update({"original_image_path": image_path, "oriented_image_path": oriented_path, "processed_image_path": target_path, "orientation_quarter_turns": orientation_turns})
+        return result
     except Exception as e:
         logger.warning(f"Hybrid per-region OCR failed ({e}), falling back to full-page PaddleOCR")
         result = paddleocr_engine.extract_text(target_path)
         result["engine"] = "paddleocr_fallback"
+        result.update({"original_image_path": image_path, "oriented_image_path": oriented_path, "processed_image_path": target_path, "orientation_quarter_turns": orientation_turns})
         return result
 
 
