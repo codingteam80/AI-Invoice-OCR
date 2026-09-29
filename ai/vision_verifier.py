@@ -11,6 +11,7 @@ import re
 import uuid
 from pathlib import Path
 import requests
+from ai.vision_budget import vision_post
 import cv2
 
 from config.logging import get_logger
@@ -31,12 +32,12 @@ VISION_CHECK_FIELDS = [
     "vendor_name", "vendor_address", "vendor_tax_id",
     "customer_name", "customer_address", "customer_tax_id",
     "plate_number",
-    "subtotal", "tax_amount", "discount",
+    "subtotal", "tax_amount", "discount", "withholding_tax",
     "zero_rated_sales", "vat_exempt_sales", "total_amount", "currency",
 ]
 WATSONS_VISION_CHECK_FIELDS = VISION_CHECK_FIELDS
 
-_MONEY_FIELDS = {"subtotal", "tax_amount", "total_amount", "discount", "zero_rated_sales", "vat_exempt_sales"}
+_MONEY_FIELDS = {"subtotal", "tax_amount", "total_amount", "discount", "withholding_tax", "zero_rated_sales", "vat_exempt_sales"}
 
 
 def _image_to_base64(file_path: str) -> str | None:
@@ -77,7 +78,7 @@ def _post_generate(prompt: str, image_b64: str, trace: dict) -> str | None:
     }
     attempt = {"endpoint": "/api/generate"}
     trace.setdefault("http_attempts", []).append(attempt)
-    resp = requests.post(url, json=payload, timeout=settings.VISION_TIMEOUT_SECONDS)
+    resp = vision_post(url, payload, attempt)
     attempt["http_status"] = resp.status_code
     if not resp.ok:
         attempt["response_body"] = resp.text[:4000]
@@ -103,7 +104,7 @@ def _post_chat(prompt: str, image_b64: str, trace: dict) -> str | None:
     }
     attempt = {"endpoint": "/api/chat"}
     trace.setdefault("http_attempts", []).append(attempt)
-    resp = requests.post(url, json=payload, timeout=settings.VISION_TIMEOUT_SECONDS)
+    resp = vision_post(url, payload, attempt)
     attempt["http_status"] = resp.status_code
     if not resp.ok:
         attempt["response_body"] = resp.text[:4000]
@@ -119,17 +120,32 @@ def _post_chat(prompt: str, image_b64: str, trace: dict) -> str | None:
 def _vendor_header_field_needs_recovery(extracted: dict) -> tuple[bool, bool]:
     """Return (need_address, need_tin) for the generic header second pass."""
     address = str(extracted.get("vendor_address") or "").strip()
+    customer_address = str(extracted.get("customer_address") or "").strip()
     tin = normalize_tin(extracted.get("vendor_tax_id"))
     # A bare account/client number is not an address. Require some alphabetic
     # content and a minimally plausible length. 1.59 also retries addresses
     # that clearly look truncated: a block beginning only at postal-city level
     # (e.g. "1209 City of Makati...") or only at barangay level is usually the
     # tail of a longer seller address whose building/street lines were missed.
+    structural = re.search(r"(?i)\b(?:street|st\.?|avenue|ave\.?|road|rd\.?|tower|bldg|building|floor|outlet|supermarket|barangay|district|corner|cor\.?|global\s+city)\b", address)
+    words = re.findall(r"[A-Za-z]{2,}", address)
     truncated_tail = bool(
         re.match(r"(?i)^\s*\d{4}\s+city\b", address)
-        or (re.match(r"(?i)^\s*barangay\b", address) and not re.search(r"(?i)\b(?:street|st\.?|avenue|ave\.?|road|tower|bldg|building|outlet|supermarket|corner|cor\.?)\b", address))
+        or (re.match(r"(?i)^\s*barangay\b", address) and not structural)
+        # Short city-only/tail fragments are a common symptom of tiny
+        # white-on-dark seller header OCR (e.g. only "... Cebu City 6000").
+        or (len(words) <= 7 and re.search(r"(?i)\bcity\b", address) and not structural)
     )
-    need_address = (not address or len(address) < 12 or not re.search(r"[A-Za-z]", address) or truncated_tail)
+    def words(value):
+        return {w for w in re.findall(r"[a-z]{3,}", value.lower())}
+    buyer_words = words(customer_address)
+    copied_buyer_address = bool(len(buyer_words) >= 3 and
+                                len(words(address) & buyer_words) >= max(3, len(buyer_words) // 2))
+    seller_words = words(str(extracted.get("vendor_name") or "")) - {
+        "inc", "corporation", "corp", "company", "business"}
+    seller_name_in_address = bool(not structural and len(seller_words & words(address)) >= 2)
+    need_address = (not address or len(address) < 12 or not re.search(r"[A-Za-z]", address)
+                    or truncated_tail or copied_buyer_address or seller_name_in_address)
     need_tin = not is_valid_tin(tin)
     return need_address, need_tin
 
@@ -144,7 +160,7 @@ def _extract_labeled_tin_from_header_text(text: str) -> str | None:
         return None
     compact = re.sub(r"[ \t]+", " ", text)
     pat = re.compile(
-        r"(?:VAT\s*(?:Reg(?:istered)?\.?\s*)?TIN|Tax\s*Identification\s*No\.?|\bTIN\b)"
+        r"(?:VAT\s*(?:R(?:e)?g(?:istered)?\.?)?\s*TIN|VATRg?|Tax\s*Identification\s*No\.?|\bTIN\b)"
         r"\s*[:#.-]*\s*(?:\n\s*)?([0-9][0-9 -]{7,20}[0-9])",
         re.IGNORECASE,
     )
@@ -162,20 +178,8 @@ _HEADER_ADDRESS_CUE_RE = re.compile(
 )
 
 def _address_from_header_ocr(text: str) -> str | None:
-    if not text:
-        return None
-    out=[]
-    seen=set()
-    for raw in text.splitlines():
-        line=re.sub(r"\s+", " ", raw).strip(" ,;|")
-        low=line.lower()
-        if len(line) < 8:
-            continue
-        if any(x in low for x in ("invoice", "bill to", "billed to", "customer", "account number", "client no", "vat reg", " tin", "tel.", "email", "www.")):
-            continue
-        if _HEADER_ADDRESS_CUE_RE.search(line) and line.lower() not in seen:
-            out.append(line); seen.add(line.lower())
-    return ", ".join(out) if out else None
+    from ai.address_ownership import seller_header_address
+    return seller_header_address(text)
 
 
 def _write_vendor_header_variants(image_path: str) -> list[str]:
@@ -222,7 +226,7 @@ def recover_vendor_header_fields(
         trace["error"]="could not create header crop"
         return {}, [], set()
 
-    ocr_attempts=[]; best_text=""; best_score=-1.0
+    ocr_attempts=[]; best_text=""; best_score=-1.0; best_lines=[]; best_path=None
     try:
         from ocr import paddleocr_engine
         for vp in variants:
@@ -232,7 +236,7 @@ def recover_vendor_header_fields(
                 score=len(re.sub(r"\s+", "", text)) + (150 if re.search(r"(?i)VAT\s*.*TIN|\bTIN\b", text) else 0)
                 ocr_attempts.append({"path":vp,"text":text,"avg_confidence":r.get("avg_confidence"),"lines":r.get("lines",[])})
                 if score>best_score:
-                    best_score=score; best_text=text
+                    best_score=score; best_text=text; best_lines=r.get("lines",[]) or []; best_path=vp
             except Exception as e:
                 ocr_attempts.append({"path":vp,"error":str(e)})
     except Exception as e:
@@ -263,12 +267,36 @@ def recover_vendor_header_fields(
             '{"vendor_address": string|null, "vendor_tax_id": string|null}. '
             'vendor_tax_id must come from an explicit seller label such as "VAT Reg. TIN" or "TIN"; '
             'never use Account Number, Client No., Service ID, invoice number, barcode/control number, or customer TIN. '
-            'vendor_address must include ALL consecutive seller location lines in the header (outlet/store, building/floor, street, barangay, city/district/country) but must NOT repeat the seller company name. '
+            'vendor_address must include all consecutive lines belonging to the FIRST seller postal location only (outlet/store, building/floor, street, city/country). Exclude any second office/location address and do not repeat the seller company name. '
             'Do not return Bill To/customer, bank/remittance, or printer/footer address. If uncertain return null.'
         )
         vtrace={}; raw=None
         try:
-            b64=_image_to_base64(variants[1] if len(variants)>1 else variants[0])
+            # 1.70 speed/ownership: if an explicit seller VAT/TIN token is
+            # visible in the high-resolution header OCR, focus the vision image
+            # on that same header side and stop shortly below the TIN. This
+            # removes the lower customer block and substantially reduces image
+            # tokens on dense statements such as telecom bills.
+            vision_path = best_path or (variants[1] if len(variants)>1 else variants[0])
+            focus_path = None
+            anchor_rect = None
+            for ln in best_lines:
+                if re.search(r"(?i)(?:VAT\s*R?e?g?|VATRg|\bTIN\b)", str(ln.get("text") or "")):
+                    anchor_rect = _bbox_rect(ln); break
+            if anchor_rect and vision_path:
+                src=cv2.imread(str(vision_path))
+                if src is not None:
+                    hh,ww=src.shape[:2]; ax1,ay1,ax2,ay2=anchor_rect; acx=(ax1+ax2)/2
+                    if acx > ww*0.58: fx1,fx2=int(ww*0.48),ww
+                    elif acx < ww*0.42: fx1,fx2=0,int(ww*0.55)
+                    else: fx1,fx2=0,ww
+                    fy2=min(hh,int(ay2+max(120,(ay2-ay1)*4)))
+                    focused=src[:max(1,fy2),fx1:fx2]
+                    if focused.size:
+                        fp=Path(settings.TEMP_DIR)/f"vendor_header_focus_{uuid.uuid4().hex}.png"
+                        cv2.imwrite(str(fp),focused); focus_path=str(fp); vision_path=focus_path
+                        trace["vision_focus_crop"]={"path":focus_path,"side":"right" if fx1 else ("left" if fx2<ww else "full"),"anchor":list(anchor_rect)}
+            b64=_image_to_base64(vision_path)
             if b64:
                 raw=_post_generate(prompt,b64,vtrace)
                 if raw is None:
@@ -290,6 +318,13 @@ def recover_vendor_header_fields(
                 if len(va)>=12 and re.search(r"[A-Za-z]",va):
                     recovered["vendor_address"]=va; locked.add("vendor_address")
                     notes.append("Vendor header recovery: vendor_address recovered from the high-resolution header vision pass.")
+
+
+        try:
+            if focus_path:
+                Path(focus_path).unlink(missing_ok=True)
+        except OSError:
+            pass
 
     if need_address and "vendor_address" not in recovered and ocr_address:
         recovered["vendor_address"]=ocr_address; locked.add("vendor_address")
@@ -585,9 +620,13 @@ def verify_vendor_address_crop(
     # This trigger is intentionally generic: ordinal streets / business-district
     # wording / very compact multi-part headers are where OCR substitutions are
     # common.  Straightforward seller addresses keep the 1.59 result.
-    if not re.search(r"(?i)\b(?:\d{1,3}(?:st|nd|rd|th)\s+street|global\s+city|business\s+park|tower|corner|outlet|barangay|district)\b", address):
-        trace["skipped_reason"] = "address does not look character-sensitive"
+    structural = re.search(r"(?i)\b(?:\d{1,3}(?:st|nd|rd|th)\s+street|global\s+city|business\s+park|tower|corner|outlet|barangay|district|avenue|road|building|floor)\b", address)
+    words = re.findall(r"[A-Za-z]{2,}", address)
+    suspicious_short_tail = bool(len(words) <= 7 and re.search(r"(?i)\bcity\b", address) and not structural)
+    if not structural and not suspicious_short_tail:
+        trace["skipped_reason"] = "address does not look character-sensitive or incomplete"
         return None, []
+    trace["suspicious_incomplete_address"] = suspicious_short_tail
 
     img = cv2.imread(image_path)
     if img is None:
@@ -598,7 +637,7 @@ def verify_vendor_address_crop(
     # Seller microtext is overwhelmingly in the top header.  Use OCR address
     # cues when available to decide which half contains the most address-like
     # tokens; otherwise preserve the whole width of the top 18%.
-    top_h = max(1, int(h * 0.28))
+    top_h = max(1, int(h * 0.22))
     cue_boxes = []
     cue_re = re.compile(r"(?i)\b(?:street|avenue|ave\.?|road|rd\.?|corner|global\s+city|business\s+park|city|philippines|tower|bldg|building|outlet|barangay|district|marcelino|arroceros)\b")
     for ln in ocr_lines or []:
@@ -608,12 +647,20 @@ def verify_vendor_address_crop(
                 cue_boxes.append(r)
     if cue_boxes:
         avg_x = sum((r[0] + r[2]) / 2 for r in cue_boxes) / len(cue_boxes)
-        if avg_x > w * 0.58:
-            x1, x2 = int(w * 0.55), w
-        elif avg_x < w * 0.42:
-            x1, x2 = 0, int(w * 0.55)
-        else:
-            x1, x2 = 0, w
+    else:
+        # Tiny seller addresses are often unreadable in normal OCR while the
+        # adjacent VAT/TIN token is still detected. Use that explicit seller
+        # identifier as a safe side-of-page anchor for the focused crop.
+        tin_boxes=[]
+        for ln in ocr_lines or []:
+            if re.search(r"(?i)(?:VAT\s*R?e?g?|VATRg|\bTIN\b)", str(ln.get("text") or "")):
+                r=_bbox_rect(ln)
+                if r and r[1] <= top_h*1.5: tin_boxes.append(r)
+        avg_x = (sum((r[0]+r[2])/2 for r in tin_boxes)/len(tin_boxes)) if tin_boxes else w/2
+    if avg_x > w * 0.58:
+        x1, x2 = int(w * 0.50), w
+    elif avg_x < w * 0.42:
+        x1, x2 = 0, int(w * 0.55)
     else:
         x1, x2 = 0, w
     crop = img[0:top_h, x1:x2]
@@ -630,7 +677,7 @@ def verify_vendor_address_crop(
     try:
         b64 = base64.b64encode(out.read_bytes()).decode("utf-8")
         prompt = (
-            'Read ONLY the COMPLETE seller/vendor postal address printed in this header crop, including outlet/store/location lines that are visibly part of the address. '
+            'Read ONLY the FIRST COMPLETE seller/vendor postal address printed in this header crop. Include consecutive lines belonging to that first location; exclude any separate second office/location address. '
             'Return strict JSON only: {"vendor_address":string|null}. '
             'Transcribe exact visible characters; do not infer from company knowledge. '
             'Pay special attention to ordinal street numbers (for example 22nd vs 32nd) and similar-looking words/letters. '
@@ -657,8 +704,10 @@ def verify_vendor_address_crop(
         b = _normalized_words(value)
         overlap = len(a & b) / max(1, min(len(a), len(b)))
         trace["token_overlap"] = overlap
-        if overlap < 0.55:
-            trace["rejected_reason"] = "focused read does not sufficiently overlap current vendor address"
+        min_overlap = 0.25 if suspicious_short_tail else 0.55
+        fuller = len(_normalized_words(value)) >= len(_normalized_words(address)) + 2
+        if overlap < min_overlap or (suspicious_short_tail and not fuller):
+            trace["rejected_reason"] = "focused read does not sufficiently overlap/improve current vendor address"
             return None, []
         if value.casefold() == address.casefold():
             return None, []
@@ -672,6 +721,70 @@ def verify_vendor_address_crop(
             out.unlink(missing_ok=True)
         except OSError:
             pass
+
+
+def verify_missing_seller_location(
+    image_path: str, current_address: str | None, header_text: str,
+    trace: dict | None = None,
+) -> tuple[str | None, list[str]]:
+    """Read a second, tiny seller-header location when OCR sees one missing.
+
+    The crop is restricted to the right-hand top banner; customer fields are
+    below it. No guessed address is accepted without both a header cue and a
+    matching city token in the focused vision result.
+    """
+    if trace is None:
+        trace = {}
+    address = str(current_address or "").strip()
+    cue = re.search(r"(?i)(?:tower.?cebu|cebu\s+city|business\s+park.?cebu)", header_text or "")
+    if (not settings.VISION_VERIFICATION_ENABLED or not cue or
+            re.search(r"(?i)\bcebu\b", address) or not address):
+        trace["skipped_reason"] = "no missing, OCR-supported second seller location"
+        return None, []
+    img = cv2.imread(image_path)
+    if img is None:
+        trace["skipped_reason"] = "image unreadable"
+        return None, []
+    h, w = img.shape[:2]
+    crop = img[:max(1, int(h * 0.15)), int(w * 0.58):]
+    if crop.size == 0:
+        return None, []
+    crop = cv2.resize(crop, None, fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
+    out = Path(settings.TEMP_DIR) / f"seller_second_location_{uuid.uuid4().hex}.png"
+    cv2.imwrite(str(out), crop)
+    try:
+        prompt = (
+            'Read ONLY the second seller location printed in this header banner, '
+            'the location mentioning Cebu. Return strict JSON: '
+            '{"address": string|null}. Copy the complete visible street/building '
+            'and city/address lines. Do not use the customer or a guessed address; '
+            'return null if the second location is unreadable.'
+        )
+        encoded = base64.b64encode(out.read_bytes()).decode("utf-8")
+        local = {"http_attempts": []}
+        raw = _post_generate(prompt, encoded, local)
+        if raw is None:
+            raw = _post_chat(prompt, encoded, local)
+        trace["http_attempts"] = local["http_attempts"]
+        trace["raw_response"] = raw
+        parsed = safe_json_loads(raw or "")
+        trace["parsed_json"] = parsed
+        value = re.sub(r"\s+", " ", str(parsed.get("address") or "")).strip(" ,;:") if isinstance(parsed, dict) else ""
+        if (not re.search(r"(?i)\bcebu\b", value) or len(value) < 30 or
+                not re.search(r"(?i)\b(?:tower|road|street|loop|park)\b", value)):
+            trace["rejected_reason"] = "second address was not independently legible"
+            return None, []
+        if re.search(r"(?i)\b(?:ortigas|pasig|customer|billed\s+to)\b", value):
+            trace["rejected_reason"] = "customer address contamination"
+            return None, []
+        combined = address.rstrip(" ,;") + "; " + value
+        trace["combined_address"] = combined
+        return combined, ["Second seller-header location added from a separate focused header read corroborated by OCR."]
+    except Exception as exc:
+        trace["error"] = str(exc)
+        return None, []
+    finally:
+        out.unlink(missing_ok=True)
 
 
 def verify_plate_number_crop(

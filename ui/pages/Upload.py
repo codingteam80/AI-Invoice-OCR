@@ -8,6 +8,7 @@ import streamlit as st
 from config.settings import settings
 from services.upload_service import handle_upload, UploadError
 from services.invoice_service import process_invoice_file
+from ai.vision_budget import vision_batch
 from ui.components.nav import render_nav
 
 st.set_page_config(page_title="Upload Invoices", page_icon="📤", layout="wide")
@@ -46,18 +47,23 @@ enhance_image = st.checkbox(
     ),
 )
 
-files = st.file_uploader(
-    "Drop invoice images or PDFs here",
-    type=["png", "jpg", "jpeg", "tiff", "bmp", "pdf"],
-    accept_multiple_files=True,
-    disabled=locked,
-)
+source = st.radio("Invoice source", ["Upload files", "Scan invoice"], horizontal=True, disabled=locked)
+files = []
+pending_input = None
+if source == "Upload files":
+    files = st.file_uploader(
+        "Drop invoice images or PDFs here",
+        type=["png", "jpg", "jpeg", "tiff", "bmp", "pdf"],
+        accept_multiple_files=True, disabled=locked,
+    )
+    if files and not locked and st.button("Process Invoices", type="primary"):
+        pending_input = [(f.name, f.getvalue()) for f in files]
+else:
+    from ui.components.scanner_input import render_scanner_input
+    pending_input = render_scanner_input(locked)
 
-if files and not locked and st.button("Process Invoices", type="primary"):
-    # Snapshot the uploaded bytes now, then lock navigation and rerun so the
-    # sidebar renders in its locked state *before* the (potentially slow)
-    # processing loop below actually starts.
-    st.session_state.pending_upload_files = [(f.name, f.read()) for f in files]
+if pending_input and not locked:
+    st.session_state.pending_upload_files = pending_input
     st.session_state.upload_results = None
     st.session_state.force_handwritten = force_handwritten
     st.session_state.enhance_image = enhance_image
@@ -70,32 +76,33 @@ if locked and st.session_state.pending_upload_files:
     results = []
     batch_start = time.perf_counter()
 
-    for i, (name, data) in enumerate(pending):
-        progress.progress(i / len(pending), text=f"Processing {name}...")
-        file_start = time.perf_counter()
-        try:
-            saved_path = handle_upload(data, name)
-        except UploadError as e:
-            results.append({
-                "success": False, "error": str(e), "file": name,
-                "elapsed_seconds": time.perf_counter() - file_start,
-            })
-            continue
+    with vision_batch():
+        for i, (name, data) in enumerate(pending):
+            progress.progress(i / len(pending), text=f"Processing {name}...")
+            file_start = time.perf_counter()
+            try:
+                saved_path = handle_upload(data, name)
+            except UploadError as e:
+                results.append({
+                    "success": False, "error": str(e), "file": name,
+                    "elapsed_seconds": time.perf_counter() - file_start,
+                })
+                continue
 
-        # A single uploaded file (especially a multi-page PDF) can contain
-        # more than one invoice — process_invoice_file() now returns a
-        # list, one entry per invoice found, instead of a single dict.
-        file_results = process_invoice_file(
-            saved_path,
-            force_handwritten=st.session_state.get("force_handwritten"),
-            original_filename=name,
-            enhance_image=st.session_state.get("enhance_image"),
-        )
-        elapsed = time.perf_counter() - file_start
-        for result in file_results:
-            result.setdefault("file", result.get("original_filename", name))
-            result["elapsed_seconds"] = elapsed
-            results.append(result)
+            # A single uploaded file (especially a multi-page PDF) can contain
+            # more than one invoice — process_invoice_file() now returns a
+            # list, one entry per invoice found, instead of a single dict.
+            file_results = process_invoice_file(
+                saved_path,
+                force_handwritten=st.session_state.get("force_handwritten"),
+                original_filename=name,
+                enhance_image=st.session_state.get("enhance_image"),
+            )
+            elapsed = time.perf_counter() - file_start
+            for result in file_results:
+                result.setdefault("file", result.get("original_filename", name))
+                result["elapsed_seconds"] = elapsed
+                results.append(result)
 
     progress.progress(1.0, text="Done")
 
@@ -116,21 +123,45 @@ if st.session_state.upload_results:
         if r.get("duplicate"):
             st.warning(f"⚠️ {r['file']}: {r.get('error')}{elapsed_suffix}")
         elif r.get("success"):
-            with st.expander(f"✅ {r['file']} — {r.get('invoice_number', 'N/A')}{elapsed_suffix}", expanded=True):
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Vendor", r.get("vendor_name", "-"))
-                c2.metric("Total", f"{r.get('total_amount', 0):,.2f} {r.get('currency', '')}")
-                c3.metric("Final Confidence", f"{(r.get('confidence_score') or 0)*100:.0f}%")
-                c4.metric("Status", r.get("status", "-"))
-                st.caption("Final Confidence estimates support for the final reconciled information using completeness, OCR quality, validation, and accounting/line-item consistency.")
-                st.caption(f"OCR engine used: `{r.get('ocr_engine_used', '-')}`")
-                if elapsed is not None:
-                    st.caption(f"Uploaded and processed in {elapsed:.2f} seconds.")
-                if r.get("status") == "needs_review":
-                    st.warning("This invoice needs manual review — low confidence or data mismatch.")
-                if r.get("vision_notes"):
-                    st.warning("🔍 **Vision cross-check flagged possible mismatches:**\n\n"
-                               + "\n".join(f"- {line}" for line in r["vision_notes"].split("\n")))
+            if "VISION_VERIFICATION_INCOMPLETE:" in (r.get("vision_notes") or ""):
+                st.warning(f"{r['file']}: Image verification was incomplete. OCR/text results were saved; review them against the original invoice.")
+            invoice_id = r.get("invoice_id")
+            vendor = r.get("vendor_name") or "-"
+            total_text = f"{r.get('total_amount', 0):,.2f} {r.get('currency', '')}".strip()
+            status_text = r.get("status") or "-"
+            ocr_text = r.get("ocr_engine_used") or "-"
+            time_text = f"{elapsed:.1f}s" if elapsed is not None else "-"
+            review_text = " · ⚠️ Review required" if status_text == "needs_review" else ""
+            # Keep the saved-invoice summary and its processing details in ONE
+            # clickable control. This avoids making users open a separate
+            # Processing details expander just to see the result before
+            # navigating to History.
+            row_label = (
+                f"✅ {r['file']} — {r.get('invoice_number', 'N/A')}\n\n"
+                f"Vendor: {vendor} · Total: {total_text} · Status: {status_text} · "
+                f"OCR: {ocr_text} · Processing time: {time_text}{review_text}"
+            )
+            help_lines = [
+                "Open this saved invoice in History.",
+                f"Vendor: {vendor}",
+                f"Total: {total_text}",
+                f"Status: {status_text}",
+                f"OCR engine used: {ocr_text}",
+                f"Processing time: {time_text}",
+            ]
+            if r.get("vision_notes"):
+                help_lines.append("Vision cross-check notes:")
+                help_lines.extend(r["vision_notes"].split("\n"))
+            if st.button(
+                row_label,
+                key=f"open_saved_invoice_{invoice_id}",
+                use_container_width=True,
+                help="\n".join(help_lines),
+            ):
+                st.session_state["detail_selected_id"] = invoice_id
+                st.session_state["editing_invoice_id"] = None
+                st.session_state["scroll_to_detail"] = True
+                st.switch_page("pages/History.py")
         else:
             st.error(f"❌ {r['file']}: {r.get('error')}{elapsed_suffix}")
 elif not files and not locked:

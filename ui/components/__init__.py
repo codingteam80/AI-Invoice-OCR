@@ -2,16 +2,6 @@
 import streamlit as st
 
 
-def confidence_badge(score: float | None):
-    score = score or 0.0
-    if score >= 0.85:
-        st.success(f"Final Confidence: {score*100:.0f}%")
-    elif score >= 0.6:
-        st.warning(f"Final Confidence: {score*100:.0f}%")
-    else:
-        st.error(f"Final Confidence: {score*100:.0f}%")
-
-
 def status_badge(status: str):
     icons = {
         "processed": "✅", "needs_review": "⚠️",

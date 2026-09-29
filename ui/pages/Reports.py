@@ -7,11 +7,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from config.constants import CATEGORY_OPTIONS
-from services.invoice_service import list_invoices
+from services.invoice_service import list_invoices, list_custom_categories
 from services.export_service import export_invoices
+from services.audit_service import log_action
 from exports.chart import generate_chart
 from ui.components.nav import render_nav, guard_locked_navigation
+from ui.components.ai_search import render_ai_search
+from services.search_service import apply_search_plan
 
 st.set_page_config(page_title="Reports & Export", page_icon="📁", layout="wide")
 
@@ -21,11 +25,45 @@ guard_locked_navigation()
 st.title("📁 Reports & Export")
 
 
+def _scroll_to_export_if_requested() -> None:
+    """Return the viewport to Generate Export after Streamlit reruns/download clicks."""
+    if st.session_state.pop("scroll_to_generate_export", False):
+        components.html(
+            """<script>
+                function backToExport() {
+                    var el = window.parent.document.getElementById("generate-export-anchor");
+                    if (el) { el.scrollIntoView({behavior: "auto", block: "center"}); }
+                }
+                backToExport();
+                setTimeout(backToExport, 80);
+                setTimeout(backToExport, 250);
+                setTimeout(backToExport, 600);
+            </script>""",
+            height=0,
+        )
+
+
+def _finish_confirmed_export_download(filename: str, invoice_count: int) -> None:
+    log_action("DOWNLOAD EXPORT", "export", None, f"Downloaded {filename} ({invoice_count} invoice(s))")
+    st.session_state.pop("report_export_confirmation", None)
+    st.session_state["scroll_to_generate_export"] = True
+
+
+def _record_export_download(filename: str, invoice_count: int) -> None:
+    log_action("DOWNLOAD EXPORT", "export", None, f"Downloaded {filename} ({invoice_count} invoice(s))")
+    st.session_state["scroll_to_generate_export"] = True
+
+
 def _month_key(inv: dict) -> str:
-    """'YYYY-MM' bucket for an invoice — prefers the invoice date, falls
-    back to when it was uploaded if the date couldn't be read off the doc."""
-    raw = inv.get("invoice_date") or (inv.get("created_at") or "")[:10]
+    """'YYYY-MM' bucket based on Date Uploaded."""
+    raw = inv.get("date_uploaded") or (inv.get("created_at") or "")[:10]
     return raw[:7] if raw else "unknown"
+
+
+def _invoice_month_key(inv: dict) -> str:
+    """'YYYY-MM' bucket based on Invoice Date."""
+    raw = str(inv.get("invoice_date") or "")
+    return raw[:7] if len(raw) >= 7 else "unknown"
 
 
 def _month_label(month_key: str) -> str:
@@ -66,13 +104,18 @@ def _render_preview_table(df: pd.DataFrame) -> None:
     st.markdown(
         f"""
         <style>
+        .tsukiden-report-table-wrap {{
+            width: 100%; max-height: 460px; overflow: auto;
+            border: 1px solid rgba(128,128,128,.25); border-radius: 6px;
+        }}
         .tsukiden-report-table {{ width: 100%; border-collapse: collapse; font-size: 1.15rem; }}
         .tsukiden-report-table th {{
+            position: sticky; top: 0; z-index: 1;
             background: #1F4E78; color: white; text-align: left; padding: 0.5rem 0.6rem;
         }}
         .tsukiden-report-table td {{ padding: 0.5rem 0.6rem; border-bottom: 1px solid #E4E9E3; }}
         </style>
-        <div style="overflow-x:auto;">
+        <div class="tsukiden-report-table-wrap">
         <table class="tsukiden-report-table">
             <thead><tr>{header_cells}</tr></thead>
             <tbody>{body_rows}</tbody>
@@ -89,13 +132,31 @@ month_keys = sorted(
     {_month_key(inv) for inv in all_invoices if _month_key(inv) != "unknown"}, reverse=True
 )
 month_label_map = {_month_label(k): k for k in month_keys}
+invoice_month_keys = sorted(
+    {_invoice_month_key(inv) for inv in all_invoices if _invoice_month_key(inv) != "unknown"}, reverse=True
+)
+invoice_month_label_map = {_month_label(k): k for k in invoice_month_keys}
 
 vendors = sorted({inv["vendor_name"] for inv in all_invoices if inv.get("vendor_name")})
+custom_categories = list_custom_categories()
+all_categories = CATEGORY_OPTIONS + custom_categories
 
-f1, f2, f3 = st.columns(3)
-month_choice = f1.multiselect("Filter by month", list(month_label_map.keys()))
-category_choice = f2.multiselect("Filter by category", CATEGORY_OPTIONS)
-vendor_choice = f3.multiselect("Filter by vendor", vendors)
+ai_plan = render_ai_search(
+    page="reports",
+    key="reports",
+    placeholder="e.g. Show unlocked Transportation invoices from June to October above 10,000 pesos",
+    context={
+        "categories": all_categories,
+        "statuses": sorted({str(inv.get("status")) for inv in all_invoices if inv.get("status")}),
+        "vendors": vendors[:100],
+    },
+)
+
+f1, f2, f3, f4 = st.columns(4)
+month_choice = f1.multiselect("Filter by month(Date Uploaded)", list(month_label_map.keys()))
+invoice_month_choice = f2.multiselect("Filter by Month(Invoice Date)", list(invoice_month_label_map.keys()))
+category_choice = f3.multiselect("Filter by category", all_categories)
+vendor_choice = f4.multiselect("Filter by vendor", vendors)
 
 fmt = st.radio("Export format", ["xlsx", "csv", "pdf"], horizontal=True)
 
@@ -103,10 +164,15 @@ invoices = all_invoices
 if month_choice:
     chosen_month_keys = {month_label_map[m] for m in month_choice}
     invoices = [inv for inv in invoices if _month_key(inv) in chosen_month_keys]
+if invoice_month_choice:
+    chosen_invoice_month_keys = {invoice_month_label_map[m] for m in invoice_month_choice}
+    invoices = [inv for inv in invoices if _invoice_month_key(inv) in chosen_invoice_month_keys]
 if category_choice:
     invoices = [inv for inv in invoices if (inv.get("category") or "Others") in category_choice]
 if vendor_choice:
     invoices = [inv for inv in invoices if inv.get("vendor_name") in vendor_choice]
+
+invoices = apply_search_plan(invoices, ai_plan, "reports")
 
 total_count = len(invoices)
 locked_count = sum(1 for inv in invoices if inv.get("locked"))
@@ -125,7 +191,8 @@ else:
                 "ID": inv["id"],
                 "Invoice #": inv.get("invoice_number"),
                 "Vendor": inv.get("vendor_name"),
-                "Date": inv.get("invoice_date") or "-",
+                "Invoice Date": inv.get("invoice_date") or "-",
+                "Date Uploaded": inv.get("date_uploaded") or (inv.get("created_at") or "")[:10] or "-",
                 "Category": inv.get("category") or "-",
                 "Total Amount Due": f"{(inv.get('total_amount') or 0):,.2f} {inv.get('currency') or ''}".strip(),
                 "Locked": "🔒 Yes" if inv.get("locked") else "🔓 No",
@@ -135,7 +202,7 @@ else:
     )
     _render_preview_table(table_df)
 
-    # Net Amount and VAT sums are intentionally not shown on this page —
+    # Vatable Sales and VAT sums are intentionally not shown on this page —
     # only Total Amount Due is. All three are still included in every
     # exported file (see exports/common.py: invoice_totals_row).
     total_sum = sum(inv.get("total_amount") or 0 for inv in invoices)
@@ -143,6 +210,15 @@ else:
 
 st.subheader("📊 Chart")
 chart_path_for_export = None
+current_ids = tuple(sorted(inv["id"] for inv in invoices))
+
+# A graph belongs to the exact invoice selection that created it. As soon as
+# the filters change that selection, remove the old graph automatically.
+stored_ids = st.session_state.get("report_chart_ids")
+if stored_ids is not None and stored_ids != current_ids:
+    st.session_state.pop("report_chart_path", None)
+    st.session_state.pop("report_chart_ids", None)
+
 if not invoices:
     st.caption("No invoices to chart — adjust the filters above.")
 else:
@@ -153,40 +229,47 @@ else:
     if c1.button("📊 Generate Graph", disabled=not chart_group_by):
         chart_path = generate_chart(invoices, group_by=chart_group_by)
         st.session_state["report_chart_path"] = chart_path
-        st.session_state["report_chart_ids"] = tuple(sorted(inv["id"] for inv in invoices))
+        st.session_state["report_chart_ids"] = current_ids
+        st.rerun()
 
-    # Only used in the export below if it still matches the currently
-    # filtered invoices — otherwise it's a stale graph from an earlier filter.
     stored_chart_path = st.session_state.get("report_chart_path")
     if stored_chart_path and Path(stored_chart_path).exists():
+        with c1:
+            if st.button("🗑️ Remove Graph", type="secondary"):
+                st.session_state.pop("report_chart_path", None)
+                st.session_state.pop("report_chart_ids", None)
+                st.rerun()
         with c2:
-            # use_container_width was added to st.image() later than for most
-            # other widgets — older Streamlit installs raise a TypeError, so
-            # fall back to the older use_column_width param in that case.
             try:
                 st.image(stored_chart_path, use_container_width=True)
             except TypeError:
                 st.image(stored_chart_path, use_column_width=True)
-            current_ids = tuple(sorted(inv["id"] for inv in invoices))
-            if st.session_state.get("report_chart_ids") == current_ids:
-                chart_path_for_export = stored_chart_path
-            else:
-                st.caption(
-                    "⚠️ Filters have changed since this graph was generated — click "
-                    "**Generate Graph** to refresh it. The export below won't include this outdated graph."
-                )
+        chart_path_for_export = stored_chart_path
+
+st.markdown('<div id="generate-export-anchor"></div>', unsafe_allow_html=True)
 
 if total_count > 0:
     if all_locked:
         st.success(f"✅ All {total_count} invoice(s) in this selection are locked and ready to export.")
     else:
+        unlocked_count = total_count - locked_count
         st.warning(
-            f"🔒 {locked_count}/{total_count} invoice(s) locked. Every invoice in this "
-            "selection must be reviewed and locked on the History page before you can export."
+            f"⚠️ {unlocked_count} of {total_count} selected invoice(s) are not locked. "
+            "You can still export them, but the export may contain information that has not been reviewed and confirmed."
         )
-        st.page_link("pages/History.py", label="Go lock the remaining invoices", icon="🗂️")
+        st.page_link("pages/History.py", label="Review or lock invoices in History", icon="🗂️")
 
-if st.button("Generate Export", type="primary", disabled=not all_locked):
+selection_signature = (current_ids, fmt)
+pending = st.session_state.get("report_export_confirmation")
+if pending and pending != selection_signature:
+    st.session_state.pop("report_export_confirmation", None)
+    st.session_state.pop("prepared_export_key", None)
+    st.session_state.pop("prepared_export_name", None)
+    st.session_state.pop("prepared_export_bytes", None)
+    pending = None
+
+
+def _generate_and_offer_export() -> None:
     paths = export_invoices(invoices, fmt=fmt, chart_path=chart_path_for_export)
     st.success(f"Exported {len(invoices)} invoice(s).")
     for p in paths:
@@ -196,13 +279,74 @@ if st.button("Generate Export", type="primary", disabled=not all_locked):
                 data=f.read(),
                 file_name=Path(p).name,
                 key=f"download_{Path(p).name}",
+                on_click=_record_export_download, args=(Path(p).name, len(invoices)),
             )
     if fmt == "csv" and chart_path_for_export:
-        st.caption("CSV is plain text, so the graph couldn't be embedded in it — it's included as a separate PNG above instead.")
-    if any(inv.get("line_items") for inv in invoices):
-        note = {
-            "xlsx": "Items purchased are included on a separate 'Line Items' sheet.",
-            "csv": "Items purchased are included in a second, separate CSV file.",
-            "pdf": "Items purchased are included as extra pages at the end of the PDF.",
-        }[fmt]
-        st.caption(f"📋 {note}")
+        st.caption("CSV is plain text, so the graph is not embedded in the CSV file.")
+
+
+if st.button("Generate Export", type="primary", disabled=not invoices):
+    st.session_state["scroll_to_generate_export"] = True
+    if all_locked:
+        st.session_state.pop("report_export_confirmation", None)
+        _generate_and_offer_export()
+    else:
+        st.session_state["report_export_confirmation"] = selection_signature
+        st.rerun()
+
+if st.session_state.get("report_export_confirmation") == selection_signature and not all_locked:
+    st.warning(
+        "Some selected invoices are not locked. Continue only if you want to export the current, unconfirmed values."
+    )
+    # Prepare the file while the confirmation is visible so the user's single
+    # confirmation click can also be the browser download click.
+    prepared_key = (selection_signature, chart_path_for_export)
+    if st.session_state.get("prepared_export_key") != prepared_key:
+        prepared_paths = export_invoices(invoices, fmt=fmt, chart_path=chart_path_for_export)
+        p = Path(prepared_paths[0])
+        st.session_state["prepared_export_key"] = prepared_key
+        st.session_state["prepared_export_name"] = p.name
+        st.session_state["prepared_export_bytes"] = p.read_bytes()
+    confirm_col, cancel_col, _ = st.columns([2.2, 1, 4])
+    with confirm_col:
+        st.download_button(
+            label="Continue Export & Download",
+            data=st.session_state["prepared_export_bytes"],
+            file_name=st.session_state["prepared_export_name"],
+            mime={"xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "csv": "text/csv", "pdf": "application/pdf"}[fmt],
+            type="primary",
+            on_click=_finish_confirmed_export_download,
+            args=(st.session_state["prepared_export_name"], len(invoices)),
+        )
+    if cancel_col.button("Cancel"):
+        st.session_state.pop("report_export_confirmation", None)
+        st.session_state.pop("prepared_export_key", None)
+        st.session_state.pop("prepared_export_name", None)
+        st.session_state.pop("prepared_export_bytes", None)
+        st.rerun()
+
+# Prepare an isolated print document so sidebar/buttons are not printed.
+from services.print_report_service import report_signature, build_report_pdf, pdf_print_html
+print_signature = report_signature(invoices, chart_path_for_export)
+if st.session_state.get("print_report_signature") != print_signature:
+    st.session_state.pop("print_report_html", None)
+    st.session_state.pop("print_report_pdf", None)
+    st.session_state["print_report_signature"] = print_signature
+st.subheader("Print report")
+print_confirmed = all_locked
+if invoices and not all_locked:
+    print_confirmed = st.checkbox("I understand that this printout includes unlocked, unconfirmed invoices.", key=f"print_confirm_{print_signature}")
+if st.button("Prepare print preview", disabled=not invoices or not print_confirmed):
+    try:
+        pdf = build_report_pdf(invoices, chart_path_for_export)
+        st.session_state["print_report_html"] = pdf_print_html(pdf)
+        st.session_state["print_report_pdf"] = pdf
+        log_action("PRINT PREVIEW", "report", None, f"Prepared print preview for {len(invoices)} invoice(s); IDs: " + ",".join(str(inv["id"]) for inv in invoices))
+    except Exception as exc:
+        st.error(f"Could not prepare the print report: {exc}")
+if st.session_state.get("print_report_html") and print_confirmed:
+    st.caption("This is the same A3 landscape layout as Generate Export → PDF. Click Print / choose printer below. Disable browser headers/footers; A4 printers may need Fit to page.")
+    components.html(st.session_state["print_report_html"], height=650, scrolling=True)
+
+# Run after the export controls exist in the DOM so the target anchor can be found.
+_scroll_to_export_if_requested()

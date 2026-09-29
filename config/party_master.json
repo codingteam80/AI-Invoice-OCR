@@ -1,0 +1,37 @@
+{
+  "_readme": "Master data for recurring parties. Vendors are matched by VAT Reg. TIN (digits only, first 9 digits); the master vendor_address is the exact printed header address and replaces whatever OCR/LLM produced. Customers are matched by TIN or name key; address_variants are the exact address spellings printed on each invoice layout and are used to repair OCR typos and vendor/customer address bleed. Add new lines here - no code change needed.",
+  "vendors": [
+    {
+      "tin": "000-360-916-00000",
+      "label": "Globe Business / Innove Communications",
+      "vendor_address": "32nd Street corner 7th Avenue, Bonifacio Global City, Taguig, Philippines 1634"
+    },
+    {
+      "tin": "002-176-366-00000",
+      "label": "TRI-Q Responsible Services",
+      "vendor_address": "# 79 P. Cruz Street, Brgy. Old Zaniga, 1550 City of Mandaluyong NCR, Second District Philippines"
+    },
+    {
+      "tin": "000-423-215-00000",
+      "label": "North Star International Travel",
+      "vendor_address": "19/F Trident Tower 312 Sen. Gil Puyat Avenue Bel-Air, 1209 City of Makati NCR, Fourth District Philippines"
+    },
+    {
+      "tin": "000-502-547-00000",
+      "label": "SGV (Sycip, Gorres, Velayo & Co.)",
+      "vendor_address": "6760 Ayala Avenue, San Lorenzo, NCR, Fourth District, 1226 City of Makati, Philippines"
+    }
+  ],
+  "customers": [
+    {
+      "tin": "007-848-122-000",
+      "name_keys": ["tsukiden"],
+      "address_variants": [
+        "U 2102 21/F One Corporate Ctr Condo, J Vargas cor Meralco Ave, Brgy San Antonio, Ortigas Center, Pasig City 1605",
+        "2101 One Corporate Center Julia Vargas Cor Meralco Ave Ortigas Center, Ortigas,Pasig, Metro Manila,1605",
+        "21st Floor One Corporate Center, Julia Vargas Corner Meralco Ave., Ortigas Center, Pasig City",
+        "Unit 2102, 21st Floor, One Corporate Centre, Dona Julia Vargas Avenue corner Meralco Ave. Ortigas"
+      ]
+    }
+  ]
+}

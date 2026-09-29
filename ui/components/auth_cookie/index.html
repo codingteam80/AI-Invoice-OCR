@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8"></head><body>
+<script>
+(() => {
+  let lastRequest = null;
+  function send(type, extra = {}) {
+    window.parent.postMessage({isStreamlitMessage: true, type, ...extra}, "*");
+  }
+  function readCookie(name) {
+    const prefix = encodeURIComponent(name) + "=";
+    const part = document.cookie.split(";").map(x => x.trim()).find(x => x.startsWith(prefix));
+    return part ? decodeURIComponent(part.slice(prefix.length)) : "";
+  }
+  function writeCookie(name, token) {
+    const secure = location.protocol === "https:" ? "; Secure" : "";
+    // Browser expiry is renewed on visits; the server applies no login timer.
+    document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(token) +
+      "; Path=/; SameSite=Strict; Max-Age=" + (token ? 34560000 : 0) + secure;
+  }
+  window.addEventListener("message", event => {
+    if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
+    const args = event.data.args;
+    if (!args || args.request_id === lastRequest) return;
+    lastRequest = args.request_id;
+    let result = {request_id: args.request_id, ok: false};
+    try {
+      if (args.action === "write") {
+        writeCookie(args.cookie_name, args.token);
+        result.ok = readCookie(args.cookie_name) === args.token;
+      } else if (args.action === "clear") {
+        writeCookie(args.cookie_name, "");
+        result.ok = !readCookie(args.cookie_name);
+      } else {
+        result.token = readCookie(args.cookie_name);
+        if (result.token) writeCookie(args.cookie_name, result.token);
+        result.ok = true;
+      }
+    } catch (_) { result.ok = false; }
+    send("streamlit:setComponentValue", {value: result, dataType: "json"});
+    send("streamlit:setFrameHeight", {height: 0});
+  });
+  send("streamlit:componentReady", {apiVersion: 1});
+  send("streamlit:setFrameHeight", {height: 0});
+})();
+</script></body></html>

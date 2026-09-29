@@ -19,9 +19,9 @@ def _financial_consistency(d):
     sub=_num(d.get("subtotal")); total=_num(d.get("total_amount"))
     if sub is None or total is None: return None, None
     tax=_num(d.get("tax_amount")) or 0.0; zero=_num(d.get("zero_rated_sales")) or 0.0
-    exempt=_num(d.get("vat_exempt_sales")) or 0.0; disc=_num(d.get("discount")) or 0.0
+    exempt=_num(d.get("vat_exempt_sales")) or 0.0; disc=_num(d.get("discount")) or 0.0; wht=_num(d.get("withholding_tax")) or 0.0
     current=_num(d.get("current_charges_total")); target=current if current is not None else total
-    current_ok=abs((sub+tax+zero+exempt-disc)-target)<=max(0.05,abs(target)*0.002)
+    current_ok=abs((sub+tax+zero+exempt-disc-wht)-target)<=max(0.05,abs(target)*0.002)
     prev=_num(d.get("previous_balance")); billing_ok=None
     if current is not None and prev is not None:
         billing_ok=abs((current+prev)-total)<=max(0.05,abs(total)*0.002)
@@ -41,9 +41,9 @@ def _line_item_consistency(d):
 def score_extraction(extracted: dict, ocr_avg_confidence: float, validation_issues: list[str], ocr_engine: str | None=None) -> Prediction:
     ocr=clamp(float(ocr_avg_confidence or 0.0)); issue_text=" ".join(str(x).lower() for x in validation_issues)
     financial_ok,billing_ok=_financial_consistency(extracted); items_ok=_line_item_consistency(extracted)
-    fields=list(dict.fromkeys(REQUIRED_FIELDS+["vendor_tax_id","customer_name","customer_address","subtotal","tax_amount","discount","zero_rated_sales","vat_exempt_sales","current_charges_total","previous_balance"]))
+    fields=list(dict.fromkeys(REQUIRED_FIELDS+["vendor_tax_id","customer_name","customer_address","subtotal","tax_amount","discount","withholding_tax","zero_rated_sales","vat_exempt_sales","current_charges_total","previous_balance"]))
     fcs=[]
-    financial_fields={"subtotal","tax_amount","discount","zero_rated_sales","vat_exempt_sales","current_charges_total","previous_balance","total_amount"}
+    financial_fields={"subtotal","tax_amount","discount","withholding_tax","zero_rated_sales","vat_exempt_sales","current_charges_total","previous_balance","total_amount"}
     for field in fields:
         value=extracted.get(field); present=value not in (None,"",[])
         if not present:

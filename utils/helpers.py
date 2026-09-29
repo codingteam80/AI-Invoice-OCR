@@ -65,11 +65,16 @@ def normalize_tin(value: str | None) -> str | None:
         return raw
 
     digits_only = re.sub(r"\D", "", raw)
-    if len(digits_only) not in (9, 12):
+    # Standard 9-digit PH TIN plus an optional branch code. In the invoices
+    # handled by this project the branch group can be 3, 4, or 5 digits, so
+    # a labelled/noisy OCR token may legitimately contain 12-14 digits total
+    # (e.g. ``VATRg000-360-916-00000`` -> ``000-360-916-00000``).
+    if len(digits_only) == 9:
+        candidate = "-".join(digits_only[i:i + 3] for i in range(0, 9, 3))
+    elif 12 <= len(digits_only) <= 14:
+        candidate = "-".join((digits_only[:3], digits_only[3:6], digits_only[6:9], digits_only[9:]))
+    else:
         return value  # doesn't look like a PH TIN at all — leave untouched
-
-    groups = [digits_only[i:i + 3] for i in range(0, len(digits_only), 3)]
-    candidate = "-".join(groups)
     return candidate if TIN_RE.match(candidate) else value
 
 

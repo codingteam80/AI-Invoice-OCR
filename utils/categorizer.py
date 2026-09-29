@@ -112,3 +112,46 @@ def auto_categorize(vendor_name: str | None, line_items: list | None = None) -> 
             return category
 
     return "Others"
+
+
+def categorize_with_custom_categories(
+    vendor_name: str | None,
+    line_items: list | None,
+    custom_category_profiles: dict[str, list[str]] | None = None,
+) -> str:
+    """Re-analyse an invoice against built-in and user-created categories.
+
+    Built-in keyword evidence remains authoritative. If it resolves only to
+    ``Others``, remaining custom categories are scored from (a) words in the
+    category name and (b) vendor/item text learned from other invoices already
+    assigned to that custom category. This lets deletion of a custom category
+    redistribute its invoices without inventing permanent vendor-specific rules.
+    """
+    built_in = auto_categorize(vendor_name, line_items)
+    if built_in != "Others":
+        return built_in
+
+    profiles = custom_category_profiles or {}
+    if not profiles:
+        return "Others"
+
+    import re
+    def tokens(text: str) -> set[str]:
+        return {t for t in re.findall(r"[a-z0-9]+", (text or "").lower()) if len(t) >= 3}
+
+    haystack_parts = [vendor_name or ""]
+    for li in (line_items or []):
+        desc = li.get("description") if isinstance(li, dict) else getattr(li, "description", None)
+        if desc:
+            haystack_parts.append(desc)
+    invoice_tokens = tokens(" ".join(haystack_parts))
+    if not invoice_tokens:
+        return "Others"
+
+    best_name, best_score = None, 0
+    for name, examples in profiles.items():
+        profile_tokens = tokens(name + " " + " ".join(examples or []))
+        score = len(invoice_tokens & profile_tokens)
+        if score > best_score:
+            best_name, best_score = name, score
+    return best_name if best_score > 0 else "Others"

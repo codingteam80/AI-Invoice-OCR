@@ -1,7 +1,7 @@
-﻿"""Shared constants used across the app."""
+"""Shared constants used across the app."""
 
 APP_NAME = "AI Invoice OCR"
-APP_VERSION = "1.0.0"
+APP_VERSION = "2.0.0"
 COMPANY_NAME = "Tsukiden Global Solutions, Inc."
 COPYRIGHT_YEAR = "2026"
 
@@ -124,6 +124,10 @@ EXTRACTION_SCHEMA = {
         "parentheses, e.g. '(400.00)' or '40.15-' both mean discount=400.00 "
         "/ discount=40.15 — never a negative number here."
     ),
+    "withholding_tax": (
+        "number or null — ONLY an amount explicitly labelled Withholding Tax, Less: Withholding Tax, WHT, or W/Tax. "
+        "Store it as a positive deduction magnitude. Do not merge it into discount; discount is reserved for actual discounts."
+    ),
     "zero_rated_sales": (
         "number or null — Philippine BIR invoices often break sales into "
         "THREE separate columns: VATABLE SALES (-> subtotal above), "
@@ -170,3 +174,11 @@ CATEGORY_OPTIONS = [
     "Food", "Utilities", "Furnitures", "Office Supplies", "Transportation",
     "Insurance", "Medical & Health Supplies", "Others",
 ]
+
+
+# --- Authentication (offline, local users table) ---
+# st.session_state key holding the logged-in user dict. Shared by
+# ui/components/auth.py (writes it) and services/audit_service.py (reads it).
+AUTH_SESSION_KEY = "auth_user"
+USER_ROLES = ["admin", "user"]
+MIN_PASSWORD_LENGTH = 8

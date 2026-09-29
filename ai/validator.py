@@ -166,6 +166,7 @@ def validate_extraction(
     subtotal = data.get("subtotal")
     tax = data.get("tax_amount") or 0
     discount = data.get("discount") or 0
+    withholding_tax = data.get("withholding_tax") or 0
     # zero_rated_sales/vat_exempt_sales are separate BIR sales categories
     # that still count toward total_amount alongside the VATable subtotal
     # (see config/constants.py EXTRACTION_SCHEMA) — omitting them here
@@ -182,13 +183,13 @@ def validate_extraction(
     accounting_target = current_charges_total if current_charges_total is not None else total
     if subtotal is not None and accounting_target is not None:
         try:
-            computed = float(subtotal) + float(tax) + float(zero_rated) + float(vat_exempt) - float(discount)
+            computed = float(subtotal) + float(tax) + float(zero_rated) + float(vat_exempt) - float(discount) - float(withholding_tax)
             target_f = float(accounting_target)
             if target_f and abs(computed - target_f) > 0.05 * abs(target_f):
                 target_name = "current_charges_total" if current_charges_total is not None else "total_amount"
                 issues.append(
                     f"subtotal ({subtotal}) + tax ({tax}) + zero-rated ({zero_rated}) "
-                    f"+ vat-exempt ({vat_exempt}) - discount ({discount}) = {computed:.2f}, "
+                    f"+ vat-exempt ({vat_exempt}) - discount ({discount}) - withholding tax ({withholding_tax}) = {computed:.2f}, "
                     f"which does not match {target_name} ({accounting_target})"
                 )
             if current_charges_total is not None and previous_balance is not None and total is not None:
@@ -199,7 +200,7 @@ def validate_extraction(
                         f"= {payable:.2f}, which does not match total_amount/Amount to Pay ({total})"
                     )
         except (TypeError, ValueError):
-            issues.append("subtotal/tax/discount are not numeric")
+            issues.append("subtotal/tax/deductions are not numeric")
     elif subtotal is None and total is not None:
         # subtotal isn't in REQUIRED_FIELDS (a handful of legitimate
         # documents genuinely have none, e.g. a plain payment/collection

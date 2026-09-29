@@ -1,16 +1,88 @@
 """Business logic layer: process an uploaded invoice end-to-end and persist it."""
 import json
+from ai.vision_budget import vision_scope
 from pathlib import Path
 from config.constants import SUPPORTED_IMAGE_EXTS
 from config.settings import settings
 from config.logging import get_logger
 from database.database import SessionLocal
 from database.repository import InvoiceRepository, DuplicateInvoiceError, InvoiceLockedError
+from database.models import InvoiceORM
 from parser.invoice_parser import parse_invoice_pages, InvoiceParsingError
 from utils.file_utils import move_to_processed, sanitize_filename_component
 from utils.categorizer import auto_categorize
+from services.audit_service import log_action
 
 logger = get_logger("services.invoice")
+
+
+_AUDIT_FIELD_LABELS = {
+    "invoice_number": "Invoice #",
+    "invoice_date": "Invoice Date",
+    "due_date": "Due Date",
+    "vendor_name": "Vendor",
+    "vendor_address": "Vendor Address",
+    "vendor_tax_id": "Vendor TIN",
+    "customer_name": "Customer",
+    "customer_contact": "Customer Contact",
+    "customer_address": "Customer Address",
+    "customer_tax_id": "Customer TIN",
+    "plate_number": "Plate #",
+    "subtotal": "Vatable Sales",
+    "tax_amount": "VAT",
+    "discount": "Discount (internal)",
+    "withholding_tax": "Withholding Tax",
+    "zero_rated_sales": "Zero-Rated Sales",
+    "vat_exempt_sales": "VAT-Exempt Sales",
+    "total_amount": "Total Amount Due",
+    "current_charges_total": "Current Charges Total",
+    "previous_balance": "Previous Balance",
+    "currency": "Currency",
+    "payment_terms": "Payment Terms",
+    "status": "Status",
+    "category": "Category",
+    "line_items": "Items Purchased / Line Items",
+}
+
+
+def _audit_display_value(value) -> str:
+    """Compact, readable representation used in the Activity Log Details column."""
+    if value is None or value == "":
+        return "—"
+    if isinstance(value, float):
+        return f"{value:,.2f}"
+    if isinstance(value, list):
+        if not value:
+            return "(none)"
+        parts = []
+        for item in value:
+            if isinstance(item, dict):
+                desc = item.get("description") or "(unnamed item)"
+                qty = item.get("quantity") or 0
+                unit = item.get("unit_price") or 0
+                amount = item.get("amount") or 0
+                parts.append(f"{desc} [Qty {qty:g}, Unit {unit:,.2f}, Total {amount:,.2f}]")
+            else:
+                parts.append(str(item))
+        return "; ".join(parts)
+    return str(value)
+
+
+def _describe_invoice_changes(before: dict, after: dict, submitted_fields) -> str:
+    """Return only fields whose persisted values actually changed, with old/new values."""
+    changes = []
+    for field in submitted_fields:
+        if field not in _AUDIT_FIELD_LABELS:
+            continue
+        old_value = before.get(field)
+        new_value = after.get(field)
+        if old_value == new_value:
+            continue
+        label = _AUDIT_FIELD_LABELS[field]
+        changes.append(
+            f"{label}: {_audit_display_value(old_value)} → {_audit_display_value(new_value)}"
+        )
+    return "\n".join(changes) if changes else "No field values changed."
 
 
 def _generate_enhanced_image(file_path: str, enabled: bool | None = None) -> str | None:
@@ -40,6 +112,7 @@ def _generate_enhanced_image(file_path: str, enabled: bool | None = None) -> str
         return None
 
 
+@vision_scope
 def process_invoice_file(
     file_path: str,
     force_handwritten: bool | None = None,
@@ -93,6 +166,8 @@ def process_invoice_file(
             invoice.original_filename = (
                 f"{base_filename} (page {i}/{len(invoices)})" if multi_invoice else base_filename
             )
+            invoice.vendor_name = (invoice.vendor_name or "Unknown Vendor").strip().upper()
+            invoice.customer_name = (invoice.customer_name or "").strip().upper() or None
             invoice.category = auto_categorize(invoice.vendor_name, invoice.line_items)
             invoice.enhanced_image_path = enhanced_image_path
 
@@ -121,6 +196,7 @@ def process_invoice_file(
 
             invoice.id = orm_invoice.id
             _archive_json(invoice)
+            log_action("UPLOAD", "invoice", invoice.id, f"Uploaded and processed {invoice.original_filename}; invoice #{invoice.invoice_number}")
             results.append({
                 "success": True,
                 "invoice_id": invoice.id,
@@ -217,7 +293,7 @@ def get_invoice(invoice_id: int) -> dict | None:
         session.close()
 
 
-def update_invoice(invoice_id: int, updates: dict) -> dict:
+def update_invoice(invoice_id: int, updates: dict, audit: bool = True) -> dict:
     """Apply manual corrections to an invoice's header fields.
 
     Used by the History page's "Edit" action — this is how a user fixes
@@ -229,10 +305,25 @@ def update_invoice(invoice_id: int, updates: dict) -> dict:
     session = SessionLocal()
     try:
         repo = InvoiceRepository(session)
+        before_row = repo.get_by_id(invoice_id)
+        if before_row is None:
+            raise ValueError(f"Invoice {invoice_id} not found")
+        before = _orm_to_dict(before_row)
+        submitted_fields = list(updates.keys())
+
         row = repo.update(invoice_id, updates)
         if row is None:
             raise ValueError(f"Invoice {invoice_id} not found")
-        return _orm_to_dict(row)
+        result = _orm_to_dict(row)
+        if audit:
+            changes = _describe_invoice_changes(before, result, submitted_fields)
+            log_action(
+                "EDIT",
+                "invoice",
+                invoice_id,
+                f"Invoice #{result.get('invoice_number')}:\n{changes}",
+            )
+        return result
     finally:
         session.close()
 
@@ -245,10 +336,24 @@ def lock_invoice(invoice_id: int) -> dict:
     session = SessionLocal()
     try:
         repo = InvoiceRepository(session)
+        before = repo.get_by_id(invoice_id)
+        if before is None:
+            raise ValueError(f"Invoice {invoice_id} not found")
+        old_locked = bool(before.locked)
+        old_status = before.status
+
         row = repo.set_locked(invoice_id, True)
         if row is None:
             raise ValueError(f"Invoice {invoice_id} not found")
-        return _orm_to_dict(row)
+        result = _orm_to_dict(row)
+        changes = [f"Locked: {'Yes' if old_locked else 'No'} → Yes"]
+        if old_status != result.get("status"):
+            changes.append(f"Status: {old_status or '—'} → {result.get('status') or '—'}")
+        log_action(
+            "LOCK", "invoice", invoice_id,
+            f"Invoice #{result.get('invoice_number')}:\n" + "\n".join(changes),
+        )
+        return result
     finally:
         session.close()
 
@@ -258,10 +363,24 @@ def unlock_invoice(invoice_id: int) -> dict:
     session = SessionLocal()
     try:
         repo = InvoiceRepository(session)
+        before = repo.get_by_id(invoice_id)
+        if before is None:
+            raise ValueError(f"Invoice {invoice_id} not found")
+        old_locked = bool(before.locked)
+        old_status = before.status
+
         row = repo.set_locked(invoice_id, False)
         if row is None:
             raise ValueError(f"Invoice {invoice_id} not found")
-        return _orm_to_dict(row)
+        result = _orm_to_dict(row)
+        changes = [f"Locked: {'Yes' if old_locked else 'No'} → No"]
+        if old_status != result.get("status"):
+            changes.append(f"Status: {old_status or '—'} → {result.get('status') or '—'}")
+        log_action(
+            "UNLOCK", "invoice", invoice_id,
+            f"Invoice #{result.get('invoice_number')}:\n" + "\n".join(changes),
+        )
+        return result
     finally:
         session.close()
 
@@ -274,9 +393,60 @@ def delete_invoice(invoice_id: int) -> None:
     session = SessionLocal()
     try:
         repo = InvoiceRepository(session)
+        before = repo.get_by_id(invoice_id)
+        invoice_number = before.invoice_number if before else None
         deleted = repo.delete(invoice_id)
         if not deleted:
             raise ValueError(f"Invoice {invoice_id} not found")
+        log_action("DELETE", "invoice", invoice_id, f"Deleted invoice #{invoice_number or '-'}")
+    finally:
+        session.close()
+
+
+def list_custom_categories() -> list[str]:
+    session = SessionLocal()
+    try:
+        return InvoiceRepository(session).list_custom_categories()
+    finally:
+        session.close()
+
+
+def add_custom_category(name: str) -> str:
+    session = SessionLocal()
+    try:
+        added = InvoiceRepository(session).add_custom_category(name)
+        log_action("ADD CATEGORY", "category", None, f"Added custom category: {added}")
+        return added
+    finally:
+        session.close()
+
+
+def delete_custom_category(name: str) -> int:
+    session = SessionLocal()
+    try:
+        repo = InvoiceRepository(session)
+        affected_before = {
+            row.id: {"invoice_number": row.invoice_number, "category": row.category}
+            for row in session.query(InvoiceORM).filter(InvoiceORM.category == name).all()
+        }
+        count = repo.delete_custom_category(name)
+        log_action("DELETE CATEGORY", "category", None, f"Deleted custom category: {name}; re-analysed {count} invoice(s)")
+
+        # Record the actual category field transition for every invoice that
+        # was automatically reclassified after the custom category was deleted.
+        for invoice_id, previous in affected_before.items():
+            row = repo.get_by_id(invoice_id)
+            if row is None:
+                continue
+            new_category = row.category or "Others"
+            if previous["category"] != new_category:
+                log_action(
+                    "REASSIGN CATEGORY",
+                    "invoice",
+                    invoice_id,
+                    f"Invoice #{previous['invoice_number']}: Category: {previous['category'] or '—'} → {new_category}",
+                )
+        return count
     finally:
         session.close()
 
@@ -319,15 +489,19 @@ def _orm_to_dict(row) -> dict:
         "enhanced_image_path": row.enhanced_image_path,
         "category": row.category,
         "created_at": row.created_at.isoformat() if row.created_at else None,
+        "date_uploaded": row.date_uploaded.isoformat() if row.date_uploaded else (row.created_at.date().isoformat() if row.created_at else None),
         "subtotal": row.subtotal,
         "tax_amount": row.tax_amount,
+        "tax_rate": row.tax_rate,
         "discount": row.discount,
+        "withholding_tax": row.withholding_tax,
         "zero_rated_sales": row.zero_rated_sales,
         "vat_exempt_sales": row.vat_exempt_sales,
         "total_amount": row.total_amount,
         "current_charges_total": row.current_charges_total,
         "previous_balance": row.previous_balance,
         "currency": row.currency,
+        "payment_terms": row.payment_terms,
         "status": row.status,
         "locked": row.locked,
         "confidence_score": row.confidence_score,

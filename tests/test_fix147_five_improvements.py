@@ -40,5 +40,6 @@ def test_layout_financial_page4_withholding_and_no_zero_contamination():
     fixed,notes=reconcile_financial_layout(data,lines)
     assert fixed["zero_rated_sales"] == 0.0
     assert fixed["vat_exempt_sales"] == 0.0
-    assert fixed["discount"] == 1719.28
+    assert fixed["discount"] == 0.0
+    assert fixed["withholding_tax"] == 1719.28
     assert fixed["total_amount"] == 94560.39

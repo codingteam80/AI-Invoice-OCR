@@ -8,3 +8,15 @@ backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F6EE"
 textColor = "#1A231F"
 font = "sans serif"
+
+[server]
+# Single-PC mode: keep the app and its login on this computer.
+address = "127.0.0.1"
+port = 8501
+headless = true
+
+[browser]
+# Address shown in the console and opened automatically. 0.0.0.0 is only a
+# 'listen everywhere' setting and cannot be opened in a browser.
+serverAddress = "localhost"
+gatherUsageStats = false

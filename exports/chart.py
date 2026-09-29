@@ -14,7 +14,7 @@ _TEXT_COLOR = "#1A231F"
 _GROUP_KEY_FUNCS = {
     "Vendor": lambda inv: inv.get("vendor_name") or "Unknown",
     "Category": lambda inv: inv.get("category") or "Others",
-    "Month": lambda inv: (inv.get("invoice_date") or (inv.get("created_at") or "")[:10])[:7] or "Unknown",
+    "Month": lambda inv: (inv.get("date_uploaded") or (inv.get("created_at") or "")[:10])[:7] or "Unknown",
 }
 
 

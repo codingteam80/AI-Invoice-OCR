@@ -3,12 +3,16 @@ Top-level orchestrator: turns a raw invoice file into a validated Invoice
 object by chaining OCR -> LLM extraction -> validation -> post-processing.
 """
 from pathlib import Path
+import time
 
+from ai.vision_budget import vision_scope, verification_summary, verification_warning
 from config.logging import get_logger
+from config.settings import settings
 from ocr.ocr_engine import extract_from_file, extract_pages_from_file
 from ai.extractor import extract_invoice_data, ExtractionError
 from ai.validator import validate_extraction
 from ai.confidence import score_extraction
+from ai.party_master import apply_final_master_pass
 from ai.post_processing import (
     post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax, reconcile_subtotal,
     clean_line_items, reconcile_vendor_name, reconcile_missing_vendor_name, reconcile_invoice_date, reconcile_swapped_subtotal_total,
@@ -16,7 +20,7 @@ from ai.post_processing import (
     reconcile_invoice_number, reconcile_zero_rated_exempt, reconcile_plate_number, reconcile_discount,
     reconcile_customer_name, reconcile_financial_layout, apply_vision_corrections_with_financial_gate,
     apply_identity_corrections_with_gate, reconcile_single_unreliable_financial_field, collect_financial_evidence,
-    reconcile_statement_summary, reconcile_billing_statement_balances, reconcile_billing_current_period_financials, add_remaining_balance_line_item, extract_statement_summary_evidence, reconcile_line_item_geometry, reconcile_customer_address_layout,
+    reconcile_statement_summary, reconcile_billing_statement_balances, reconcile_billing_current_period_financials, add_remaining_balance_line_item, extract_statement_summary_evidence, reconcile_line_item_geometry, reconcile_customer_address_layout, reconcile_party_ownership_layout,
     reconcile_vendor_address_block, reconcile_customer_tax_id_context, reconcile_blank_customer_address,
     reconcile_retail_line_items, reconcile_retail_tax_summary, reconcile_parking_tax_summary,
     reconcile_loyalty_balance_context, reconcile_issuer_printer_ownership,
@@ -29,6 +33,9 @@ from config.constants import INVOICE_STATUS_PROCESSED, INVOICE_STATUS_REVIEW, IN
 from utils.invoice_template_detector import detect_invoice_template
 from ai.invoice_templates import get_template
 from ai.diagnostics import save_diagnostic_trace
+from ai.address_ownership import enforce_seller_address_boundary
+from ai.evidence_corrections import (reconcile_visible_fields, reconcile_statement_plan_item,
+                                     reconcile_split_retail_price, clear_blank_party_fields, keep_first_vendor_address)
 
 logger = get_logger("parser.invoice")
 
@@ -37,6 +44,7 @@ class InvoiceParsingError(Exception):
     pass
 
 
+@vision_scope
 def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invoice:
     """
     Full pipeline for a single invoice file, treating the ENTIRE file
@@ -56,7 +64,9 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     logger.info(f"Starting invoice parse: {file_path}")
 
     # OCR (auto-routes between PaddleOCR and TrOCR based on handwriting detection)
+    ocr_start = time.perf_counter()
     ocr_result = extract_from_file(file_path, force_handwritten=force_handwritten)
+    ocr_result["file_ocr_elapsed_seconds"] = round(time.perf_counter() - ocr_start, 3)
 
     if not ocr_result["text"].strip():
         raise InvoiceParsingError("OCR produced no text — file may be blank or unreadable.")
@@ -73,6 +83,7 @@ def parse_invoice(file_path: str, force_handwritten: bool | None = None) -> Invo
     )
 
 
+@vision_scope
 def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -> list[Invoice]:
     """
     Full pipeline for a file that may contain MULTIPLE, separate invoices
@@ -103,7 +114,11 @@ def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -
     whatever succeeded.
     """
     logger.info(f"Starting multi-page invoice parse: {file_path}")
+    ocr_start = time.perf_counter()
     pages = extract_pages_from_file(file_path, force_handwritten=force_handwritten)
+    file_ocr_elapsed = round(time.perf_counter() - ocr_start, 3)
+    for page in pages:
+        page["file_ocr_elapsed_seconds"] = file_ocr_elapsed
 
     invoices: list[Invoice] = []
     skip_reasons: list[str] = []
@@ -144,6 +159,7 @@ def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -
     return invoices
 
 
+@vision_scope
 def _build_invoice_from_ocr(
     file_path: str,
     image_path: str,
@@ -170,13 +186,17 @@ def _build_invoice_from_ocr(
     """
     # 2. Detect a stable vendor-specific invoice layout, then run the LLM
     # extraction with that template injected into the prompt.
+    pipeline_start = time.perf_counter()
+    vision_before = verification_summary({})
     template_name = detect_invoice_template(ocr_text)
     text_llm_trace: dict = {}
     vision_trace: dict = {}
     stages: dict = {"ocr_text": ocr_text}
+    text_start = time.perf_counter()
     try:
         extracted = extract_invoice_data(ocr_text, template_name=template_name, trace=text_llm_trace)
         stages["text_llm_extracted"] = dict(extracted)
+        stages["timing_seconds"] = {"text_extraction_and_corrections": round(time.perf_counter() - text_start, 3), "ocr_entire_source_file": (ocr_result or {}).get("file_ocr_elapsed_seconds")}
     except ExtractionError as e:
         logger.error(f"LLM extraction failed for {file_path}: {e}")
         save_diagnostic_trace(
@@ -288,8 +308,16 @@ def _build_invoice_from_ocr(
     # Emerald Mansion Condominium Association invoices).
     cleaned, customer_notes = reconcile_customer_name(cleaned, ocr_text)
 
-    # 1.54: rebuild customer address from the explicit ADDRESS block using OCR geometry.
-    # This prevents neighboring PO Ref No./Terms fields from entering the address.
+    # 1.70: establish issuer-vs-billed-party ownership from OCR geometry before
+    # rebuilding addresses/TINs. This catches a generic two-column/header swap
+    # where the LLM assigns the lower customer block to Vendor and the true
+    # header issuer to Customer.
+    cleaned, party_ownership_notes = reconcile_party_ownership_layout(cleaned, ocr_lines or [])
+    if party_ownership_notes:
+        cleaned = post_process(cleaned)
+
+    # Rebuild customer address from the explicit ADDRESS/customer block using OCR geometry.
+    # This prevents neighboring PO Ref No./Terms/account fields from entering the address.
     cleaned, customer_address_notes = reconcile_customer_address_layout(cleaned, ocr_lines or [])
 
     # 4c-3c. Heuristic backstop: catch vendor_tax_id/customer_tax_id being
@@ -300,6 +328,19 @@ def _build_invoice_from_ocr(
     # vendor_name above so its "which party is which" comparisons are
     # working from already-corrected names.
     cleaned, tax_id_notes = reconcile_tax_ids(cleaned, ocr_text)
+
+    # A plausible-looking seller address can actually be a copy of the
+    # customer's address. Clear it before seller-header recovery so the
+    # ordinary header pass does not skip it as already complete.
+    from ai.vision_verifier import _vendor_header_field_needs_recovery
+    seller_addr = str(cleaned.get("vendor_address") or "")
+    buyer_addr = str(cleaned.get("customer_address") or "")
+    if seller_addr and buyer_addr and _vendor_header_field_needs_recovery(cleaned)[0]:
+        buyer_tokens = set(__import__('re').findall(r"[a-z]{3,}", buyer_addr.lower()))
+        seller_tokens = set(__import__('re').findall(r"[a-z]{3,}", seller_addr.lower()))
+        if len(buyer_tokens) >= 3 and len(seller_tokens & buyer_tokens) >= max(3, len(buyer_tokens)//2):
+            cleaned["vendor_address"] = None
+            party_ownership_notes.append("Seller address was a copy of the buyer address and was cleared before independent header recovery.")
 
     # 1.52: if the whole-page pass missed/suspiciously populated seller
     # address/TIN, perform a generic high-resolution header-only second pass.
@@ -334,7 +375,7 @@ def _build_invoice_from_ocr(
 
     reconciliation_notes = (
         template_notes + line_item_notes + swap_notes + total_notes + tax_notes + zero_exempt_notes
-        + discount_notes + subtotal_notes + missing_vendor_notes + vendor_notes + customer_notes + customer_address_notes + tax_id_notes + header_notes + invnum_notes + date_notes
+        + discount_notes + subtotal_notes + missing_vendor_notes + vendor_notes + customer_notes + party_ownership_notes + customer_address_notes + tax_id_notes + header_notes + invnum_notes + date_notes
         + plate_notes
     )
 
@@ -349,7 +390,15 @@ def _build_invoice_from_ocr(
     # of Statement Summary. Geometry owns the fields when available; crop
     # evidence only fills a missing summary or confirms it.
     summary_crop_trace: dict = {}
-    summary_crop, summary_crop_notes = verify_statement_summary_crop(image_path, ocr_lines or [], trace=summary_crop_trace)
+    if statement_evidence:
+        summary_crop = None
+        summary_crop_notes = []
+        summary_crop_trace.update({
+            "enabled": bool(getattr(settings, 'STATEMENT_SUMMARY_VERIFY_ENABLED', True)),
+            "skipped_reason": "OCR geometry already owns Statement Summary; redundant vision crop skipped for speed.",
+        })
+    else:
+        summary_crop, summary_crop_notes = verify_statement_summary_crop(image_path, ocr_lines or [], trace=summary_crop_trace)
     vision_trace["statement_summary_verification"] = summary_crop_trace
     if summary_crop_notes:
         reconciliation_notes.extend(summary_crop_notes)
@@ -543,6 +592,10 @@ def _build_invoice_from_ocr(
     if post_vision_customer_notes:
         reconciliation_notes.extend(post_vision_customer_notes)
 
+    cleaned, post_vision_party_notes = reconcile_party_ownership_layout(cleaned, ocr_lines or [])
+    if post_vision_party_notes:
+        cleaned = post_process(cleaned)
+        reconciliation_notes.extend(post_vision_party_notes)
     cleaned, post_vision_address_notes = reconcile_customer_address_layout(cleaned, ocr_lines or [])
     if post_vision_address_notes:
         reconciliation_notes.extend(post_vision_address_notes)
@@ -579,9 +632,20 @@ def _build_invoice_from_ocr(
     # These crops are deliberately narrow so the vision model cannot borrow
     # unrelated identifiers/addresses from elsewhere on the page.
     vendor_addr_trace: dict = {}
-    vendor_addr_value, vendor_addr_notes = verify_vendor_address_crop(
-        image_path, cleaned.get("vendor_address"), ocr_lines or [], trace=vendor_addr_trace
+    header_vision_address = (
+        ((header_trace.get("vision_header") or {}).get("parsed_json") or {}).get("vendor_address")
+        if isinstance((header_trace.get("vision_header") or {}).get("parsed_json"), dict) else None
     )
+    if "vendor_address" in header_locked_fields and header_vision_address:
+        vendor_addr_value, vendor_addr_notes = None, []
+        vendor_addr_trace.update({
+            "enabled": bool(getattr(settings, "VENDOR_ADDRESS_VERIFY_ENABLED", True)),
+            "skipped_reason": "high-resolution seller-header vision already recovered vendor_address; duplicate focused vision skipped for speed.",
+        })
+    else:
+        vendor_addr_value, vendor_addr_notes = verify_vendor_address_crop(
+            image_path, cleaned.get("vendor_address"), ocr_lines or [], trace=vendor_addr_trace
+        )
     vision_trace["vendor_address_verification"] = vendor_addr_trace
     if vendor_addr_value:
         cleaned["vendor_address"] = vendor_addr_value
@@ -603,13 +667,38 @@ def _build_invoice_from_ocr(
     cleaned, issuer_owner_notes = reconcile_issuer_printer_ownership(cleaned, ocr_text)
     reconciliation_notes.extend(loyalty_balance_notes + issuer_owner_notes)
 
+    header_ocr = str(header_trace.get("best_ocr_text") or "")
+    cleaned, explicit_field_notes = reconcile_visible_fields(cleaned, ocr_text, header_ocr)
+    cleaned, plan_item_notes = reconcile_statement_plan_item(cleaned, ocr_text)
+    cleaned, split_item_notes = reconcile_split_retail_price(cleaned, ocr_text)
+    reconciliation_notes.extend(explicit_field_notes + plan_item_notes + split_item_notes)
+
     # 1.58: add a non-zero carried balance only after ownership cleanup.
     cleaned, balance_item_notes = add_remaining_balance_line_item(cleaned)
     reconciliation_notes.extend(balance_item_notes)
 
+    # Recover parties before trimming the vendor suffix: Dan's recovery can
+    # use misplaced customer fragments as evidence for the customer address.
+    cleaned, master_notes = apply_final_master_pass(cleaned, ocr_text)
+    reconciliation_notes.extend(master_notes)
+
+    # Final UI/storage policy: absent buyer details stay null and the seller
+    # address holds only the first printed postal location.
+    cleaned, blank_party_notes = clear_blank_party_fields(cleaned)
+    cleaned, boundary_notes = enforce_seller_address_boundary(cleaned, header_ocr or ocr_text)
+    reconciliation_notes.extend(boundary_notes)
+    cleaned, first_address_notes = keep_first_vendor_address(cleaned)
+    reconciliation_notes.extend(blank_party_notes + first_address_notes)
+
     # 5. Validate + score FINAL information confidence. Successful
     # reconciliation notes are provenance, not unresolved correctness defects.
     unresolved_validation_issues = validate_extraction(cleaned, template_name=template_name, ocr_text=ocr_text)
+    availability = verification_summary(vision_trace)
+    vision_trace["verification_availability"] = availability
+    unavailable_note = verification_warning(availability)
+    if unavailable_note:
+        unresolved_validation_issues.append(unavailable_note)
+        vision_issues.append(unavailable_note)
     prediction = score_extraction(cleaned, ocr_confidence, unresolved_validation_issues, ocr_engine=ocr_engine)
     issues = unresolved_validation_issues + reconciliation_notes + vision_issues
 
@@ -631,6 +720,10 @@ def _build_invoice_from_ocr(
     invoice.vision_notes = "\n".join(vision_issues) if vision_issues else None
     invoice.status = INVOICE_STATUS_REVIEW if prediction.needs_review else INVOICE_STATUS_PROCESSED
 
+    stages["timing_seconds"].update({
+        "vision_http_this_invoice": round(availability.get("batch_vision_elapsed_seconds", 0) - vision_before.get("batch_vision_elapsed_seconds", 0), 3),
+        "pipeline_after_ocr": round(time.perf_counter() - pipeline_start, 3),
+    })
     stages["final_cleaned"] = dict(cleaned)
     trace_path = save_diagnostic_trace(
         source_file=file_path, page_number=page_number, image_path=image_path,

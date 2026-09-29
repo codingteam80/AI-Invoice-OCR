@@ -12,6 +12,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings:
+    # Stop repeated unavailable vision calls within one upload batch; reset on next batch.
+    VISION_BATCH_GUARD_ENABLED: bool = os.getenv("VISION_BATCH_GUARD_ENABLED", "true").lower() == "true"
+    LLM_EARLY_CLEANUP_ENABLED: bool = os.getenv("LLM_EARLY_CLEANUP_ENABLED", "true").lower() == "true"
+
     # OCR
     # Printed invoices always use PaddleOCR; handwritten invoices are
     # auto-detected and routed to TrOCR. See ocr/ocr_engine.py.
@@ -79,6 +83,10 @@ class Settings:
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
     LLM_MAX_RETRIES: int = int(os.getenv("LLM_MAX_RETRIES", "3"))
+    # 1.70 speed: stop correction retries when validation issues are unchanged
+    # after a correction. Repeating the same prompt/issue set wastes a full
+    # local 7B generation without improving the invoice.
+    LLM_STOP_ON_STALLED_VALIDATION: bool = os.getenv("LLM_STOP_ON_STALLED_VALIDATION", "true").lower() == "true"
     # Generous default: a local CPU-run 7B model on a multi-page PDF's
     # full OCR text can genuinely take longer than 120s to generate a
     # full JSON response. Raise further if you're still seeing timeouts
@@ -93,6 +101,14 @@ class Settings:
     # and the next request pays a cold-start reload on top of generation
     # time — often the real cause of a timeout that "shouldn't" happen.
     OLLAMA_KEEP_ALIVE: str = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
+
+    # Natural-language search uses the same local text model by default but
+    # has its own setting so it can be changed independently later without
+    # affecting invoice extraction. The search prompt is tiny compared with
+    # OCR extraction, so a shorter timeout keeps the UI responsive if Ollama
+    # is unavailable.
+    SEARCH_LLM_MODEL: str = os.getenv("SEARCH_LLM_MODEL", os.getenv("OLLAMA_MODEL", "qwen2.5:7b"))
+    SEARCH_LLM_TIMEOUT_SECONDS: int = int(os.getenv("SEARCH_LLM_TIMEOUT_SECONDS", "90"))
 
     # Vision cross-check (see ai/vision_verifier.py). Independent second
     # read of the source IMAGE itself (not the OCR text) for the fields
@@ -126,6 +142,11 @@ class Settings:
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/data/invoices.db")
+
+    # First-run admin account, created only when the users table is empty.
+    # The account is forced to change this password on first login.
+    DEFAULT_ADMIN_USERNAME: str = os.getenv("DEFAULT_ADMIN_USERNAME", "admin")
+    DEFAULT_ADMIN_PASSWORD: str = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin1234")
 
     # Storage paths
     UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", BASE_DIR / "data" / "uploads"))

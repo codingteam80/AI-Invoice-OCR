@@ -6,6 +6,9 @@ attempt when a mutable ``trace`` dict is supplied by the caller.
 from __future__ import annotations
 
 import time
+import re
+import json
+from copy import deepcopy
 import requests
 from config.settings import settings
 from config.logging import get_logger
@@ -124,11 +127,42 @@ def extract_invoice_data(ocr_text: str, template_name: str | None = None, trace:
         trace["error"] = "LLM did not return valid JSON"
         raise ExtractionError("LLM did not return valid JSON.")
 
+    # Use existing rules before asking the model to repair already-resolvable noise.
+    from ai.post_processing import post_process, clean_line_items
+    def prepare(candidate):
+        if not getattr(settings, "LLM_EARLY_CLEANUP_ENABLED", True):
+            return deepcopy(candidate)
+        normalized = post_process(deepcopy(candidate))
+        normalized, notes = clean_line_items(normalized)
+        trace.setdefault("early_cleanup", []).append({"notes": notes, "normalized_json": deepcopy(normalized)})
+        return normalized
+
+    parsed = prepare(parsed)
+    previous_issue_fingerprint = None
+    seen_results = {json.dumps(parsed, sort_keys=True, default=str)}
     for attempt in range(settings.LLM_MAX_RETRIES):
         issues = validate_extraction(parsed, template_name=template_name, ocr_text=ocr_text)
+        issue_fingerprint = tuple(sorted(re.sub(r"\s+", " ", str(x)).strip() for x in issues))
         trace.setdefault("validation_history", []).append({"attempt": attempt, "issues": list(issues)})
         if not issues:
             break
+        # 1.70 speed optimization: when a correction produces exactly the
+        # same validation problems as the preceding cycle, further retries
+        # have plateaued. Keep the latest parsed JSON and let deterministic
+        # OCR/geometry reconciliation handle the remaining issues.
+        if (
+            getattr(settings, "LLM_STOP_ON_STALLED_VALIDATION", True)
+            and previous_issue_fingerprint is not None
+            and issue_fingerprint == previous_issue_fingerprint
+        ):
+            trace["stopped_on_stalled_validation"] = {
+                "attempt": attempt,
+                "issues": list(issues),
+                "reason": "validation issue set unchanged after previous correction",
+            }
+            logger.info("Stopping LLM correction retries: validation issues are unchanged from the previous cycle.")
+            break
+        previous_issue_fingerprint = issue_fingerprint
         logger.info(f"Validation issues (attempt {attempt+1}): {issues}")
         correction_prompt = build_correction_prompt(ocr_text, parsed, issues, template_name=template_name)
         corr_trace = {"kind": "correction", "correction_number": attempt + 1, "issues_given_to_model": list(issues)}
@@ -136,8 +170,18 @@ def extract_invoice_data(ocr_text: str, template_name: str | None = None, trace:
         raw_response = _call_ollama(correction_prompt, corr_trace)
         corrected = safe_json_loads(raw_response)
         corr_trace["parsed_json"] = corrected
-        if corrected:
+        if isinstance(corrected, dict) and corrected:
+            corrected = prepare(corrected)
+            fingerprint = json.dumps(corrected, sort_keys=True, default=str)
+            if fingerprint in seen_results:
+                trace["stopped_on_repeated_result"] = {"attempt": attempt + 1, "reason": "correction repeated a previously seen normalized result"}
+                break
+            seen_results.add(fingerprint)
             parsed = corrected
+        else:
+            trace["stopped_on_invalid_correction"] = {"attempt": attempt + 1, "reason": "correction returned no usable object; retained last usable extraction"}
+            break
 
+    trace["final_validation_issues"] = validate_extraction(parsed, template_name=template_name, ocr_text=ocr_text)
     trace["final_parsed_json"] = parsed
     return parsed

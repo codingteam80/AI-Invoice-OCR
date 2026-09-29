@@ -19,12 +19,22 @@ class VendorORM(Base):
     invoices = relationship("InvoiceORM", back_populates="vendor")
 
 
+class CustomCategoryORM(Base):
+    """User-defined invoice category. The eight built-in categories live in config/constants.py and are immutable."""
+    __tablename__ = "custom_categories"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class InvoiceORM(Base):
     __tablename__ = "invoices"
 
     id = Column(Integer, primary_key=True)
     invoice_number = Column(String, unique=True, index=True, nullable=False)
     invoice_date = Column(Date, nullable=True)
+    date_uploaded = Column(Date, default=date.today, nullable=True)
     due_date = Column(Date, nullable=True)
 
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
@@ -48,6 +58,7 @@ class InvoiceORM(Base):
     tax_amount = Column(Float, nullable=True)
     tax_rate = Column(Float, nullable=True)
     discount = Column(Float, nullable=True)
+    withholding_tax = Column(Float, nullable=True)
     # Philippine BIR sales-breakdown columns, sibling to `subtotal`
     # (VATABLE SALES) — see models/invoice.py and config/constants.py's
     # EXTRACTION_SCHEMA for what these represent.
@@ -95,3 +106,42 @@ class LineItemORM(Base):
     quantity = Column(Float, default=1.0)
     unit_price = Column(Float, default=0.0)
     amount = Column(Float, default=0.0)
+
+
+class AuditLogORM(Base):
+    """Append-only user activity log shown on the Log page."""
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, nullable=False)
+    action = Column(String, nullable=False, index=True)
+    entity_type = Column(String, nullable=True)
+    entity_id = Column(Integer, nullable=True)
+    details = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class UserORM(Base):
+    """Local app account. Passwords are stored only as salted PBKDF2 hashes."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, index=True, nullable=False)  # stored lowercase
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="user", nullable=False)  # "admin" | "user"
+    is_active = Column(Boolean, default=True, nullable=False)
+    must_change_password = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login_at = Column(DateTime, nullable=True)
+
+
+class BrowserLoginSessionORM(Base):
+    """Local revocable browser login; random tokens are stored only as hashes."""
+    __tablename__ = "browser_login_sessions"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String, unique=True, nullable=False, index=True)
+    password_fingerprint = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)

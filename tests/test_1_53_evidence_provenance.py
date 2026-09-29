@@ -35,7 +35,8 @@ def test_tri_q_authoritative_total_due_and_withholding_outrank_intermediate_amou
     ]
     out, notes = reconcile_financial_layout(data, lines)
     assert out["total_amount"] == 94560.39
-    assert out["discount"] == 1719.28
+    assert out["discount"] == 0.0
+    assert out["withholding_tax"] == 1719.28
     assert out["zero_rated_sales"] == 0.0
     assert out["vat_exempt_sales"] == 0.0
     assert notes
@@ -76,7 +77,7 @@ def test_blank_discount_row_overrides_flat_text_neighbor_amount():
 
 
 def test_vision_cannot_replace_strong_total_due_and_withholding_with_balancing_pair():
-    data = {"subtotal": 85963.99, "tax_amount": 10315.68, "discount": 1719.28,
+    data = {"subtotal": 85963.99, "tax_amount": 10315.68, "discount": 0.0, "withholding_tax": 1719.28,
             "zero_rated_sales": 0.0, "vat_exempt_sales": 0.0, "total_amount": 94560.39}
     lines = [
         _line("Less:Withholding Tax", 1360,100,1750,140), _line("1,719.28",2090,100,2250,140),
@@ -86,15 +87,16 @@ def test_vision_cannot_replace_strong_total_due_and_withholding_with_balancing_p
     mismatches = [
         {"field":"subtotal","image_shows":"85963.99"},
         {"field":"tax_amount","image_shows":"10315.68"},
-        {"field":"discount","image_shows":"1719.28"},
+        {"field":"withholding_tax","image_shows":"1719.28"},
         {"field":"total_amount","image_shows":"96279.67"},
     ]
     out, locked, notes, accepted, rejected = apply_vision_corrections_with_financial_gate(
         data, {}, mismatches, ocr_lines=lines
     )
     assert out["total_amount"] == 94560.39
-    assert out["discount"] == 1719.28
-    assert "total_amount" in locked and "discount" in locked
+    assert out["discount"] == 0.0
+    assert out["withholding_tax"] == 1719.28
+    assert "total_amount" in locked and "withholding_tax" in locked
     assert rejected.get("total_amount") == 96279.67
 
 

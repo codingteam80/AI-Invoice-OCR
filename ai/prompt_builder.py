@@ -208,6 +208,7 @@ Important financial-reading rules:
 - Read each amount from the value visibly attached to its own printed label/row/column.
 - Distinguish TOTAL AMOUNT DUE / Amount to Pay from intermediate Amount Due, Total Sales, Less VAT, or Amount Net of VAT.
 - A blank Discount, Zero-Rated, VAT-Exempt, or Withholding row is 0 only when that row is visibly blank; never borrow a nearby amount from another column.
+- Keep Withholding Tax separate from Discount: values labelled Less: Withholding Tax / WHT / W/Tax belong only to withholding_tax, never discount.
 - A percentage such as 12% is a tax rate, not a monetary tax_amount.
 - For handwritten/poor OCR forms, zoom attention to the lower financial-summary box and read the printed/handwritten digits directly.
 

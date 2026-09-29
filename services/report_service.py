@@ -15,7 +15,7 @@ def spend_by_month(limit: int = 500) -> dict:
     invoices = list_invoices(limit=limit)
     totals = defaultdict(float)
     for inv in invoices:
-        date_str = inv.get("invoice_date")
+        date_str = inv.get("date_uploaded") or (inv.get("created_at") or "")[:10]
         if not date_str:
             continue
         month_key = date_str[:7]  # YYYY-MM

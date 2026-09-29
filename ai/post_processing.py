@@ -6,6 +6,7 @@ from utils.helpers import normalize_tin, is_valid_tin, TIN_RE
 from parser.currency_parser import normalize_currency, to_float, normalize_discount
 from parser.tax_parser import find_tax_rate, find_tax_amount
 from config.settings import settings
+from ai.evidence_corrections import clear_blank_party_fields
 from config.field_aliases import (
     SUBTOTAL_LABELS as NET_LABELS,
     TOTAL_LABELS,
@@ -253,7 +254,7 @@ def clean_vendor_address(value: str | None) -> str | None:
 
 
 def post_process(data: dict) -> dict:
-    data = dict(data)  # shallow copy
+    data, _ = clear_blank_party_fields(data)
 
     for date_field in ("invoice_date", "due_date"):
         if data.get(date_field):
@@ -261,7 +262,7 @@ def post_process(data: dict) -> dict:
 
     for money_field in (
         "subtotal", "tax_amount", "total_amount", "current_charges_total", "previous_balance", "tax_rate",
-        "zero_rated_sales", "vat_exempt_sales",
+        "zero_rated_sales", "vat_exempt_sales", "withholding_tax",
     ):
         if data.get(money_field) is not None:
             data[money_field] = to_float(data[money_field])
@@ -1405,39 +1406,97 @@ def reconcile_billing_current_period_financials(data: dict, ocr_lines: list[dict
 
 
 def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tuple[dict, list[str]]:
-    """Correct line-item unit price/amount from a same-row OCR amount cell.
+    """Correct line-item quantity/unit price/amount from OCR table geometry.
 
-    Uses table geometry only when a description region and an amount region are
-    clearly on the same row. This is generic and avoids using sales-summary rows
-    far below the item table.
+    Two conservative modes are used:
+      1) a three-cell arithmetic row (Qty, Unit Price, Total Amount) can repair
+         all three values when the printed cells satisfy Qty * Unit = Total;
+      2) otherwise the older rightmost-amount ownership rule is retained.
+
+    This avoids interpreting pack-size text inside a description (for example
+    ``CAPX100``) as the purchased quantity when an explicit Qty cell says 10.
     """
     lines=ocr_lines or []; items=data.get('line_items') or []
     if not lines or not items:
         return data, []
     result=dict(data); out=[dict(i) for i in items]; notes=[]
-    # If the table exposes an explicit TOTAL AMOUNT header, use its x-position
-    # as the authoritative amount column. This prevents Qty/ROE/unit-cost
-    # numbers from being mistaken for the PHP line total.
     amount_header = next((l for l in lines if re.search(r"(?i)^\s*total\s+amount\s*$", str(l.get("text") or ""))), None)
     amount_header_box = _bbox_bounds(amount_header.get("bbox")) if amount_header else None
+
+    def compact(text: str) -> str:
+        return re.sub(r'[^a-z0-9]+','',str(text or '').lower())
+
+    def money_value(text: str):
+        raw=str(text or '').strip()
+        if not raw or '/' in raw or '%' in raw:
+            return None
+        # Require a decimal/currency marker for a price so a barcode/integer
+        # identifier cannot become a unit price.
+        if not (re.search(r'(?i)(?:php|₱|\bp\s*\d)', raw) or re.search(r'\d[,.]\d{1,2}\b', raw)):
+            return None
+        return to_float(raw)
+
     for idx,item in enumerate(out):
         desc=re.sub(r'\s+',' ',str(item.get('description') or '')).strip()
         if not desc: continue
-        # 1.55: Add-ons inside a Statement Summary is reconciled by the
-        # summary-row parser itself. Do not let generic item geometry attach
-        # an MRF/Total value from a nearby row to it.
         if desc.lower() in {'add-ons','addons','add ons'} and any('statement summary' in str(x.get('text') or '').lower() for x in lines):
             continue
-        # exact/fuzzy containment against OCR item description
-        desc_line=None
+        desc_line=None; dc=compact(desc)
         for l in lines:
-            t=re.sub(r'\s+',' ',str(l.get('text') or '')).strip()
-            if t and (t.lower()==desc.lower() or (len(desc)>8 and desc.lower() in t.lower())):
+            t=re.sub(r'\s+',' ',str(l.get('text') or '')).strip(); tc=compact(t)
+            if not t: continue
+            if t.lower()==desc.lower() or (len(desc)>8 and desc.lower() in t.lower()) or (len(dc)>=8 and (dc in tc or tc in dc) and min(len(dc),len(tc))>=8):
                 desc_line=l; break
         if not desc_line: continue
         db=_bbox_bounds(desc_line.get('bbox'))
         if not db: continue
         dcy=(db[1]+db[3])/2
+
+        # 1.70: explicit retail/table triplet. The Qty/Unit/Total cells often
+        # sit one OCR baseline below the description, including thermal receipt
+        # rows. Keep the vertical window tight so the next barcode/item row is
+        # not borrowed.
+        qty_candidates=[]; money_candidates=[]
+        for l in lines:
+            if l is desc_line: continue
+            b=_bbox_bounds(l.get('bbox'))
+            if not b: continue
+            cy=(b[1]+b[3])/2
+            if cy < dcy-8 or cy > dcy+58: continue
+            raw=str(l.get('text') or '').strip()
+            if re.fullmatch(r'\d{1,3}(?:\.0+)?', raw):
+                q=to_float(raw)
+                if q is not None and 0 < q <= 999:
+                    qty_candidates.append((abs(cy-dcy),b[0],float(q),raw))
+            mv=money_value(raw)
+            if mv is not None and mv > 0:
+                money_candidates.append((b[0],abs(cy-dcy),float(mv),raw))
+        if qty_candidates and len(money_candidates)>=2:
+            qty_candidates.sort(key=lambda x:(x[0],x[1]))
+            money_candidates.sort(key=lambda x:x[0])
+            # Rightmost money cell owns row total. A money cell to its left is
+            # a unit-price candidate. Test candidates against printed arithmetic.
+            total=money_candidates[-1]
+            triples=[]
+            for qc in qty_candidates:
+                q=qc[2]
+                for mc in money_candidates[:-1]:
+                    u=mc[2]; amt=total[2]
+                    tol=max(0.03,abs(amt)*0.003)
+                    if abs(q*u-amt) <= tol:
+                        triples.append((abs(q*u-amt), qc[0]+mc[1]+total[1], q,u,amt,qc[3],mc[3],total[3]))
+            if triples:
+                _,_,q,u,amt,qraw,uraw,araw=sorted(triples)[0]
+                oldq=to_float(item.get('quantity')); oldu=to_float(item.get('unit_price')); olda=to_float(item.get('amount'))
+                if oldq is None or oldu is None or olda is None or abs(oldq-q)>0.005 or abs(oldu-u)>0.005 or abs(olda-amt)>0.005:
+                    item['quantity']=round(q,4); item['unit_price']=round(u,2); item['amount']=round(amt,2)
+                    notes.append(
+                        f"Line-item geometry corrected {desc!r}: quantity={q:g}, unit_price={u:.2f}, amount={amt:.2f} "
+                        f"from explicit OCR cells ({qraw!r}, {uraw!r}, {araw!r}) whose arithmetic reconciles."
+                    )
+                    continue
+
+        # Original generic backstop: rightmost same-row money cell owns amount.
         candidates=[]
         for l in lines:
             b=_bbox_bounds(l.get('bbox'))
@@ -1447,8 +1506,6 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
             if amount_header_box and b[0] < amount_header_box[0] - 80:
                 continue
             raw_value=str(l.get('text') or '').strip()
-            # Dates/periods/IDs are never prices. This prevents values like
-            # 08/26/26 from becoming 82,626.00 after punctuation stripping.
             if '/' in raw_value or re.fullmatch(r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}', raw_value):
                 continue
             v=to_float(raw_value)
@@ -1456,8 +1513,6 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
             candidates.append((b[0],float(v)))
         if not candidates: continue
         candidates.sort(key=lambda x:x[0])
-        # Rightmost same-row money cell is the total amount; for quantity=1 the
-        # unit price is the same. On a one-price row this covers both columns.
         row_amount=round(candidates[-1][1],2)
         qty=to_float(item.get('quantity')) or 1.0
         old_amt=to_float(item.get('amount')) or 0.0
@@ -1472,7 +1527,6 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
             )
     result['line_items']=out
     return result, notes
-
 
 def _looks_address_like(text: str) -> bool:
     """Conservative generic test for a postal-address line/block."""
@@ -1540,6 +1594,118 @@ def _rebuild_customer_address_from_party_block(data: dict, lines: list[dict]) ->
         parts.append(t); last_y=cy
     text=clean_customer_address(", ".join(parts))
     return text, anchor_kind
+
+
+def reconcile_party_ownership_layout(data: dict, ocr_lines: list[dict] | None) -> tuple[dict, list[str]]:
+    """Correct a vendor/customer swap using conservative page geometry.
+
+    Generic ownership rule: the issuer's legal/business name is normally in
+    the document header, while the billed/customer party appears materially
+    lower in the account/billing body.  This pass only swaps the two existing
+    names when BOTH are visibly grounded in OCR and their positions strongly
+    contradict their current ownership.  It also transfers an explicitly
+    labelled Customer TIN away from vendor_tax_id when that same value was
+    assigned to the wrong party.
+    """
+    lines = ocr_lines or []
+    vendor = re.sub(r"\s+", " ", str(data.get("vendor_name") or "")).strip()
+    customer = re.sub(r"\s+", " ", str(data.get("customer_name") or "")).strip()
+    if not lines or len(vendor) < 4 or len(customer) < 4:
+        return data, []
+
+    def norm(x: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "", str(x or "").lower())
+
+    def tokens(x: str) -> set[str]:
+        return {t for t in re.findall(r"[a-z0-9]+", str(x or "").lower()) if len(t) >= 3}
+
+    def best_name_line(name: str):
+        n = norm(name); nt = tokens(name); best = None
+        for ln in lines:
+            text = re.sub(r"\s+", " ", str(ln.get("text") or "")).strip()
+            b = _bbox_bounds(ln.get("bbox"))
+            if not text or not b:
+                continue
+            tn = norm(text); tt = tokens(text)
+            score = 0.0
+            if n and (n in tn or tn in n) and min(len(n), len(tn)) >= 6:
+                score = 1.0
+            elif nt and tt:
+                score = len(nt & tt) / max(1, min(len(nt), len(tt)))
+            if score >= 0.60 and (best is None or score > best[0]):
+                best = (score, ln, b)
+        return best
+
+    vb = best_name_line(vendor)
+    cb = best_name_line(customer)
+    if not vb or not cb:
+        return data, []
+    page_bottom = max((_bbox_bounds(ln.get("bbox")) or (0, 0, 0, 0))[3] for ln in lines) or 1.0
+    vy = (vb[2][1] + vb[2][3]) / 2.0
+    cy = (cb[2][1] + cb[2][3]) / 2.0
+
+    # Current *customer* is in the issuer header and current *vendor* is in a
+    # lower billed/account block. The thresholds are deliberately conservative
+    # so ordinary invoices with a correctly-owned header vendor cannot flip.
+    swapped = (
+        cy < vy
+        and cy / page_bottom <= 0.16
+        and vy / page_bottom >= 0.15
+        and (vy - cy) >= max(90.0, page_bottom * 0.035)
+    )
+    if not swapped:
+        return data, []
+
+    out = dict(data)
+    out["vendor_name"], out["customer_name"] = customer, vendor
+    notes = [
+        f"Party-ownership geometry corrected a vendor/customer swap: header issuer {customer!r} is above billed party {vendor!r}."
+    ]
+
+    # Address ownership from a swapped extraction is unsafe. Clear the seller
+    # address so the dedicated header recovery can rebuild it; the customer
+    # address is reconstructed immediately afterward from the corrected party
+    # anchor by reconcile_customer_address_layout().
+    if out.get("vendor_address"):
+        out["vendor_address"] = None
+        notes.append("Party-ownership geometry cleared the previous vendor_address because it belonged to the lower customer block; seller-header recovery will re-read it.")
+
+    # Find an explicit Customer/Buyer TIN value geometrically. This is stronger
+    # than whichever tax-id field the LLM happened to populate.
+    labels = []
+    values = []
+    for ln in lines:
+        text = str(ln.get("text") or "").strip()
+        b = _bbox_bounds(ln.get("bbox"))
+        if not b:
+            continue
+        if re.search(r"(?i)\b(?:customer|buyer)\s*(?:VAT\s*)?(?:TIN|TIL|T1N|TlN|tax\s+identification)(?:\s*(?:no\.?|#))?\b", text):
+            labels.append(b)
+        nv = normalize_tin(text)
+        if is_valid_tin(nv):
+            values.append((nv, b, text))
+    customer_tin = None
+    for lb in labels:
+        lx1, ly1, lx2, ly2 = lb; lcx = (lx1 + lx2) / 2; lh = max(1.0, ly2 - ly1)
+        candidates = []
+        for nv, b, text in values:
+            vx1, vy1, vx2, vy2 = b; vcx = (vx1 + vx2) / 2
+            if vy1 >= ly1 - lh * 0.4 and vy1 <= ly2 + lh * 4.5 and abs(vcx - lcx) <= max(220.0, (lx2-lx1)*1.5):
+                candidates.append((abs(vy1-ly2) + abs(vcx-lcx)*0.15, nv))
+        if candidates:
+            customer_tin = sorted(candidates)[0][1]
+            break
+    if customer_tin:
+        old_customer = normalize_tin(out.get("customer_tax_id"))
+        old_vendor = normalize_tin(out.get("vendor_tax_id"))
+        if old_customer != customer_tin:
+            out["customer_tax_id"] = customer_tin
+            notes.append(f"Party-ownership geometry assigned explicit Customer TIN {customer_tin} to customer_tax_id.")
+        if old_vendor == customer_tin:
+            out["vendor_tax_id"] = None
+            notes.append("Party-ownership geometry cleared vendor_tax_id because it was the explicitly labelled Customer TIN; seller-header recovery will re-read the vendor TIN.")
+
+    return out, notes
 
 
 def reconcile_customer_address_layout(data: dict, ocr_lines: list[dict] | None) -> tuple[dict, list[str]]:
@@ -3069,11 +3235,11 @@ def reconcile_financial_layout(
         if re.search(r'[A-Za-z]',alpha): return None
         if '/' in stripped or re.search(r'\d{1,2}-[A-Za-z]{3,}',stripped): return None
         return to_float(stripped)
-    def value_to_right(label_row, min_overlap=0.60):
+    def value_to_right(label_row, min_overlap=0.60, x_slack=3.0):
         i,txt,lx1,ly1,lx2,ly2,_=label_row; cand=[]
         for r in rows:
             j,t,rx1,ry1,rx2,ry2,_=r
-            if j==i or rx1 < lx2-3 or overlap(label_row,r)<min_overlap: continue
+            if j==i or rx1 < lx2-x_slack or overlap(label_row,r)<min_overlap: continue
             v=numeric_value(t)
             if v is None: continue
             gap=rx1-lx2; h=max(1.,ly2-ly1)
@@ -3098,8 +3264,8 @@ def reconcile_financial_layout(
         # label. Allow modest vertical overlap only for authoritative total
         # labels; keep optional financial buckets strict so adjacent columns
         # cannot bleed into blank Discount/Zero-Rated/VAT-Exempt rows.
-        min_ov = 0.35 if field == 'total_amount' and ('total amount due' in low or 'total amt due' in low) else 0.60
-        value=to_float(suffix.group(1)) if suffix else value_to_right(r, min_ov)
+        min_ov = 0.30 if field == 'total_amount' else 0.60
+        value=to_float(suffix.group(1)) if suffix else value_to_right(r, min_ov, 80.0 if field == 'total_amount' else 3.0)
         if value is None:
             # Generic utility rows labelled only "Discounts" may place their
             # amount slightly above/below the text baseline; do not call them
@@ -3155,18 +3321,18 @@ def reconcile_financial_layout(
         d=to_float(out.get('discount'))
         if d is not None and d<0:
             out['discount']=abs(d); notes.append(f"Discount sign normalized from {d:.2f} to {abs(d):.2f}; deductions are stored as positive magnitudes.")
-    if withholding is not None and 'discount' not in locked_fields:
-        existing=abs(to_float(out.get('discount')) or 0.0)
-        if abs(existing-withholding)>0.01:
-            out['discount']=round(withholding+(existing if 'discount' in explicit else 0.0),2)
-            notes.append(f"Layout reconciliation: withholding tax {withholding:.2f} included in effective discount/deduction.")
-        explicit.add('discount')
+    if withholding is not None:
+        old_wht=to_float(out.get('withholding_tax'))
+        if old_wht is None or abs(old_wht-withholding)>0.01:
+            out['withholding_tax']=round(withholding,2)
+            notes.append(f"Layout reconciliation: separate Withholding Tax set to {withholding:.2f} from its explicit OCR row.")
+        explicit.add('withholding_tax')
     # Derive Discount from the five other fields when it is not explicitly
     # supported by OCR. This directly fixes cases like Net=2468, VAT=296.16,
     # Total=2764.16 where an LLM hallucinated Discount=2468.
     vals={k:to_float(out.get(k)) for k in ("subtotal","tax_amount","zero_rated_sales","vat_exempt_sales","discount","total_amount")}
     if all(vals[k] is not None for k in ("subtotal","tax_amount","zero_rated_sales","vat_exempt_sales","total_amount")) and "discount" not in explicit and "discount" not in locked_fields:
-        expected=round(vals["subtotal"]+vals["tax_amount"]+vals["zero_rated_sales"]+vals["vat_exempt_sales"]-vals["total_amount"],2)
+        expected=round(vals["subtotal"]+vals["tax_amount"]+vals["zero_rated_sales"]+vals["vat_exempt_sales"]-(to_float(out.get("withholding_tax")) or 0.0)-vals["total_amount"],2)
         if expected >= -0.01:
             expected=max(0.0,expected)
             old=vals["discount"]
@@ -3179,7 +3345,7 @@ def reconcile_financial_layout(
     # printed values merely to force the equation to balance.
     vals={k:to_float(out.get(k)) for k in ("subtotal","tax_amount","zero_rated_sales","vat_exempt_sales","discount","total_amount")}
     if all(v is not None for v in vals.values()):
-        expected_total=round(vals["subtotal"]+vals["tax_amount"]+vals["zero_rated_sales"]+vals["vat_exempt_sales"]-vals["discount"],2)
+        expected_total=round(vals["subtotal"]+vals["tax_amount"]+vals["zero_rated_sales"]+vals["vat_exempt_sales"]-vals["discount"]-(to_float(out.get("withholding_tax")) or 0.0),2)
         if abs(expected_total-vals["total_amount"])>0.02:
             uncertain=[f for f in vals if f not in explicit and f not in locked_fields]
             if len(uncertain)==1:
@@ -3195,11 +3361,11 @@ def reconcile_financial_layout(
                     )
                     return out, notes
                 formulas={
-                    "subtotal": vals["total_amount"]-vals["tax_amount"]-vals["zero_rated_sales"]-vals["vat_exempt_sales"]+vals["discount"],
-                    "tax_amount": vals["total_amount"]-vals["subtotal"]-vals["zero_rated_sales"]-vals["vat_exempt_sales"]+vals["discount"],
-                    "zero_rated_sales": vals["total_amount"]-vals["subtotal"]-vals["tax_amount"]-vals["vat_exempt_sales"]+vals["discount"],
-                    "vat_exempt_sales": vals["total_amount"]-vals["subtotal"]-vals["tax_amount"]-vals["zero_rated_sales"]+vals["discount"],
-                    "discount": vals["subtotal"]+vals["tax_amount"]+vals["zero_rated_sales"]+vals["vat_exempt_sales"]-vals["total_amount"],
+                    "subtotal": vals["total_amount"]-vals["tax_amount"]-vals["zero_rated_sales"]-vals["vat_exempt_sales"]+vals["discount"]+(to_float(out.get("withholding_tax")) or 0.0),
+                    "tax_amount": vals["total_amount"]-vals["subtotal"]-vals["zero_rated_sales"]-vals["vat_exempt_sales"]+vals["discount"]+(to_float(out.get("withholding_tax")) or 0.0),
+                    "zero_rated_sales": vals["total_amount"]-vals["subtotal"]-vals["tax_amount"]-vals["vat_exempt_sales"]+vals["discount"]+(to_float(out.get("withholding_tax")) or 0.0),
+                    "vat_exempt_sales": vals["total_amount"]-vals["subtotal"]-vals["tax_amount"]-vals["zero_rated_sales"]+vals["discount"]+(to_float(out.get("withholding_tax")) or 0.0),
+                    "discount": vals["subtotal"]+vals["tax_amount"]+vals["zero_rated_sales"]+vals["vat_exempt_sales"]-(to_float(out.get("withholding_tax")) or 0.0)-vals["total_amount"],
                     "total_amount": expected_total,
                 }
                 nv=round(formulas[f],2)
@@ -3233,7 +3399,8 @@ def _strong_ocr_financial_evidence(ocr_lines: list[dict] | None) -> dict[str, di
         "tax_amount": re.compile(r"\b(?:vat\s+amount|value\s+added\s+tax|tax\s*@?\s*\d+(?:\.\d+)?%\s*vat)\b|^\s*vat\s*:?\s*$",re.I),
         "zero_rated_sales": re.compile(r"\bzero[ -]?rated(?:\s+sales?)?\b",re.I),
         "vat_exempt_sales": re.compile(r"\bvat[ -]?exempt(?:ed)?\s+sales?\b",re.I),
-        "discount": re.compile(r"\b(?:less\s*:?\s*)?discounts?\b|\bsenior\s+disc|\bwithh?olding\s+tax\b|\bless\s+w/?tax\b",re.I),
+        "discount": re.compile(r"\b(?:less\s*:?\s*)?discounts?\b|\bsenior\s+disc",re.I),
+        "withholding_tax": re.compile(r"\bwithh?olding\s+tax\b|\bless\s+w/?tax\b|\bwht\b",re.I),
         "total_amount": re.compile(r"\b(?:total\s+amount\s+due|total\s+amt\s+due|amount\s+due|amount\s+to\s+pay|grand\s+total|total\s+sales(?:\s*\(\s*vat\s+inclusive\s*\))?)\b",re.I),
     }
     def box(line):
@@ -3247,7 +3414,7 @@ def _strong_ocr_financial_evidence(ocr_lines: list[dict] | None) -> dict[str, di
     def yover(a,b):
         return max(0.,min(a[5],b[5])-max(a[3],b[3]))/max(1.,min(a[5]-a[3],b[5]-b[3]))
     evidence={}
-    optional_blank={"discount","zero_rated_sales","vat_exempt_sales"}
+    optional_blank={"discount","withholding_tax","zero_rated_sales","vat_exempt_sales"}
     for r in rows:
         field=None
         for f,pat in pats.items():
@@ -3265,9 +3432,9 @@ def _strong_ocr_financial_evidence(ocr_lines: list[dict] | None) -> dict[str, di
             # Authoritative TOTAL AMOUNT DUE values may sit a few pixels above
             # the label due to OCR polygon skew. Optional blank buckets stay
             # strict so adjacent-column values do not bleed into them.
-            min_overlap=0.35 if field=='total_amount' and ('total amount due' in low or 'total amt due' in low) else 0.60
+            min_overlap=0.30 if field=='total_amount' else 0.60
             for rr in rows:
-                if rr[0]==r[0] or rr[2] < r[4]-3 or yover(r,rr)<min_overlap:continue
+                if rr[0]==r[0] or rr[2] < r[4]-(80.0 if field=='total_amount' else 3.0) or yover(r,rr)<min_overlap:continue
                 txt=rr[1]
                 if '%' in txt or re.search(r'[A-Za-z]',re.sub(r'(?i)php','',txt)):continue
                 v=to_float(txt)
@@ -3282,12 +3449,12 @@ def _strong_ocr_financial_evidence(ocr_lines: list[dict] | None) -> dict[str, di
             ):
                 value=0.0; score=108; source='explicit_blank'
         if value is None:continue
-        if field=='discount':value=abs(float(value))
+        if field in {'discount','withholding_tax'}:value=abs(float(value))
         if field=='tax_amount':
             if re.search(r'tax\s*@?\s*\d+(?:\.\d+)?%\s*vat',low):score+=12
             elif 'vat amount' in low or 'value added tax' in low:score+=8
             elif re.fullmatch(r'vat\s*:?',low):score-=18
-        if field=='discount' and ('withholding' in low or 'w/tax' in low):
+        if field=='withholding_tax':
             score=max(score,112); source='withholding_label_geometry'
         if field=='total_amount':
             if 'total amount due' in low: score=max(score,115)
@@ -3324,7 +3491,7 @@ def reconcile_single_unreliable_financial_field(
     vals={k:to_float(out.get(k)) for k in _FINANCIAL_FIELDS_150}
     if vals['subtotal'] is None or vals['total_amount'] is None:
         return out,notes,locks
-    for k in ('tax_amount','discount','zero_rated_sales','vat_exempt_sales'):
+    for k in ('tax_amount','discount','withholding_tax','zero_rated_sales','vat_exempt_sales'):
         if vals[k] is None:vals[k]=0.0
     residual=_financial_identity_residual(out)
     if residual is None or residual<=0.02:
@@ -3332,12 +3499,13 @@ def reconcile_single_unreliable_financial_field(
     strong=_strong_ocr_financial_evidence(ocr_lines)
     va={k:to_float(v) for k,v in (vision_accepted or {}).items() if k in _FINANCIAL_FIELDS_150}
     formulas={
-        'subtotal': vals['total_amount']-vals['tax_amount']-vals['zero_rated_sales']-vals['vat_exempt_sales']+vals['discount'],
-        'tax_amount': vals['total_amount']-vals['subtotal']-vals['zero_rated_sales']-vals['vat_exempt_sales']+vals['discount'],
-        'zero_rated_sales': vals['total_amount']-vals['subtotal']-vals['tax_amount']-vals['vat_exempt_sales']+vals['discount'],
-        'vat_exempt_sales': vals['total_amount']-vals['subtotal']-vals['tax_amount']-vals['zero_rated_sales']+vals['discount'],
-        'discount': vals['subtotal']+vals['tax_amount']+vals['zero_rated_sales']+vals['vat_exempt_sales']-vals['total_amount'],
-        'total_amount': vals['subtotal']+vals['tax_amount']+vals['zero_rated_sales']+vals['vat_exempt_sales']-vals['discount'],
+        'subtotal': vals['total_amount']-vals['tax_amount']-vals['zero_rated_sales']-vals['vat_exempt_sales']+vals['discount']+vals['withholding_tax'],
+        'tax_amount': vals['total_amount']-vals['subtotal']-vals['zero_rated_sales']-vals['vat_exempt_sales']+vals['discount']+vals['withholding_tax'],
+        'zero_rated_sales': vals['total_amount']-vals['subtotal']-vals['tax_amount']-vals['vat_exempt_sales']+vals['discount']+vals['withholding_tax'],
+        'vat_exempt_sales': vals['total_amount']-vals['subtotal']-vals['tax_amount']-vals['zero_rated_sales']+vals['discount']+vals['withholding_tax'],
+        'discount': vals['subtotal']+vals['tax_amount']+vals['zero_rated_sales']+vals['vat_exempt_sales']-vals['withholding_tax']-vals['total_amount'],
+        'withholding_tax': vals['subtotal']+vals['tax_amount']+vals['zero_rated_sales']+vals['vat_exempt_sales']-vals['discount']-vals['total_amount'],
+        'total_amount': vals['subtotal']+vals['tax_amount']+vals['zero_rated_sales']+vals['vat_exempt_sales']-vals['discount']-vals['withholding_tax'],
     }
     ranked=[]
     for f,nv in formulas.items():
@@ -3391,7 +3559,7 @@ def reconcile_single_unreliable_financial_field(
 # Vision financial evidence gate / source-priority locking (1.50)
 # ---------------------------------------------------------------------------
 _FINANCIAL_FIELDS_150 = {
-    "subtotal", "tax_amount", "discount", "zero_rated_sales",
+    "subtotal", "tax_amount", "discount", "withholding_tax", "zero_rated_sales",
     "vat_exempt_sales", "total_amount",
 }
 _CORE_FINANCIAL_FIELDS_150 = (
@@ -3409,7 +3577,8 @@ def _financial_identity_residual(data: dict) -> float | None:
     zero = to_float(data.get("zero_rated_sales")) or 0.0
     exempt = to_float(data.get("vat_exempt_sales")) or 0.0
     discount = normalize_discount(data.get("discount")) or 0.0
-    return abs((subtotal + tax + zero + exempt - discount) - total)
+    withholding = normalize_discount(data.get("withholding_tax")) or 0.0
+    return abs((subtotal + tax + zero + exempt - discount - withholding) - total)
 
 
 def apply_vision_corrections_with_financial_gate(
@@ -3520,8 +3689,12 @@ def apply_vision_corrections_with_financial_gate(
     if "subtotal" in observed and "total_amount" in observed:
         sub_ev=strong_ocr.get("subtotal") or {}; total_ev=strong_ocr.get("total_amount") or {}
         no_strong_anchor_conflict = sub_ev.get("score",0) < 100 and total_ev.get("score",0) < 100
-        z_ev=strong_ocr.get("zero_rated_sales") or {}; e_ev=strong_ocr.get("vat_exempt_sales") or {}; d_ev=strong_ocr.get("discount") or {}
-        strong_zero_buckets = all((ev.get("score",0) >= 100 and abs(float(ev.get("value",0.0))) <= 0.02) for ev in (z_ev,e_ev,d_ev))
+        z_ev=strong_ocr.get("zero_rated_sales") or {}; e_ev=strong_ocr.get("vat_exempt_sales") or {}; d_ev=strong_ocr.get("discount") or {}; w_ev=strong_ocr.get("withholding_tax") or {}
+        # Discount may have no printed row at all. Withholding now has its own bucket;
+        # an explicitly blank Less: Withholding Tax row is strong zero evidence.
+        core_zero = all((ev.get("score",0) >= 100 and abs(float(ev.get("value",0.0))) <= 0.02) for ev in (z_ev,e_ev,w_ev))
+        discount_zero_or_absent = (not d_ev) or (d_ev.get("score",0) >= 100 and abs(float(d_ev.get("value",0.0))) <= 0.02)
+        strong_zero_buckets = core_zero and discount_zero_or_absent
         vision_sub=float(observed["subtotal"]); vision_total=float(observed["total_amount"])
         implied_tax=round(vision_total-vision_sub,2)
         materially_different = (abs(vision_sub-(to_float(out.get("subtotal")) or 0.0)) > max(5.0,0.15*max(vision_sub,1.0)) and abs(vision_total-(to_float(out.get("total_amount")) or 0.0)) > max(5.0,0.15*max(vision_total,1.0)))
@@ -3770,6 +3943,8 @@ def reconcile_vendor_address_block(data: dict, ocr_text: str) -> tuple[dict, lis
 
     header = []
     for line in lines[:35]:
+        if re.search(r"(?i)\b(?:bill(?:ed)?\s*to|sold\s*to|customer|buyer|client\s*(?:name|no|address))\b", line):
+            break
         if stop.search(line):
             break
         header.append(line)
@@ -4069,21 +4244,45 @@ def reconcile_retail_tax_summary(data: dict, ocr_text: str) -> tuple[dict, list[
 
 
 def reconcile_parking_tax_summary(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
-    """Lock explicit compact parking-receipt tax rows and printed zeros."""
+    """Use the printed VAT amount separately from the percentage on parking receipts."""
     if not ocr_text or not re.search(r"(?i)\bparking\s+fee\b", ocr_text):
         return data, []
-    result = dict(data); notes: list[str] = []
+    result = dict(data)
+    notes = []
     total = to_float(result.get("total_amount"))
     tax = to_float(result.get("tax_amount"))
+    if total is not None and total > 0:
+        rows = ocr_text.splitlines()
+        candidates = set()
+        for i, row in enumerate(rows):
+            label = re.search(r"(?i)\bVAT\s*Amount\s*\(?\s*(\d{1,2}(?:\.\d+)?)\s*%\)?", row)
+            if not label:
+                continue
+            rate = float(label.group(1))
+            if not 0 < rate <= 30:
+                continue
+            expected = round(total * rate / (100 + rate), 2)
+            # Strip the label and rate first: '12%' must not be joined to 23.57.
+            window = [row[label.end():]]
+            for following in rows[i+1:i+7]:
+                if re.match(r"(?i)^\s*(?:name|nanu|address|TIN|business\s+style)\b", following):
+                    break
+                window.append(following)
+            for text in window:
+                for number in re.findall(r"(?<![\d.])\d[\d,]*\.\d{2}(?!\d)", text):
+                    amount = to_float(number)
+                    if amount is not None and abs(amount - expected) <= 0.03:
+                        candidates.add(round(amount, 2))
+        if len(candidates) == 1:
+            printed_tax = next(iter(candidates))
+            if tax is None or abs(tax - printed_tax) > 0.01:
+                result["tax_amount"] = tax = printed_tax
+                notes.append(f"Parking VAT corrected to {printed_tax:.2f} from the printed VAT Amount row, independently corroborated by the VAT-inclusive total and printed rate.")
     if total is not None and tax is not None and total >= tax >= 0:
-        corrected_net = round(float(total) - float(tax), 2)
-        old = to_float(result.get("subtotal"))
+        corrected_net = round(total - tax, 2)
         result["subtotal"] = corrected_net
         result["discount"] = 0.0
         result["vat_exempt_sales"] = 0.0
         result["zero_rated_sales"] = 0.0
-        notes.append(
-            f"1.59 parking tax-summary ownership locked printed zero Discount/VAT-Exempt/Zero-Rated rows and reconciled VATable Sales as Total {total:.2f} - VAT {tax:.2f} = {corrected_net:.2f}"
-            + (f" (OCR had {old:.2f})." if old is not None and abs(old-corrected_net) > 0.01 else ".")
-        )
+        notes.append(f"Parking net sales reconciled as Total {total:.2f} - VAT {tax:.2f} = {corrected_net:.2f}.")
     return result, notes

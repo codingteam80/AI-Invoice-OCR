@@ -14,6 +14,7 @@ page_link can't prevent by itself.
 """
 import streamlit as st
 from config.constants import APP_NAME, APP_VERSION, COMPANY_NAME, COPYRIGHT_YEAR
+from ui.components.auth import require_login, render_account_box, is_admin
 
 # (path relative to the main script ui/streamlit_app.py, label, icon)
 _PAGES = [
@@ -22,39 +23,57 @@ _PAGES = [
     ("pages/Dashboard.py", "Dashboard", "📊"),
     ("pages/History.py", "History", "🗂️"),
     ("pages/Reports.py", "Reports", "📁"),
+    ("pages/Log.py", "Log", "📋"),
+]
+# Only shown to (and allowed for) admin accounts.
+_ADMIN_PAGES = [
+    ("pages/Users.py", "Users", "👥"),
 ]
 
 _UPLOAD_PAGE = "pages/Upload.py"
 
 _GLOBAL_FONT_CSS = """
 <style>
-/* Bigger base font size across the whole app. Most of Streamlit's built-in
-   typography and spacing is defined in rem, which is relative to this, so
-   raising it here scales text, buttons, inputs, and tables together rather
-   than growing text out of proportion with everything else. Browsers
-   default html to 16px; 18px is roughly a 12% bump. */
+/* Increase general UI text without enlarging each page's st.title().
+   Streamlit 1.38 bases most typography on rem, so a larger root size scales
+   body text, labels, controls, captions, tables, and sidebar navigation in a
+   consistent way. */
 html {
     font-size: 18px;
 }
 
-/* A few Streamlit elements pin their own font-size in px rather than
-   inheriting rem, so nudge those specifically too. */
+/* Keep page titles at Streamlit's original ~44px size even though the rem
+   base above is larger. This applies to the main app area only. */
+[data-testid="stAppViewContainer"] h1 {
+    font-size: 44px !important;
+    line-height: 1.2 !important;
+}
+
+/* Components that pin their own text size need explicit overrides so the
+   increase is visible consistently across the entire UI. */
 [data-testid="stMarkdownContainer"] p,
 [data-testid="stMarkdownContainer"] li,
+[data-testid="stCaptionContainer"],
 [data-testid="stDataFrame"] div,
 [data-testid="stMetricValue"],
+[data-testid="stMetricLabel"],
 .stButton button,
+.stDownloadButton button,
 .stSelectbox label,
 .stMultiSelect label,
-.stTextInput label {
+.stTextInput label,
+.stNumberInput label,
+.stTextArea label,
+.stCheckbox label,
+.stRadio label,
+[data-testid="stFileUploader"] label,
+[data-testid="stFileUploader"] small,
+[data-testid="stPageLink-NavLink"] p {
     font-size: 1rem !important;
 }
 
-/* CSS can only see the browser viewport's width, not the screen's actual
-   diagonal size — an 11" laptop and a 15" laptop can report the same
-   viewport width depending on resolution/OS scaling. This is the closest
-   proxy available: narrower windows (small/high-DPI screens, or a window
-   that isn't maximized) get a further bump. */
+/* Narrow windows get an extra body-text bump, while the page title remains
+   fixed at 44px above. */
 @media (max-width: 900px) {
     html {
         font-size: 20px;
@@ -96,14 +115,18 @@ def render_nav() -> None:
     upload is in progress), and a footer pinned to the bottom."""
     st.markdown(_GLOBAL_FONT_CSS, unsafe_allow_html=True)
     st.markdown(_SIDEBAR_CSS, unsafe_allow_html=True)
+    require_login()  # shows the sign-in form and halts the page if nobody is logged in
     locked = is_upload_locked()
 
     with st.sidebar:
         st.markdown(f"## 🧾 {APP_NAME}")
         if locked:
             st.warning("⏳ Upload in progress — other tabs are locked until it finishes.")
-        for path, label, icon in _PAGES:
+        for path, label, icon in _PAGES + (_ADMIN_PAGES if is_admin() else []):
             st.page_link(path, label=label, icon=icon, disabled=locked and path != _UPLOAD_PAGE)
+
+        st.divider()
+        render_account_box(locked=locked)
 
         st.markdown(
             f"""

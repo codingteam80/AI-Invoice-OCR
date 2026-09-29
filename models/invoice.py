@@ -26,6 +26,8 @@ class Invoice(BaseModel):
     id: Optional[int] = None
     invoice_number: str
     invoice_date: Optional[date] = None
+    # Date the source invoice was uploaded/processed into this system; independent of invoice_date.
+    date_uploaded: Optional[date] = None
     due_date: Optional[date] = None
 
     vendor_name: str
@@ -44,6 +46,8 @@ class Invoice(BaseModel):
     tax_amount: Optional[float] = None
     tax_rate: Optional[float] = None
     discount: Optional[float] = None
+    # Separate deduction for invoice rows explicitly labelled Less: Withholding Tax / WHT.
+    withholding_tax: Optional[float] = None
     zero_rated_sales: Optional[float] = None
     vat_exempt_sales: Optional[float] = None
     total_amount: float = 0.0
@@ -77,7 +81,7 @@ class Invoice(BaseModel):
 
     def validate_totals(self, tolerance: float = 0.02) -> bool:
         """Sanity check: subtotal + tax - discount ≈ total."""
-        computed = self.subtotal + (self.tax_amount or 0) + (self.zero_rated_sales or 0) + (self.vat_exempt_sales or 0) - (self.discount or 0)
+        computed = self.subtotal + (self.tax_amount or 0) + (self.zero_rated_sales or 0) + (self.vat_exempt_sales or 0) - (self.discount or 0) - (self.withholding_tax or 0)
         target = self.current_charges_total if self.current_charges_total is not None else self.total_amount
         if target == 0:
             return False

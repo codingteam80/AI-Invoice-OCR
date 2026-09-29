@@ -130,6 +130,8 @@ DISCOUNT_LABELS_SPECIFIC = (
 )
 DISCOUNT_LABEL_GENERIC = ("discount",)
 
+WITHHOLDING_TAX_LABELS = ("less: withholding tax", "less withholding tax", "withholding tax", "wht", "w/tax")
+
 # ---------------------------------------------------------------------------
 # cash / change (used to catch total_amount getting confused with these)
 # ---------------------------------------------------------------------------
@@ -184,6 +186,7 @@ FIELD_LABEL_ALIASES: dict[str, tuple[str, ...]] = {
     "zero_rated_sales": ZERO_RATED_LABELS,
     "vat_exempt_sales": VAT_EXEMPT_LABELS,
     "discount": DISCOUNT_LABELS,
+    "withholding_tax": WITHHOLDING_TAX_LABELS,
 }
 
 # ---------------------------------------------------------------------------
