@@ -1,9 +1,9 @@
-"""Natural-language search interpreter backed by the local Ollama text model.
+"""Natural-language search interpreter for the configured Groq/Ollama text model.
 
 The model is deliberately used only as a parser. It has no database/tool
 access and is never allowed to generate executable SQL. Its JSON output is
-allow-listed and normalized by services.search_service before the UI applies
-it to in-memory rows.
+allow-listed and normalized by services.search_service before SQLite/row
+filtering. Common requests are handled without a model by local_search_parser.
 """
 from __future__ import annotations
 
@@ -207,7 +207,8 @@ Return exactly this JSON shape (arrays may be empty):
 }}
 
 Operators:
-- text: contains, equals, not_contains, not_equals, starts_with, ends_with
+- text: contains, contains_any (with values list), equals, not_contains, not_equals, starts_with, ends_with
+- For OR matching of multiple vendors, return one text condition with operator contains_any and values ["MERALCO", "PLDT"].
 - dates: on, before, on_or_before, after, on_or_after, between
 - numbers: =, !=, >, >=, <, <=, between
 - choices: in, not_in
@@ -324,3 +325,69 @@ def interpret_natural_language_search(
     plan, warnings = normalize_search_plan(parsed, page)
     plan = _augment_explicit_presence(query, page, plan)
     return plan, warnings
+
+
+def interpret_hybrid_search(
+    query: str, *, page: str, context: dict | None = None
+) -> tuple[dict, list[str], str]:
+    """Local-first search; fall back to the selected Groq/Ollama LLM only if needed.
+
+    A complete, allow-listed plan is required. Never silently execute an empty
+    or partial plan for a substantive query, and never permit the LLM to issue
+    raw SQL. The existing database/row filter remains the only executor.
+    """
+    if not query or not query.strip():
+        raise SearchInterpretationError("Enter a search request first.")
+    search_schema_for(page)
+    from ai.local_search_parser import parse_local_search
+
+    local = parse_local_search(query, page=page, context=context)
+    if local is not None:
+        _check_currency_scope(local, context, page)
+        return local, [], "Local parser (no LLM call)"
+
+    # Do not expose the full vendor/customer catalogue to a remote model;
+    # the user's query itself is enough for unknown vendor-name matching.
+    prompt_context = {k: v for k, v in (context or {}).items()
+                      if k in {"categories", "statuses", "actions", "types"}}
+    try:
+        plan, warnings = interpret_natural_language_search(query, page=page, context=prompt_context)
+    except (requests.RequestException, SearchInterpretationError) as exc:
+        raise SearchInterpretationError(
+            "This request needs AI interpretation, but the selected model is unavailable. "
+            "Try a simpler search (for example: 'MERALCO January 2026 above ₱5,000') "
+            "or check the API/Ollama connection. " + str(exc)
+        ) from exc
+    if warnings:
+        raise SearchInterpretationError(
+            "The search could not be fully understood: " + "; ".join(warnings) +
+            ". Rephrase the request; no partial filter was applied."
+        )
+    if not any(plan.values()) and not re.fullmatch(
+        r"(?i)\s*(?:show|list|display|find)?\s*(?:me\s+)?(?:all|every)\s+(?:the\s+)?(?:invoices?|records?|logs?|activity|entries)\s*",
+        query.strip(),
+    ):
+        raise SearchInterpretationError(
+            "No supported filters were identified. Please rephrase; the search was not applied."
+        )
+    _check_currency_scope(plan, context, page)
+    return plan, [], "Groq/Ollama interpretation"
+
+
+def _check_currency_scope(plan: dict, context: dict | None, page: str) -> None:
+    """Never compare cross-currency invoice amounts without explicit units."""
+    if page.lower() not in {"history", "reports"}:
+        return
+    if not any(c.get("field") in {"total_amount", "subtotal", "tax_amount", "withholding_tax"}
+               for c in plan.get("numbers", [])):
+        return
+    currencies = {str(c).strip().upper() for c in (context or {}).get("currencies", []) if str(c).strip()}
+    currency_filters = [c for c in plan.get("choices", []) if c.get("field") == "currency"]
+    if currency_filters and any(len(c.get("values", [])) != 1 or c.get("operator") != "in" for c in currency_filters):
+        raise SearchInterpretationError("Choose exactly one currency for an amount comparison.")
+    has_explicit_currency = bool(currency_filters)
+    if len(currencies) > 1 and not has_explicit_currency:
+        raise SearchInterpretationError(
+            "Your invoices contain multiple currencies (" + ", ".join(sorted(currencies)) +
+            "). Add a currency to the amount search, such as 'above ₱5,000' or 'above USD 100'."
+        )

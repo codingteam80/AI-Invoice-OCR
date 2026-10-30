@@ -79,6 +79,25 @@
 - **Log:** audit activity, search, export filtered records and print logs.
 - **Users** (admin): create, deactivate and manage account access.
 
+## Hybrid AI Search: History, Reports and Log
+
+Type a request in **AI Search** and click Search. Simple queries are handled
+locally without contacting Groq or Ollama; more difficult language uses the
+AI engine you selected in the sidebar to interpret search filters.
+
+- History: `MERALCO invoices from January to March 2026 above ₱5,000`.
+- Reports: `PHP invoices between 1,000 and 10,000 uploaded last month`.
+- Log: `EDIT actions last month by user Juan`.
+
+Search results are filtered locally using validated database conditions. No
+model-generated SQL is executed. Search filters combine with manual page
+filters. On History, each Date Uploaded section is searched independently.
+Relative dates refer to your computer's local calendar. For multiple stored
+currencies, include PHP/₱ or USD/$ when searching by amount. Unrecognized
+requests or unavailable AI providers do not silently show unfiltered results.
+Click **Clear AI Search** to remove the applied search plan. A status caption
+indicates whether a local parser or the LLM interpreted the request.
+
 ## Troubleshooting
 
 | Problem | Suggested check |

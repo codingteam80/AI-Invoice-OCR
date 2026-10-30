@@ -17,7 +17,7 @@ from services.audit_service import log_action
 from exports.chart import generate_chart
 from ui.components.nav import render_nav, guard_locked_navigation
 from ui.components.ai_search import render_ai_search
-from services.search_service import apply_search_plan
+from services.search_service import apply_hybrid_search
 
 st.set_page_config(page_title="Reports & Export", page_icon="📁", layout="wide")
 
@@ -151,6 +151,7 @@ ai_plan = render_ai_search(
         "categories": all_categories,
         "statuses": sorted({str(inv.get("status")) for inv in all_invoices if inv.get("status")}),
         "vendors": vendors[:100],
+        "currencies": sorted({str(inv.get("currency") or "PHP").upper() for inv in all_invoices}),
     },
 )
 
@@ -175,7 +176,7 @@ if category_choice:
 if vendor_choice:
     invoices = [inv for inv in invoices if inv.get("vendor_name") in vendor_choice]
 
-invoices = apply_search_plan(invoices, ai_plan, "reports")
+invoices = apply_hybrid_search(invoices, ai_plan, "reports")
 
 total_count = len(invoices)
 locked_count = sum(1 for inv in invoices if inv.get("locked"))

@@ -144,21 +144,21 @@ def test_pages_use_reusable_qwen_ai_search_and_keep_manual_filters():
 
     assert 'page="history"' in history
     assert 'key=f"history_{scope_key}"' in history
-    assert 'apply_search_plan(filtered, ai_plan, "history")' in history
+    assert 'apply_hybrid_search(filtered, ai_plan, "history")' in history
     assert 'Filter by month(Invoice Date)' in history
 
     assert 'page="reports"' in reports
-    assert 'apply_search_plan(invoices, ai_plan, "reports")' in reports
+    assert 'apply_hybrid_search(invoices, ai_plan, "reports")' in reports
     assert 'Filter by month(Date Uploaded)' in reports
     assert 'Filter by Month(Invoice Date)' in reports
 
     assert 'page="log"' in log
-    assert 'apply_search_plan(filtered_logs, ai_plan, "log")' in log
+    assert 'apply_hybrid_search(filtered_logs, ai_plan, "log")' in log
     assert 'Filter by Month' in log
 
-    assert 'AI Search ({llm_client.active_search_model()})' in component
+    assert '**🔍 AI Search**' in component
     assert 'Clear AI Search' in component
-    assert 'AI interpreted:' in component
+    assert 'Search filters:' in component
     assert '"format": "json"' in interpreter
     assert 'DO NOT write SQL' in interpreter
     assert 'settings.SEARCH_LLM_MODEL' in interpreter

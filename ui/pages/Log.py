@@ -12,7 +12,7 @@ import streamlit.components.v1 as components
 from services.audit_service import list_logs, current_app_username, log_action
 from ui.components.nav import render_nav, guard_locked_navigation
 from ui.components.ai_search import render_ai_search
-from services.search_service import apply_search_plan
+from services.search_service import apply_hybrid_search
 
 st.set_page_config(page_title="Activity Log", page_icon="📋", layout="wide")
 render_nav(); guard_locked_navigation()
@@ -195,7 +195,7 @@ else:
         },
     )
     filtered_logs = _filter_logs(logs)
-    filtered_logs = apply_search_plan(filtered_logs, ai_plan, "log")
+    filtered_logs = apply_hybrid_search(filtered_logs, ai_plan, "log")
     st.caption(f"Showing {len(filtered_logs)} of {len(logs)} log record(s).")
     if filtered_logs:
         _render_log_table(filtered_logs)

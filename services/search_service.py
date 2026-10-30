@@ -1,8 +1,8 @@
-"""Deterministic, validated filtering for AI natural-language searches.
+"""Deterministic, allow-listed natural-language search filtering.
 
-The LLM never receives database access and never emits executable SQL. It only
-produces a small JSON search plan. This module validates that plan against an
-allow-list, then applies it to the already-loaded invoice/log dictionaries.
+The model never receives SQL access. Structured search plans are validated,
+then supported predicates use parameterized SQLAlchemy queries with exact
+row-level post-filtering for presentation and compatibility.
 """
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ LOG_CHOICE_FIELDS: set[str] = set()
 LOG_BOOLEAN_FIELDS: set[str] = set()
 LOG_PRESENCE_FIELDS: set[str] = set()
 
-TEXT_OPERATORS = {"contains", "equals", "not_contains", "not_equals", "starts_with", "ends_with"}
+TEXT_OPERATORS = {"contains", "contains_any", "equals", "not_contains", "not_equals", "starts_with", "ends_with"}
 DATE_OPERATORS = {"on", "before", "on_or_before", "after", "on_or_after", "between"}
 NUMBER_OPERATORS = {"=", "!=", ">", ">=", "<", "<=", "between"}
 CHOICE_OPERATORS = {"in", "not_in"}
@@ -182,10 +182,17 @@ def normalize_search_plan(raw: Any, page: str) -> tuple[dict, list[str]]:
         field = str(item.get("field") or "").strip()
         operator = str(item.get("operator") or "").strip().lower()
         value = str(item.get("value") or "").strip()
-        if field not in schema["text"] or operator not in TEXT_OPERATORS or not value:
-            warnings.append(f"Ignored unsupported text condition: {field or '?'} {operator or '?'}.")
+        if operator == "contains_any":
+            values_raw = item.get("values", [])
+            if isinstance(values_raw, str): values_raw = [values_raw]
+            values = [str(v).strip() for v in values_raw if str(v).strip()] if isinstance(values_raw,list) else []
+            if field in schema["text"] and 1 < len(values) <= 10:
+                plan["text"].append({"field":field,"operator":operator,"values":values})
+                continue
+        elif field in schema["text"] and operator in TEXT_OPERATORS and value:
+            plan["text"].append({"field": field, "operator": operator, "value": value})
             continue
-        plan["text"].append({"field": field, "operator": operator, "value": value})
+        warnings.append(f"Ignored unsupported text condition: {field or '?'} {operator or '?'}.")
 
     for item in raw.get("dates", []) if isinstance(raw.get("dates", []), list) else []:
         if not isinstance(item, dict):
@@ -424,7 +431,9 @@ def apply_search_plan(rows: list[dict], plan: dict | None, page: str) -> list[di
         ok = True
 
         for cond in plan.get("text", []):
-            if not _matches_text(_row_text(row, cond["field"]), cond["operator"], cond["value"]):
+            if not (any(_matches_text(_row_text(row, cond["field"]), "contains", v) for v in cond["values"])
+                    if cond["operator"] == "contains_any" else
+                    _matches_text(_row_text(row, cond["field"]), cond["operator"], cond["value"])):
                 ok = False
                 break
         if not ok:
@@ -497,6 +506,9 @@ def summarize_search_plan(plan: dict | None) -> str:
     parts: list[str] = []
     for cond in plan.get("text", []):
         label = FIELD_LABELS.get(cond["field"], cond["field"])
+        if cond["operator"] == "contains_any":
+            parts.append(f'{label} contains any of: {", ".join(cond["values"])}')
+            continue
         op = {
             "contains": "contains",
             "equals": "is",
@@ -553,3 +565,127 @@ def filter_invoice_keyword(invoices, keyword):
         return invoices
     fields = ("invoice_number", "vendor_name", "customer_name", "original_filename")
     return [inv for inv in invoices if any(query in identity_text(inv.get(field)) for field in fields)]
+
+
+def apply_hybrid_search(rows: list[dict], plan: dict | None, page: str) -> list[dict]:
+    """Execute supported filters in SQLite, then apply the exact row semantics.
+
+    SQLAlchemy builds bound parameters from *normalized, allow-listed* fields;
+    model output never becomes executable SQL. Field-value presence checks,
+    log dates (shown in PC-local time), and flattened line items are evaluated
+    in Python for accurate compatibility with the existing UI. On a database
+    outage the already-loaded rows can still be filtered locally.
+    """
+    if not plan:
+        return list(rows)
+    if not rows:
+        return []
+    try:
+        ids = _sql_candidate_ids(rows, plan, page)
+    except Exception as exc:
+        from config.logging import get_logger
+        get_logger("services.search_service").warning(f"Hybrid SQL search unavailable; using row filtering: {exc}")
+        # Database results were already loaded by the page. Preserve the
+        # existing reliable search behavior if SQL pushdown is unavailable.
+        ids = None
+    if ids is not None:
+        rows = [row for row in rows if row.get("id") in ids]
+    return apply_search_plan(rows, plan, page)
+
+
+def _sql_candidate_ids(rows: list[dict], plan: dict, page: str) -> set[int] | None:
+    """Construct a read-only, allow-listed SQLAlchemy SELECT for common fields."""
+    from sqlalchemy import and_, func, or_
+    from database.database import SessionLocal
+    from database.models import InvoiceORM, AuditLogORM
+
+    is_log = page.lower() in {"log", "logs"}
+    model = AuditLogORM if is_log else InvoiceORM
+    permitted = search_schema_for(page)
+    # Some UI aliases do not match SQL model columns.
+    aliases = {"user": "username"} if is_log else {}
+    predicates = []
+
+    for cond in plan.get("text", []):
+        f, op, val = cond["field"], cond["operator"], str(cond.get("value", ""))
+        if f not in permitted["text"] or f == "line_items":
+            continue
+        col = getattr(model, aliases.get(f, f), None)
+        if col is None: continue
+        left = func.lower(col)
+        v = val.casefold()
+        # Use literal substring matching, not SQL LIKE wildcard semantics.
+        # SQLAlchemy contains/startswith/endswith support auto-escaping.
+        if op == "contains_any": expr = or_(*[col.icontains(v, autoescape=True) for v in cond.get("values", [])])
+        elif op == "contains": expr = col.icontains(val, autoescape=True)
+        elif op == "not_contains": expr = ~col.icontains(val, autoescape=True)
+        elif op == "starts_with": expr = col.istartswith(val, autoescape=True)
+        elif op == "ends_with": expr = col.iendswith(val, autoescape=True)
+        elif op == "equals": expr = left == v
+        elif op == "not_equals": expr = left != v
+        else: continue
+        # In-memory matching turns null into "". Negative comparisons on
+        # absent columns would differ in SQL, so leave those for Python.
+        if op in {"not_contains", "not_equals"}: continue
+        predicates.append(expr)
+
+    for cond in plan.get("dates", []):
+        f, op = cond["field"], cond["operator"]
+        if f not in permitted["dates"] or is_log or f == "date_uploaded": continue
+        col = getattr(model, f, None)
+        if col is None: continue
+        d = date.fromisoformat(cond["value"])
+        if op == "on": expr = col == d
+        elif op == "before": expr = col < d
+        elif op == "on_or_before": expr = col <= d
+        elif op == "after": expr = col > d
+        elif op == "on_or_after": expr = col >= d
+        elif op == "between": expr = col.between(d, date.fromisoformat(cond["value2"]))
+        else: continue
+        predicates.append(expr)
+
+    for cond in plan.get("numbers", []):
+        f, op, n = cond["field"], cond["operator"], cond["value"]
+        if f not in permitted["numbers"]: continue
+        col = getattr(model, f, None)
+        if col is None: continue
+        if op == ">": expr = col > n
+        elif op == ">=": expr = col >= n
+        elif op == "<": expr = col < n
+        elif op == "<=": expr = col <= n
+        elif op == "=": expr = col == n
+        elif op == "!=": expr = col != n
+        elif op == "between": expr = col.between(n, cond["value2"])
+        else: continue
+        predicates.append(expr)
+
+    for cond in plan.get("choices", []):
+        f, op = cond["field"], cond["operator"]
+        if f not in permitted["choices"] or op != "in": continue
+        col = getattr(model, f, None)
+        if col is None: continue
+        predicates.append(func.lower(col).in_([str(x).casefold() for x in cond["values"]]))
+
+    for cond in plan.get("booleans", []):
+        f=cond["field"]
+        if f in permitted["booleans"]:
+            col=getattr(model, f, None)
+            if col is not None: predicates.append(col == bool(cond["value"]))
+
+    if not predicates:
+        return None
+    input_ids = {row.get("id") for row in rows if isinstance(row.get("id"), int)}
+    if not input_ids:
+        return None
+    session=SessionLocal()
+    try:
+        result_ids=set()
+        ordered=sorted(input_ids)
+        for offset in range(0,len(ordered),400):
+            batch=ordered[offset:offset+400]
+            result_ids.update(k for (k,) in session.query(model.id).filter(
+                model.id.in_(batch), and_(*predicates)
+            ).all())
+        return result_ids
+    finally:
+        session.close()

@@ -17,8 +17,10 @@ and images to a cloud provider**; use local-only mode when required by data-hand
 - SQLite storage via SQLAlchemy, with vendor deduplication
 - Streamlit UI: Upload, Dashboard (spend analytics), History, Reports
   (Excel/CSV/PDF export), and Activity Log
-- Natural-language search on History, Reports, and Log; the configured
-  text model interprets search filters without executing raw model-generated SQL
+- Hybrid Natural-Language Search in History, Reports, and Log: a local rule-based
+  parser handles familiar date/amount/vendor/status queries without an API call;
+  complex wording uses the configured Groq/Ollama model to interpret filters.
+  SQLite runs allowed parameterized predicates; no LLM-generated SQL executes.
 - Optional FastAPI REST API for integrations
 - Cloud API or local Ollama processing; invoice files stay on your PC in local mode
 
@@ -52,7 +54,8 @@ The retry/fallback notes below apply to every hosted provider.
    OPENROUTER_MODEL=openrouter/free
    ```
 
-2. Restart the app. Text extraction, AI Search and (if enabled) vision verification all go through OpenRouter.
+2. Restart the app. Invoice extraction and optional vision use the chosen provider.
+   **Search queries use the local parser first**, and only unclear queries reach OpenRouter.
    Set `LLM_PROVIDER=ollama` to switch back to the local models.
 
 With `LLM_PROVIDER=ollama` the local-model path is exactly the original: same requests, same options, same timeouts.
@@ -70,6 +73,38 @@ model pulled for the fallback to work. Failover details are stored in the diagno
 Notes: `openrouter/free` picks a random free model per request, so results can vary between calls and free models
 are rate limited. Invoice text/images are sent to third-party providers - do not use free models for sensitive documents
 unless you have checked their data policies. Pin a specific model id in `OPENROUTER_MODEL` for repeatable results.
+
+## Hybrid Natural-Language Search (History / Reports / Log)
+
+Examples that normally **do not call Groq/Ollama**:
+
+- `Show MERALCO invoices from January to March 2026 above ₱5,000`
+- `Invoices between PHP 1,000 and PHP 10,000 uploaded last month`
+- `Show EDIT actions last month by user Juan`
+- `Find invoices with missing invoice number`
+- `Show USD invoices over 100`
+
+The local parser accepts month/year and relative-date expressions, exact vendor
+names from the available search scope, amount ranges, PHP/USD labels, statuses,
+lock state and certain missing-field checks. Relative dates use the local PC's
+calendar. Invoice-date filtering is the default; explicitly mentioning *upload*
+filters Date Uploaded instead. Log search dates refer to activity date/time.
+
+More complex or unfamiliar wording is sent **once per Search button press** to
+Groq or Ollama according to the selected AI engine. Only the search request and
+allowed category/status/action names are sent; invoice content is not copied
+into the search prompt. Results always come from the local database. Search
+filters use read-only parameterized SQLite/SQLAlchemy predicates and exact local
+checks; the LLM never writes SQL or performs the database search itself.
+
+**Currency safety:** If there are both PHP and USD records in the search scope,
+amount-range searches must explicitly identify the currency (for example,
+`above ₱5,000` rather than `above 5000`). A request with unknown/unsupported
+wording, invalid filters, or an unavailable remote/local model is **not**
+silently converted into a search of all invoices. Add supported conditions or
+check the selected API/Ollama engine. Standard manual filters remain available
+and combine with Hybrid Search. Existing History sections still scope results
+by Date Uploaded; search does not cross between sections.
 
 ## Quick start
 

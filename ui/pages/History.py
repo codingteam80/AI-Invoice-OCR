@@ -23,7 +23,7 @@ from services.invoice_service import (
 )
 from ui.components.nav import render_nav, guard_locked_navigation
 from ui.components.ai_search import render_ai_search
-from services.search_service import apply_search_plan
+from services.search_service import apply_hybrid_search
 from utils.file_utils import resolve_source_file
 from utils.pdf_utils import pdf_to_images
 
@@ -627,6 +627,7 @@ def render_filters(scope_key: str, invoices_pool: list[dict]) -> list[dict]:
             "statuses": STATUS_OPTIONS,
             "categories": all_categories,
             "vendors": vendors[:100],
+            "currencies": sorted({str(inv.get("currency") or "PHP").upper() for inv in invoices_pool}),
         },
         scope_note=(
             "AI Search is applied inside this Date Uploaded section. "
@@ -663,7 +664,7 @@ def render_filters(scope_key: str, invoices_pool: list[dict]) -> list[dict]:
         filtered = [inv for inv in filtered if (inv.get("category") or "Others") in categories]
     if vendor_sel:
         filtered = [inv for inv in filtered if inv.get("vendor_name") in vendor_sel]
-    filtered = apply_search_plan(filtered, ai_plan, "history")
+    filtered = apply_hybrid_search(filtered, ai_plan, "history")
     return filtered
 
 
