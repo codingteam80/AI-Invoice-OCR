@@ -20,17 +20,79 @@
       "tin": "000-502-547-00000",
       "label": "SGV (Sycip, Gorres, Velayo & Co.)",
       "vendor_address": "6760 Ayala Avenue, San Lorenzo, NCR, Fourth District, 1226 City of Makati, Philippines"
+    },
+    {
+      "tin": "000-101-528-00000",
+      "label": "Meralco - Alabang Business Center",
+      "vendor_address": "ALABANG BUS. CENTER, PRIME ST., MUNTINLUPA",
+      "multi_site": true
+    },
+    {
+      "tin": "000-488-793-00000",
+      "label": "PLDT Inc. / Philippine Long Distance Telephone Company",
+      "vendor_address": "Ramon Cojuangco Bldg., Makati Ave., Makati City 1200"
+    },
+    {
+      "tin": "215-398-626-000",
+      "label": "Digitel Mobile Philippines, Inc. (Sun Cellular)",
+      "vendor_address": "29F Galleria Corporate Center, EDSA corner Ortigas Avenue, Quezon City 1110"
+    },
+    {
+      "tin": "010-091-151-00000",
+      "label": "SCommerce Philippines, Inc. (Shopee)",
+      "vendor_address": "Honest St. Cor. Determined St. CPIP Batino 4027, City of Calamba, Laguna, Philippines"
     }
   ],
   "customers": [
     {
       "tin": "007-848-122-000",
-      "name_keys": ["tsukiden"],
+      "name_keys": [
+        "tsukiden"
+      ],
       "address_variants": [
         "U 2102 21/F One Corporate Ctr Condo, J Vargas cor Meralco Ave, Brgy San Antonio, Ortigas Center, Pasig City 1605",
         "2101 One Corporate Center Julia Vargas Cor Meralco Ave Ortigas Center, Ortigas,Pasig, Metro Manila,1605",
         "21st Floor One Corporate Center, Julia Vargas Corner Meralco Ave., Ortigas Center, Pasig City",
         "Unit 2102, 21st Floor, One Corporate Centre, Dona Julia Vargas Avenue corner Meralco Ave. Ortigas"
+      ]
+    }
+  ],
+  "source_verified_vendors": [
+    {
+      "label": "SM Development Corporation - Jazz Residences",
+      "evidence_keys": [
+        "SM DEVELOPMENT CORPORATION",
+        "JAZ",
+        "RESIDENCES",
+        "METROPOLITAN"
+      ],
+      "vendor_address": "JAZZ RESIDENCES CORNER METROPOLITAN AVENUE AND NICANOR GARCIA ST. BEL-AIR C NCR FOURTH DISTRICT PHILIPPINES 1209",
+      "provenance": "User confirmed address; checked against supplied ParkingTickets1/2 originals. Requires issuer and branch evidence."
+    },
+    {
+      "label": "Globe Business / Innove Communications - primary address",
+      "evidence_keys": [
+        "Innove Communications",
+        "Globe"
+      ],
+      "vendor_address": "32nd Street corner 7th Avenue, Bonifacio Global City, Taguig, Philippines 1634",
+      "provenance": "Existing verified master address, explicitly requested by user for GlobeInvoice1; requires issuer evidence."
+    }
+  ],
+  "source_verified_identities": [
+    {
+      "vendor_name": "SMART COMMUNICATIONS INC",
+      "currency": "PHP",
+      "evidence_keys": [
+        "Smart",
+        "Account No",
+        "Total Current Bill Charges",
+        "VAT Reg"
+      ],
+      "provenance": "User-verified issuer on blurred INV-34. Applied only with mobile-bill account, total and registration context; no invoice-number or filename match.",
+      "exclude_evidence_keys": [
+        "PLDT INC",
+        "Philippine Long Distance Telephone"
       ]
     }
   ]

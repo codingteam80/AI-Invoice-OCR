@@ -1,0 +1,220 @@
+[33mcommit 646e335ff7bb737ec3538c333efa5f50cb74992e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Fri Oct 30 09:34:03 2026 +0800
+
+    Remove .env file
+
+[33mcommit 90b1eb599974dd23a7f765d118510903da1f5e16[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Fri Oct 30 09:23:03 2026 +0800
+
+    QA fixes
+
+[33mcommit 9075338265dd73c380d8faddc72894b577bcdfe0[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Tue Sep 29 16:22:15 2026 +0800
+
+    All request of modification was applied. Add user creation and login. Add the use of scanners and printers. Version 2.0.0
+
+[33mcommit dace2144e054d3c008f4c8bb940f6004bad0411c[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Tue Sep 15 15:27:34 2026 +0800
+
+    Version which was presented in TGSI
+
+[33mcommit cc2941016931b9567388d7cceb726af5a6dfd5e7[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Sep 3 16:03:47 2026 +0800
+
+    ADDed Watsons invoice template, add Plate Number
+
+[33mcommit 4da6ed8aa4f85c36124cca74ba1f45f1657ee55a[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Tue Sep 1 14:45:23 2026 +0800
+
+    add Discount in View Full Detaile for Invoice and update gitignore
+
+[33mcommit 744bd8fee22d9aa75021a69d582360c15f266b81[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Tue Sep 1 11:07:57 2026 +0800
+
+    Update OCR processing
+
+[33mcommit 0d6517bc45a4ca193042530029ef6e85eab0c603[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Tue Sep 1 08:25:15 2026 +0800
+
+    Update OCR processing
+
+[33mcommit 303586098568d094b4706eebb2d428249e09c428[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Wed Aug 26 18:32:52 2026 +0800
+
+    Update OCR processing
+
+[33mcommit f83c41401faee5ef494822da0a829fb95f0ca9d4[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Tue Aug 25 15:03:34 2026 +0800
+
+    Update OCR processing
+
+[33mcommit 8fa2cf839d463d211e1f589fcc3b2f2587091cdf[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Tue Aug 25 08:42:04 2026 +0800
+
+    added back 2 the prompts from previous copy of ai/prompt_builder.py
+
+[33mcommit 9ffffcb125042cc69b51b5f6e0bb5baebdf20cfd[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Tue Aug 25 02:00:04 2026 +0800
+
+    Delete unnecessary files(ai/prompt_builder_old.py and ocr/ocr_engine_old.py)
+
+[33mcommit 462bf01b17d4c7b7673367e8df937fec6d95a989[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Mon Aug 24 22:31:37 2026 +0800
+
+    Fix Invoice #, Vendor, Net Amount, VAT, Total Amount Due, and Items purchased table(Dan's version)
+
+[33mcommit dc286f957de0ff75609c971ae29c6b7e26dff0f8[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Wed Aug 19 12:13:38 2026 +0800
+
+    when clicking lock in the View a previous month table, it will scroll back to View a previous month section
+
+[33mcommit c7718aeb2f8a43274148700526385bdd790f9a61[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Wed Aug 19 08:24:02 2026 +0800
+
+    when clicking delete, lock, Discard changes and switch, and Keep editing buttons, the view will no scroll in the upper page
+
+[33mcommit 86f9792c0fc0323683dc741e8f9f7bb4288f2927[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Tue Aug 18 23:44:27 2026 +0800
+
+    Set OCR_PREPROCESS_ENABLED to false, change design for editing invoice
+
+[33mcommit 2ac7167e63176a99aa76cb11001964aa02c8d73c[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Mon Aug 17 17:42:33 2026 +0800
+
+    feat: add office supplies category, monthly history search, OCR contrast enhancement, line-item view, and bulk delete
+
+[33mcommit 5669358e7153f6f2ba2d1b0900d6e239c30ba78a[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Mon Aug 17 16:08:39 2026 +0800
+
+    qwen2.5vl:7b will auto correct the mismatch information
+
+[33mcommit a7f1ac285bfc393b4237ba226d08b3ee96072a09[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Mon Aug 17 12:57:15 2026 +0800
+
+    Update OCR improvements
+
+[33mcommit ee243d5e9d0c6e1a75bd0c1db35462d07ccf3e7e[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Aug 13 16:24:24 2026 +0800
+
+    Fix the bug for incorrect number of Vendors when deleting an invoice.
+
+[33mcommit c722f917e2b62ad84162123a4b46488196a6573f[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Aug 13 13:50:49 2026 +0800
+
+    The Net Amount (sum), VAT (sum), Discount (sum), and Total Amount Due (sum) will be included in the Generated export file only.
+
+[33mcommit efc992940f72e730930d08ff59e0cc4fc46ac8a7[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Aug 13 12:01:57 2026 +0800
+
+    1. Dropdown of generate graph can now select multiple choices. 2. Added calculation of sum on the Net Amount, VAT, Total Amount Due columns for the selected invoices.
+
+[33mcommit 1fe26c351368dcf1a663be33561c64af6bd5f901[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Aug 13 09:43:24 2026 +0800
+
+    edit .gitignore file so that .env file will be uploaded in git
+
+[33mcommit e67910a3fcdea3608bc7ae1dd24199c6134f1236[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Aug 13 09:25:09 2026 +0800
+
+    1. remove saome columns shown in the table and increase font size. 2. Add Generate Graph in Reports page. 3. Multiple selection in Filter dropdowns.
+
+[33mcommit 409d4a0e342c3a71ec491b65b9f2a461cf39db43[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Tue Aug 11 14:11:57 2026 +0800
+
+    Added vision check using qwen2.5vl:7b (vision-capable model)
+
+[33mcommit 08ab9ab66cdf06dd359b07ec8272852beedb4c69[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Aug 6 23:17:37 2026 +0800
+
+    Added import torch in ocr\ocr_engine.py
+
+[33mcommit 4a8c9a354019927d5cebed2f90dd39660712f306[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Thu Aug 6 16:14:21 2026 +0800
+
+    fix: cluster OCR text by column to stop label/value scrambling
+    fix: cross-check subtotal against line items and payment terms
+    fix: rewrite tax_parser regex, wire it into extraction pipeline
+    fix: make Ollama timeout configurable, retry once on timeout
+    feat: add invoice delete (service, API, UI)
+
+[33mcommit 0c2681d9f34d9698551bf931bd3f47bf0f8c391d[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Thu Aug 6 13:25:40 2026 +0800
+
+    Remove unused files
+
+[33mcommit 6dd7b7fbede682af955fd730aa8c26f4b69ac80e[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Thu Aug 6 11:01:34 2026 +0800
+
+    Update History, Dashboard, Upload, Report pages
+
+[33mcommit 1d0d177dea9a3e418ab68d691f10a6cba6bfa164[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Wed Aug 5 10:35:22 2026 +0800
+
+    Update OCR improvements
+
+[33mcommit 7710a6c9c7ef6c819898f1a5e1aef50c09ea17ea[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Wed Aug 5 09:23:36 2026 +0800
+
+    Color theme and sidebar title and footnote
+
+[33mcommit 9760d15259ecb3f95166a4afe80ed4213cdf1970[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Tue Aug 4 16:38:25 2026 +0800
+
+    Update AI Invoice OCR
+
+[33mcommit ac44f5346ccea7b5271cb8502477d977be1f0014[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Tue Aug 4 15:50:00 2026 +0800
+
+    Merge remote and local project
+
+[33mcommit 447b370265caa5d6a7719f071742a3d97ba8355b[m
+Merge: ebfcec2 6f95536
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Tue Aug 4 15:32:16 2026 +0800
+
+    Merge remote and local project
+
+[33mcommit ebfcec2256bc710d2cb174d7dc16f9c5210cb953[m
+Author: vidaldanielle <vidaldanielle19@gmail.com>
+Date:   Tue Aug 4 15:30:01 2026 +0800
+
+    Update AI Invoice OCR
+
+[33mcommit 6f955363a7d26856b8f0ea3d25a45457d11dfa98[m
+Author: bendelavega24 <virbendelavega24@gmail.com>
+Date:   Fri Jul 31 20:39:04 2026 +0800
+
+    Initial AI Invoice OCR commit

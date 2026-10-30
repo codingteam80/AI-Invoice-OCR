@@ -1,0 +1,1706 @@
+{
+ "source_file": "INV-13.png",
+ "ocr": {
+  "text": "CONVERGE INFORMATION AND COMMUNICATIONS TECHNOLOGY SOLUTIONS, INC\nCONVERGE\nMacArthur Highway,Balibago,\nNew Street Building,\nAngeles City,Philippines.\nEmail us at:customercare@convergeict.com\nCall us at:028667-0888\nTel.No:045)598-3088/028667-0888\nVAT Reg.TIN:006-895-049-000\nBILL PERIOD\nNAJELA NICOLAS BUENCIBELLO\n02/22/2024-03/21/2024 (MONTHLY)\n# the painting a raw road.\nBILL DATE\n02/22/2024\nACCOUNT NUMBER\n1050602246928\nBAYAN LUMA VII, CITY OF IMUS,\nSOA NUMBER\nSOA-0000000006892445\nCAVITE,4103\nTOTAL DUE AMOUNT:\nPHP1,500.00\nFEBRUARY MONTHLY STATEMENT\nPay Immediately\nPHP0.00\nBILL SUMMARY\nAMOUNT\nPay by 03/12/2024\nPHP1,500.00\nPREVIOUS CHARGES\nIMPORTANT REMINDERS\nYour Previous Bill\n1,500.00\nPlease ensure to make full payment of the\nTotal Payment Received -Thank You!\n(1,500.00)\nent\nservice disconnection.\nPrevious Balance (Due Immediately)\n0.00\nKindly check the charges in your statement of\nCURRENT CHARGES\nervice for\nRecurring Charges\n1,339.29\nstatement date. Should there be no raised\nissue, charges in the statement will be\nCURRENT CHARGES BEFORE TAX\n1,339.29\nconsidered correct.\n+TAXES\n160.71\n-\nTOTAL CURRENT CHARGES\n1,500.00\nPlease pay on (or) before 03/12/2024\nTOTAL DUE (OVERDUE+CURRENT)\nPHP1,500.00\nFor your safety and convenience, instead of going to our business centers, you may download our GoFiber app for your account management\nbills payment, and other concerns.For key updates and useful tips, join our Viber community and subscribe to our YouTube channel.\nGoFiber App\nYouTube Channel\nViber Community\nDownloadd from the App Store\nSubscribe to\nConvergelCTSolutionsinc\nConverge ICT Community\niOS and Play Store (Android)\nconverge.co/viber\nHelp the environment and save on time by getting your\nGOGREEN To update your acc\nunt. visit this link here\nStatement of Account through your registered email address!\nGOFiBER! http://bit.ly/AcctUpdate",
+  "avg_confidence": 0.9573,
+  "engine": "paddleocr+trocr",
+  "lines": [
+   {
+    "text": "CONVERGE INFORMATION AND COMMUNICATIONS TECHNOLOGY SOLUTIONS, INC",
+    "confidence": 0.9494063854217529,
+    "bbox": [
+     [
+      390.0,
+      95.0
+     ],
+     [
+      1038.0,
+      89.0
+     ],
+     [
+      1038.0,
+      110.0
+     ],
+     [
+      390.0,
+      116.0
+     ]
+    ]
+   },
+   {
+    "text": "CONVERGE",
+    "confidence": 0.9048686027526855,
+    "bbox": [
+     [
+      64.0,
+      93.0
+     ],
+     [
+      303.0,
+      100.0
+     ],
+     [
+      302.0,
+      136.0
+     ],
+     [
+      63.0,
+      129.0
+     ]
+    ]
+   },
+   {
+    "text": "MacArthur Highway,Balibago,",
+    "confidence": 0.9523128867149353,
+    "bbox": [
+     [
+      810.0,
+      151.0
+     ],
+     [
+      1038.0,
+      151.0
+     ],
+     [
+      1038.0,
+      170.0
+     ],
+     [
+      810.0,
+      170.0
+     ]
+    ]
+   },
+   {
+    "text": "New Street Building,",
+    "confidence": 0.9488655924797058,
+    "bbox": [
+     [
+      879.0,
+      133.0
+     ],
+     [
+      1037.0,
+      133.0
+     ],
+     [
+      1037.0,
+      152.0
+     ],
+     [
+      879.0,
+      152.0
+     ]
+    ]
+   },
+   {
+    "text": "Angeles City,Philippines.",
+    "confidence": 0.922863781452179,
+    "bbox": [
+     [
+      848.0,
+      170.0
+     ],
+     [
+      1040.0,
+      170.0
+     ],
+     [
+      1040.0,
+      190.0
+     ],
+     [
+      848.0,
+      190.0
+     ]
+    ]
+   },
+   {
+    "text": "Email us at:customercare@convergeict.com",
+    "confidence": 0.9830535650253296,
+    "bbox": [
+     [
+      46.0,
+      182.0
+     ],
+     [
+      410.0,
+      184.0
+     ],
+     [
+      410.0,
+      204.0
+     ],
+     [
+      46.0,
+      202.0
+     ]
+    ]
+   },
+   {
+    "text": "Call us at:028667-0888",
+    "confidence": 0.9478070735931396,
+    "bbox": [
+     [
+      49.0,
+      207.0
+     ],
+     [
+      268.0,
+      207.0
+     ],
+     [
+      268.0,
+      222.0
+     ],
+     [
+      49.0,
+      222.0
+     ]
+    ]
+   },
+   {
+    "text": "Tel.No:045)598-3088/028667-0888",
+    "confidence": 0.9637913703918457,
+    "bbox": [
+     [
+      443.0,
+      205.0
+     ],
+     [
+      756.0,
+      207.0
+     ],
+     [
+      756.0,
+      223.0
+     ],
+     [
+      443.0,
+      222.0
+     ]
+    ]
+   },
+   {
+    "text": "VAT Reg.TIN:006-895-049-000",
+    "confidence": 0.9433974623680115,
+    "bbox": [
+     [
+      782.0,
+      205.0
+     ],
+     [
+      1038.0,
+      205.0
+     ],
+     [
+      1038.0,
+      225.0
+     ],
+     [
+      782.0,
+      225.0
+     ]
+    ]
+   },
+   {
+    "text": "BILL PERIOD",
+    "confidence": 0.9529802203178406,
+    "bbox": [
+     [
+      463.0,
+      267.0
+     ],
+     [
+      568.0,
+      267.0
+     ],
+     [
+      568.0,
+      284.0
+     ],
+     [
+      463.0,
+      284.0
+     ]
+    ]
+   },
+   {
+    "text": "NAJELA NICOLAS BUENCIBELLO",
+    "confidence": 0.9792008996009827,
+    "bbox": [
+     [
+      42.0,
+      267.0
+     ],
+     [
+      313.0,
+      267.0
+     ],
+     [
+      313.0,
+      287.0
+     ],
+     [
+      42.0,
+      287.0
+     ]
+    ]
+   },
+   {
+    "text": "02/22/2024-03/21/2024 (MONTHLY)",
+    "confidence": 0.9480605721473694,
+    "bbox": [
+     [
+      654.0,
+      268.0
+     ],
+     [
+      958.0,
+      268.0
+     ],
+     [
+      958.0,
+      288.0
+     ],
+     [
+      654.0,
+      288.0
+     ]
+    ]
+   },
+   {
+    "text": "# the painting a raw road.",
+    "confidence": 0.7452,
+    "bbox": [
+     [
+      43.0,
+      296.0
+     ],
+     [
+      292.0,
+      296.0
+     ],
+     [
+      292.0,
+      315.0
+     ],
+     [
+      43.0,
+      315.0
+     ]
+    ]
+   },
+   {
+    "text": "BILL DATE",
+    "confidence": 0.9389651417732239,
+    "bbox": [
+     [
+      464.0,
+      300.0
+     ],
+     [
+      549.0,
+      300.0
+     ],
+     [
+      549.0,
+      317.0
+     ],
+     [
+      464.0,
+      317.0
+     ]
+    ]
+   },
+   {
+    "text": "02/22/2024",
+    "confidence": 0.9928450584411621,
+    "bbox": [
+     [
+      656.0,
+      300.0
+     ],
+     [
+      751.0,
+      300.0
+     ],
+     [
+      751.0,
+      317.0
+     ],
+     [
+      656.0,
+      317.0
+     ]
+    ]
+   },
+   {
+    "text": "ACCOUNT NUMBER",
+    "confidence": 0.9673424959182739,
+    "bbox": [
+     [
+      464.0,
+      329.0
+     ],
+     [
+      628.0,
+      329.0
+     ],
+     [
+      628.0,
+      348.0
+     ],
+     [
+      464.0,
+      348.0
+     ]
+    ]
+   },
+   {
+    "text": "1050602246928",
+    "confidence": 0.9987573623657227,
+    "bbox": [
+     [
+      654.0,
+      330.0
+     ],
+     [
+      788.0,
+      330.0
+     ],
+     [
+      788.0,
+      350.0
+     ],
+     [
+      654.0,
+      350.0
+     ]
+    ]
+   },
+   {
+    "text": "BAYAN LUMA VII, CITY OF IMUS,",
+    "confidence": 0.8959547877311707,
+    "bbox": [
+     [
+      43.0,
+      351.0
+     ],
+     [
+      315.0,
+      351.0
+     ],
+     [
+      315.0,
+      371.0
+     ],
+     [
+      43.0,
+      371.0
+     ]
+    ]
+   },
+   {
+    "text": "SOA NUMBER",
+    "confidence": 0.963358998298645,
+    "bbox": [
+     [
+      466.0,
+      360.0
+     ],
+     [
+      580.0,
+      360.0
+     ],
+     [
+      580.0,
+      377.0
+     ],
+     [
+      466.0,
+      377.0
+     ]
+    ]
+   },
+   {
+    "text": "SOA-0000000006892445",
+    "confidence": 0.9973164796829224,
+    "bbox": [
+     [
+      654.0,
+      359.0
+     ],
+     [
+      864.0,
+      359.0
+     ],
+     [
+      864.0,
+      379.0
+     ],
+     [
+      654.0,
+      379.0
+     ]
+    ]
+   },
+   {
+    "text": "CAVITE,4103",
+    "confidence": 0.9777631759643555,
+    "bbox": [
+     [
+      43.0,
+      377.0
+     ],
+     [
+      156.0,
+      377.0
+     ],
+     [
+      156.0,
+      398.0
+     ],
+     [
+      43.0,
+      398.0
+     ]
+    ]
+   },
+   {
+    "text": "TOTAL DUE AMOUNT:",
+    "confidence": 0.9561110138893127,
+    "bbox": [
+     [
+      833.0,
+      421.0
+     ],
+     [
+      1013.0,
+      421.0
+     ],
+     [
+      1013.0,
+      440.0
+     ],
+     [
+      833.0,
+      440.0
+     ]
+    ]
+   },
+   {
+    "text": "PHP1,500.00",
+    "confidence": 0.9819913506507874,
+    "bbox": [
+     [
+      838.0,
+      454.0
+     ],
+     [
+      1021.0,
+      454.0
+     ],
+     [
+      1021.0,
+      475.0
+     ],
+     [
+      838.0,
+      475.0
+     ]
+    ]
+   },
+   {
+    "text": "FEBRUARY MONTHLY STATEMENT",
+    "confidence": 0.9601745009422302,
+    "bbox": [
+     [
+      201.0,
+      483.0
+     ],
+     [
+      528.0,
+      483.0
+     ],
+     [
+      528.0,
+      502.0
+     ],
+     [
+      201.0,
+      502.0
+     ]
+    ]
+   },
+   {
+    "text": "Pay Immediately",
+    "confidence": 0.9840688109397888,
+    "bbox": [
+     [
+      796.0,
+      488.0
+     ],
+     [
+      892.0,
+      492.0
+     ],
+     [
+      891.0,
+      509.0
+     ],
+     [
+      796.0,
+      505.0
+     ]
+    ]
+   },
+   {
+    "text": "PHP0.00",
+    "confidence": 0.9010916948318481,
+    "bbox": [
+     [
+      944.0,
+      490.0
+     ],
+     [
+      1000.0,
+      490.0
+     ],
+     [
+      1000.0,
+      507.0
+     ],
+     [
+      944.0,
+      507.0
+     ]
+    ]
+   },
+   {
+    "text": "BILL SUMMARY",
+    "confidence": 0.9716110229492188,
+    "bbox": [
+     [
+      45.0,
+      525.0
+     ],
+     [
+      179.0,
+      525.0
+     ],
+     [
+      179.0,
+      545.0
+     ],
+     [
+      45.0,
+      545.0
+     ]
+    ]
+   },
+   {
+    "text": "AMOUNT",
+    "confidence": 0.9967460632324219,
+    "bbox": [
+     [
+      580.0,
+      525.0
+     ],
+     [
+      659.0,
+      525.0
+     ],
+     [
+      659.0,
+      546.0
+     ],
+     [
+      580.0,
+      546.0
+     ]
+    ]
+   },
+   {
+    "text": "Pay by 03/12/2024",
+    "confidence": 0.9581190943717957,
+    "bbox": [
+     [
+      796.0,
+      516.0
+     ],
+     [
+      904.0,
+      516.0
+     ],
+     [
+      904.0,
+      532.0
+     ],
+     [
+      796.0,
+      532.0
+     ]
+    ]
+   },
+   {
+    "text": "PHP1,500.00",
+    "confidence": 0.9792768359184265,
+    "bbox": [
+     [
+      944.0,
+      517.0
+     ],
+     [
+      1020.0,
+      517.0
+     ],
+     [
+      1020.0,
+      534.0
+     ],
+     [
+      944.0,
+      534.0
+     ]
+    ]
+   },
+   {
+    "text": "PREVIOUS CHARGES",
+    "confidence": 0.9808943867683411,
+    "bbox": [
+     [
+      46.0,
+      564.0
+     ],
+     [
+      221.0,
+      564.0
+     ],
+     [
+      221.0,
+      584.0
+     ],
+     [
+      46.0,
+      584.0
+     ]
+    ]
+   },
+   {
+    "text": "IMPORTANT REMINDERS",
+    "confidence": 0.9695403575897217,
+    "bbox": [
+     [
+      756.0,
+      564.0
+     ],
+     [
+      1027.0,
+      564.0
+     ],
+     [
+      1027.0,
+      584.0
+     ],
+     [
+      756.0,
+      584.0
+     ]
+    ]
+   },
+   {
+    "text": "Your Previous Bill",
+    "confidence": 0.9513623714447021,
+    "bbox": [
+     [
+      46.0,
+      593.0
+     ],
+     [
+      190.0,
+      593.0
+     ],
+     [
+      190.0,
+      612.0
+     ],
+     [
+      46.0,
+      612.0
+     ]
+    ]
+   },
+   {
+    "text": "1,500.00",
+    "confidence": 0.9915659427642822,
+    "bbox": [
+     [
+      586.0,
+      596.0
+     ],
+     [
+      656.0,
+      596.0
+     ],
+     [
+      656.0,
+      612.0
+     ],
+     [
+      586.0,
+      612.0
+     ]
+    ]
+   },
+   {
+    "text": "Please ensure to make full payment of the",
+    "confidence": 0.9605333209037781,
+    "bbox": [
+     [
+      741.0,
+      603.0
+     ],
+     [
+      1040.0,
+      605.0
+     ],
+     [
+      1040.0,
+      621.0
+     ],
+     [
+      740.0,
+      620.0
+     ]
+    ]
+   },
+   {
+    "text": "Total Payment Received -Thank You!",
+    "confidence": 0.9602996706962585,
+    "bbox": [
+     [
+      46.0,
+      620.0
+     ],
+     [
+      352.0,
+      620.0
+     ],
+     [
+      352.0,
+      641.0
+     ],
+     [
+      46.0,
+      641.0
+     ]
+    ]
+   },
+   {
+    "text": "(1,500.00)",
+    "confidence": 0.9231468439102173,
+    "bbox": [
+     [
+      572.0,
+      620.0
+     ],
+     [
+      654.0,
+      620.0
+     ],
+     [
+      654.0,
+      641.0
+     ],
+     [
+      572.0,
+      641.0
+     ]
+    ]
+   },
+   {
+    "text": "ent",
+    "confidence": 0.8958719372749329,
+    "bbox": [
+     [
+      1021.0,
+      624.0
+     ],
+     [
+      1041.0,
+      624.0
+     ],
+     [
+      1041.0,
+      635.0
+     ],
+     [
+      1021.0,
+      635.0
+     ]
+    ]
+   },
+   {
+    "text": "service disconnection.",
+    "confidence": 0.9860856533050537,
+    "bbox": [
+     [
+      740.0,
+      638.0
+     ],
+     [
+      898.0,
+      638.0
+     ],
+     [
+      898.0,
+      653.0
+     ],
+     [
+      740.0,
+      653.0
+     ]
+    ]
+   },
+   {
+    "text": "Previous Balance (Due Immediately)",
+    "confidence": 0.9814528226852417,
+    "bbox": [
+     [
+      48.0,
+      652.0
+     ],
+     [
+      346.0,
+      652.0
+     ],
+     [
+      346.0,
+      671.0
+     ],
+     [
+      48.0,
+      671.0
+     ]
+    ]
+   },
+   {
+    "text": "0.00",
+    "confidence": 0.9970670938491821,
+    "bbox": [
+     [
+      616.0,
+      650.0
+     ],
+     [
+      656.0,
+      650.0
+     ],
+     [
+      656.0,
+      668.0
+     ],
+     [
+      616.0,
+      668.0
+     ]
+    ]
+   },
+   {
+    "text": "Kindly check the charges in your statement of",
+    "confidence": 0.9615213871002197,
+    "bbox": [
+     [
+      744.0,
+      673.0
+     ],
+     [
+      1043.0,
+      673.0
+     ],
+     [
+      1043.0,
+      688.0
+     ],
+     [
+      744.0,
+      688.0
+     ]
+    ]
+   },
+   {
+    "text": "CURRENT CHARGES",
+    "confidence": 0.9733363389968872,
+    "bbox": [
+     [
+      48.0,
+      692.0
+     ],
+     [
+      218.0,
+      692.0
+     ],
+     [
+      218.0,
+      712.0
+     ],
+     [
+      48.0,
+      712.0
+     ]
+    ]
+   },
+   {
+    "text": "ervice for",
+    "confidence": 0.9135128855705261,
+    "bbox": [
+     [
+      986.0,
+      689.0
+     ],
+     [
+      1043.0,
+      689.0
+     ],
+     [
+      1043.0,
+      704.0
+     ],
+     [
+      986.0,
+      704.0
+     ]
+    ]
+   },
+   {
+    "text": "Recurring Charges",
+    "confidence": 0.9829209446907043,
+    "bbox": [
+     [
+      46.0,
+      719.0
+     ],
+     [
+      197.0,
+      719.0
+     ],
+     [
+      197.0,
+      739.0
+     ],
+     [
+      46.0,
+      739.0
+     ]
+    ]
+   },
+   {
+    "text": "1,339.29",
+    "confidence": 0.9945252537727356,
+    "bbox": [
+     [
+      585.0,
+      716.0
+     ],
+     [
+      659.0,
+      716.0
+     ],
+     [
+      659.0,
+      738.0
+     ],
+     [
+      585.0,
+      738.0
+     ]
+    ]
+   },
+   {
+    "text": "statement date. Should there be no raised",
+    "confidence": 0.946202278137207,
+    "bbox": [
+     [
+      744.0,
+      721.0
+     ],
+     [
+      1044.0,
+      721.0
+     ],
+     [
+      1044.0,
+      736.0
+     ],
+     [
+      744.0,
+      736.0
+     ]
+    ]
+   },
+   {
+    "text": "issue, charges in the statement will be",
+    "confidence": 0.9472026228904724,
+    "bbox": [
+     [
+      744.0,
+      736.0
+     ],
+     [
+      1044.0,
+      736.0
+     ],
+     [
+      1044.0,
+      756.0
+     ],
+     [
+      744.0,
+      756.0
+     ]
+    ]
+   },
+   {
+    "text": "CURRENT CHARGES BEFORE TAX",
+    "confidence": 0.9590268731117249,
+    "bbox": [
+     [
+      48.0,
+      759.0
+     ],
+     [
+      327.0,
+      759.0
+     ],
+     [
+      327.0,
+      778.0
+     ],
+     [
+      48.0,
+      778.0
+     ]
+    ]
+   },
+   {
+    "text": "1,339.29",
+    "confidence": 0.9964515566825867,
+    "bbox": [
+     [
+      585.0,
+      757.0
+     ],
+     [
+      657.0,
+      757.0
+     ],
+     [
+      657.0,
+      778.0
+     ],
+     [
+      585.0,
+      778.0
+     ]
+    ]
+   },
+   {
+    "text": "considered correct.",
+    "confidence": 0.9907720685005188,
+    "bbox": [
+     [
+      742.0,
+      751.0
+     ],
+     [
+      875.0,
+      753.0
+     ],
+     [
+      875.0,
+      769.0
+     ],
+     [
+      742.0,
+      768.0
+     ]
+    ]
+   },
+   {
+    "text": "+TAXES",
+    "confidence": 0.9848100543022156,
+    "bbox": [
+     [
+      46.0,
+      787.0
+     ],
+     [
+      123.0,
+      787.0
+     ],
+     [
+      123.0,
+      808.0
+     ],
+     [
+      46.0,
+      808.0
+     ]
+    ]
+   },
+   {
+    "text": "160.71",
+    "confidence": 0.9972211718559265,
+    "bbox": [
+     [
+      602.0,
+      786.0
+     ],
+     [
+      660.0,
+      786.0
+     ],
+     [
+      660.0,
+      807.0
+     ],
+     [
+      602.0,
+      807.0
+     ]
+    ]
+   },
+   {
+    "text": "-",
+    "confidence": 0.6713989973068237,
+    "bbox": [
+     [
+      804.0,
+      814.0
+     ],
+     [
+      814.0,
+      814.0
+     ],
+     [
+      814.0,
+      822.0
+     ],
+     [
+      804.0,
+      822.0
+     ]
+    ]
+   },
+   {
+    "text": "TOTAL CURRENT CHARGES",
+    "confidence": 0.9572364091873169,
+    "bbox": [
+     [
+      49.0,
+      822.0
+     ],
+     [
+      278.0,
+      822.0
+     ],
+     [
+      278.0,
+      837.0
+     ],
+     [
+      49.0,
+      837.0
+     ]
+    ]
+   },
+   {
+    "text": "1,500.00",
+    "confidence": 0.9941608309745789,
+    "bbox": [
+     [
+      586.0,
+      819.0
+     ],
+     [
+      659.0,
+      819.0
+     ],
+     [
+      659.0,
+      836.0
+     ],
+     [
+      586.0,
+      836.0
+     ]
+    ]
+   },
+   {
+    "text": "Please pay on (or) before 03/12/2024",
+    "confidence": 0.9602863788604736,
+    "bbox": [
+     [
+      406.0,
+      843.0
+     ],
+     [
+      662.0,
+      842.0
+     ],
+     [
+      662.0,
+      861.0
+     ],
+     [
+      406.0,
+      863.0
+     ]
+    ]
+   },
+   {
+    "text": "TOTAL DUE (OVERDUE+CURRENT)",
+    "confidence": 0.9570454955101013,
+    "bbox": [
+     [
+      51.0,
+      884.0
+     ],
+     [
+      389.0,
+      884.0
+     ],
+     [
+      389.0,
+      899.0
+     ],
+     [
+      51.0,
+      899.0
+     ]
+    ]
+   },
+   {
+    "text": "PHP1,500.00",
+    "confidence": 0.9842150211334229,
+    "bbox": [
+     [
+      534.0,
+      881.0
+     ],
+     [
+      662.0,
+      881.0
+     ],
+     [
+      662.0,
+      900.0
+     ],
+     [
+      534.0,
+      900.0
+     ]
+    ]
+   },
+   {
+    "text": "For your safety and convenience, instead of going to our business centers, you may download our GoFiber app for your account management",
+    "confidence": 0.9740989208221436,
+    "bbox": [
+     [
+      45.0,
+      1175.0
+     ],
+     [
+      1058.0,
+      1169.0
+     ],
+     [
+      1058.0,
+      1193.0
+     ],
+     [
+      45.0,
+      1199.0
+     ]
+    ]
+   },
+   {
+    "text": "bills payment, and other concerns.For key updates and useful tips, join our Viber community and subscribe to our YouTube channel.",
+    "confidence": 0.9621013402938843,
+    "bbox": [
+     [
+      83.0,
+      1195.0
+     ],
+     [
+      1026.0,
+      1192.0
+     ],
+     [
+      1026.0,
+      1213.0
+     ],
+     [
+      83.0,
+      1216.0
+     ]
+    ]
+   },
+   {
+    "text": "GoFiber App",
+    "confidence": 0.9670383334159851,
+    "bbox": [
+     [
+      309.0,
+      1244.0
+     ],
+     [
+      409.0,
+      1244.0
+     ],
+     [
+      409.0,
+      1261.0
+     ],
+     [
+      309.0,
+      1261.0
+     ]
+    ]
+   },
+   {
+    "text": "YouTube Channel",
+    "confidence": 0.9789401292800903,
+    "bbox": [
+     [
+      566.0,
+      1244.0
+     ],
+     [
+      699.0,
+      1244.0
+     ],
+     [
+      699.0,
+      1259.0
+     ],
+     [
+      566.0,
+      1259.0
+     ]
+    ]
+   },
+   {
+    "text": "Viber Community",
+    "confidence": 0.9648061394691467,
+    "bbox": [
+     [
+      782.0,
+      1243.0
+     ],
+     [
+      924.0,
+      1243.0
+     ],
+     [
+      924.0,
+      1262.0
+     ],
+     [
+      782.0,
+      1262.0
+     ]
+    ]
+   },
+   {
+    "text": "Downloadd from the App Store",
+    "confidence": 0.9551315903663635,
+    "bbox": [
+     [
+      307.0,
+      1258.0
+     ],
+     [
+      484.0,
+      1258.0
+     ],
+     [
+      484.0,
+      1278.0
+     ],
+     [
+      307.0,
+      1278.0
+     ]
+    ]
+   },
+   {
+    "text": "Subscribe to",
+    "confidence": 0.9877553582191467,
+    "bbox": [
+     [
+      568.0,
+      1261.0
+     ],
+     [
+      645.0,
+      1261.0
+     ],
+     [
+      645.0,
+      1276.0
+     ],
+     [
+      568.0,
+      1276.0
+     ]
+    ]
+   },
+   {
+    "text": "ConvergelCTSolutionsinc",
+    "confidence": 0.985156238079071,
+    "bbox": [
+     [
+      566.0,
+      1275.0
+     ],
+     [
+      713.0,
+      1273.0
+     ],
+     [
+      713.0,
+      1290.0
+     ],
+     [
+      566.0,
+      1291.0
+     ]
+    ]
+   },
+   {
+    "text": "Converge ICT Community",
+    "confidence": 0.9637863039970398,
+    "bbox": [
+     [
+      782.0,
+      1259.0
+     ],
+     [
+      939.0,
+      1259.0
+     ],
+     [
+      939.0,
+      1279.0
+     ],
+     [
+      782.0,
+      1279.0
+     ]
+    ]
+   },
+   {
+    "text": "iOS and Play Store (Android)",
+    "confidence": 0.9421108961105347,
+    "bbox": [
+     [
+      307.0,
+      1276.0
+     ],
+     [
+      483.0,
+      1276.0
+     ],
+     [
+      483.0,
+      1291.0
+     ],
+     [
+      307.0,
+      1291.0
+     ]
+    ]
+   },
+   {
+    "text": "converge.co/viber",
+    "confidence": 0.9969301819801331,
+    "bbox": [
+     [
+      784.0,
+      1276.0
+     ],
+     [
+      893.0,
+      1276.0
+     ],
+     [
+      893.0,
+      1293.0
+     ],
+     [
+      784.0,
+      1293.0
+     ]
+    ]
+   },
+   {
+    "text": "Help the environment and save on time by getting your",
+    "confidence": 0.9708061814308167,
+    "bbox": [
+     [
+      196.0,
+      1317.0
+     ],
+     [
+      574.0,
+      1317.0
+     ],
+     [
+      574.0,
+      1336.0
+     ],
+     [
+      196.0,
+      1336.0
+     ]
+    ]
+   },
+   {
+    "text": "GOGREEN To update your acc",
+    "confidence": 0.9597235321998596,
+    "bbox": [
+     [
+      645.0,
+      1317.0
+     ],
+     [
+      873.0,
+      1317.0
+     ],
+     [
+      873.0,
+      1336.0
+     ],
+     [
+      645.0,
+      1336.0
+     ]
+    ]
+   },
+   {
+    "text": "unt. visit this link here",
+    "confidence": 0.9170475006103516,
+    "bbox": [
+     [
+      879.0,
+      1318.0
+     ],
+     [
+      987.0,
+      1318.0
+     ],
+     [
+      987.0,
+      1329.0
+     ],
+     [
+      879.0,
+      1329.0
+     ]
+    ]
+   },
+   {
+    "text": "Statement of Account through your registered email address!",
+    "confidence": 0.9835090637207031,
+    "bbox": [
+     [
+      157.0,
+      1335.0
+     ],
+     [
+      575.0,
+      1333.0
+     ],
+     [
+      575.0,
+      1354.0
+     ],
+     [
+      157.0,
+      1356.0
+     ]
+    ]
+   },
+   {
+    "text": "GOFiBER! http://bit.ly/AcctUpdate",
+    "confidence": 0.9551604986190796,
+    "bbox": [
+     [
+      646.0,
+      1335.0
+     ],
+     [
+      983.0,
+      1335.0
+     ],
+     [
+      983.0,
+      1354.0
+     ],
+     [
+      646.0,
+      1354.0
+     ]
+    ]
+   }
+  ]
+ },
+ "text_llm_extracted": {
+  "invoice_number": "SOA-0000000006892445",
+  "invoice_date": "2024-02-22",
+  "due_date": "2024-03-12",
+  "vendor_name": "CONVERGE",
+  "vendor_address": "New Street Building, MacArthur Highway, Balibago, Angeles City, Philippines",
+  "vendor_tax_id": "006-895-049-000",
+  "customer_name": "NAJELA NICOLAS BUENCIBELLO",
+  "customer_contact": null,
+  "customer_address": "BAYAN LUMA VII, CITY OF IMUS, CAVITE, 4103",
+  "customer_tax_id": null,
+  "plate_number": null,
+  "line_items": [
+   {
+    "description": "Recurring Charges",
+    "quantity": 1.0,
+    "unit_price": 0.0,
+    "amount": 1339.29
+   }
+  ],
+  "subtotal": 1339.29,
+  "tax_amount": 160.71,
+  "tax_rate": null,
+  "discount": null,
+  "withholding_tax": null,
+  "zero_rated_sales": null,
+  "vat_exempt_sales": null,
+  "total_amount": 1500.0,
+  "current_charges_total": 1500.0,
+  "previous_balance": 0.0,
+  "currency": "PHP",
+  "payment_terms": "Pay by 03/12/2024"
+ },
+ "vision": {
+  "mismatches": [],
+  "corrections": {},
+  "notes": [
+   "VISION_VERIFICATION_INCOMPLETE: vision request timed out. OCR/text results were saved; review the invoice against the original image."
+  ]
+ },
+ "header": {
+  "recovered_fields": {},
+  "locked_fields": [],
+  "best_ocr_text": ""
+ },
+ "header_notes": []
+}

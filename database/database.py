@@ -18,6 +18,10 @@ def init_db():
     from database import models  # noqa: F401 — ensures models are registered
     Base.metadata.create_all(bind=engine)
     _ensure_new_columns()
+    from database.qa_migration import migrate_duplicate_identity
+    migrate_duplicate_identity(engine)
+    from database.content_migration import migrate_content_identity
+    migrate_content_identity(engine)
 
 
 def _ensure_new_columns():
@@ -38,7 +42,8 @@ def _ensure_new_columns():
     new_columns = {
         "invoices": [
             ("vision_notes", "TEXT"), ("enhanced_image_path", "TEXT"),
-            ("date_uploaded", "DATE"),
+            ("duplicate_key", "TEXT"), ("content_key", "TEXT"), ("validation_issues", "TEXT"), ("field_confidences", "TEXT"),
+            ("date_uploaded", "DATE"), ("field_evidence", "TEXT"),
             ("vendor_address", "TEXT"), ("vendor_tax_id", "TEXT"),
             ("customer_contact", "TEXT"), ("customer_address", "TEXT"), ("customer_tax_id", "TEXT"),
             ("plate_number", "TEXT"),

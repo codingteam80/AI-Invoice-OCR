@@ -1,0 +1,185 @@
+{
+ "_note": "Meralco 'ELECTRIC BILL' with a printed future Bill Date (12/31/2026). The first extraction was complete; the correction round failed (429 x2, then local timeout) and the whole invoice was discarded.",
+ "ocr_text": "For inquiries please contact our CallCenter:16211(Residential) or\n16210(Business) or visit our website at www.meralco.com.ph\nELINO B.ESGUERRA\nV\n0088 LTBLOCK6 ST\nBACOOR BUSINESS CTR.\nSUMMERVILLS SUBD.PHASE 1 MOLINO IV\nGEN.EMILIO AGUINALDO\nBACOOR\nBACOOR\nMERALCO\nCAVITE\nTel.No.:16222227\nTIN:000-101-528-000-/VAT\nAng liwanag ng bukas\nB-QL-86\n078A009020\n413007 0003\nPage 1 of2\nCUSTOMER TIN:\nELECTRIC BILL\nEB Invoice No.4130N622260430\nSummary for Customer Account Number CAN)1624259261\nBalance From Previous Billing\nCurrent Charges\nTotal Amount Due\nAmount Due\nDue Date\nP8,698.13\nPlease pay immediately\nP9,274.86\n12/31/2026\nP17,972.99\nPayments made after 12/31/2026 will be reflected on your next billing statement.\nService Info\nIMPORTANT NOTICE\nService ID Number\n403195286101\nRate\n:Residential\nFor customers with 200 kWh consumption and below in their\nContract in the name of\nESGUERRA,ELINO B.\nDecember 2026 bill, there will be NO DISCONNECTION until\nService Address\n0088 LT BLOCK 6SUMMERVILLS SUBD.MOLINO\nCAVITE\nJanuary 31,2027.\nFor customers with 201 kWh consumption and above in their\nBilling Info\nBill Date\n12/31/2026\nDecember 2026 bill, and with unpaid regular non ECQ/MECQ\nMeter Reading Date\n12/31/2026\nbills,disconnection will REsuME in January2027\nBill Period\n11/30/2026 to 12/31/2026\nDue Date\n12/31/2026\nTo avoid bills from piling up, you may settle your bills via\nTotal KWH\n929\nauthorized payment partners.\nTotal current amount\nP9,274.86\nNext Meter Reading\n01/31/2027\nYour monthly electricity consumption chart\nBREAKDOWN OF ELECTRICITY CHARGES\nBILL SUBGROUP\nSUBTOTAL\nPERCENTAGE\n3100\n2790\nGeneration\n4,158.02\n44.83%\n2170\n2480\nTransmission\n698.14\n7.53 %\n1860\nSystem Loss\n277.12\n2.99 %\n1550\nDistribution (Meralco)\n2,794.70\n30.13%\n1240\nSubsidies\n75.62\n0.82 %\n930\nGovernment Taxes\n620\n995.16\n10.73 %\n310\nUniversal Charges\n184.78\n1.99%\n0\nFIT-Al (Renewable)\n91.32\n0.98 %\nOther Charges\n0.00\n0.00%\nNDec26 Jan27 Feb27 Mar27 Apr27 May27 Jun27 Jul27 Aug27 Sep27 Oct27 Dec27\nMay or June kWh bar includes\ncustomer metering facilities within your area this quarter.\nPlease be informed that MERALCO may conduct a routine maintenance/inspection of our\nconsumption from previous months\nFor authorized collecting agents\nScan the CAN!\nCustomer Account Number (CAN)\nGood news!\nUse this barcode to make online payments easier\n1624259261\nStarting December 1,2026,\njust use this Customer Account Number (CAN)\nPlease pay at any Meralco Business Center\nto paythru our authorized payment partners!\nCAS Permit No.:0306-116-00036-8A/AR dt:March21,2005",
+ "text_llm": {
+  "attempts": [
+   {
+    "kind": "initial",
+    "http_status": 200,
+    "parsed_json": {
+     "invoice_number": "4130N622260430",
+     "invoice_date": "2026-12-31",
+     "due_date": "2026-12-31",
+     "vendor_name": "MERALCO",
+     "vendor_address": null,
+     "vendor_tax_id": "000-101-528-000",
+     "customer_name": "ESGUERRA, ELINO B.",
+     "customer_contact": null,
+     "customer_address": "0088 LT BLOCK 6 SUMMERVILLS SUBD. MOLINO IV, GEN. EMILIO AGUINALDO, BACOOR, CAVITE",
+     "customer_tax_id": null,
+     "plate_number": null,
+     "line_items": [
+      {
+       "description": "Generation",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 4158.02
+      },
+      {
+       "description": "Transmission",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 698.14
+      },
+      {
+       "description": "System Loss",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 277.12
+      },
+      {
+       "description": "Distribution (Meralco)",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 2794.7
+      },
+      {
+       "description": "Subsidies",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 75.62
+      },
+      {
+       "description": "Government Taxes",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 995.16
+      },
+      {
+       "description": "Universal Charges",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 184.78
+      },
+      {
+       "description": "FIT-Al (Renewable)",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 91.32
+      },
+      {
+       "description": "Other Charges",
+       "quantity": null,
+       "unit_price": null,
+       "amount": 0.0
+      }
+     ],
+     "subtotal": 9274.86,
+     "tax_amount": null,
+     "tax_rate": null,
+     "discount": null,
+     "withholding_tax": null,
+     "zero_rated_sales": null,
+     "vat_exempt_sales": null,
+     "total_amount": 17972.99,
+     "current_charges_total": 9274.86,
+     "previous_balance": 8698.13,
+     "currency": "PHP",
+     "payment_terms": null
+    }
+   },
+   {
+    "kind": "correction",
+    "error": "LLM API (api.groq.com) failed after 2 attempt(s): attempt 1: HTTP 429; attempt 2: HTTP 429",
+    "parsed_json": null
+   }
+  ],
+  "early_cleanup": [
+   {
+    "notes": [],
+    "normalized_json": {
+     "invoice_number": "4130N622260430",
+     "invoice_date": "2026-12-31",
+     "due_date": "2026-12-31",
+     "vendor_name": "MERALCO",
+     "vendor_address": null,
+     "vendor_tax_id": "000-101-528-000",
+     "customer_name": "ESGUERRA, ELINO B.",
+     "customer_contact": null,
+     "customer_address": "0088 LT BLOCK 6 SUMMERVILLS SUBD. MOLINO IV, GEN. EMILIO AGUINALDO, BACOOR, CAVITE",
+     "customer_tax_id": null,
+     "plate_number": null,
+     "line_items": [
+      {
+       "description": "Generation",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 4158.02
+      },
+      {
+       "description": "Transmission",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 698.14
+      },
+      {
+       "description": "System Loss",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 277.12
+      },
+      {
+       "description": "Distribution (Meralco)",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 2794.7
+      },
+      {
+       "description": "Subsidies",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 75.62
+      },
+      {
+       "description": "Government Taxes",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 995.16
+      },
+      {
+       "description": "Universal Charges",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 184.78
+      },
+      {
+       "description": "FIT-Al (Renewable)",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 91.32
+      },
+      {
+       "description": "Other Charges",
+       "quantity": 1.0,
+       "unit_price": 0.0,
+       "amount": 0.0
+      }
+     ],
+     "subtotal": 9274.86,
+     "tax_amount": null,
+     "tax_rate": null,
+     "discount": null,
+     "withholding_tax": null,
+     "zero_rated_sales": null,
+     "vat_exempt_sales": null,
+     "total_amount": 17972.99,
+     "current_charges_total": 9274.86,
+     "previous_balance": 8698.13,
+     "currency": "PHP",
+     "payment_terms": null
+    }
+   }
+  ]
+ },
+ "error": "LLM API (api.groq.com) failed (LLM API (api.groq.com) request failed: LLM API (api.groq.com) failed after 2 attempt(s): attempt 1: HTTP 429; attempt 2: HTTP 429) and the local Ollama fallback also failed (Ollama request timed out after 2 attempt(s), 300s each.)"
+}

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from starlette.concurrency import run_in_threadpool
 from services.upload_service import handle_upload, UploadError
 from services.invoice_service import process_invoice_file
 
@@ -13,9 +14,9 @@ async def upload_invoice(file: UploadFile = File(...)):
     except UploadError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    results = process_invoice_file(saved_path, original_filename=file.filename)
+    results = await run_in_threadpool(process_invoice_file, saved_path, original_filename=file.filename)
     if not any(r.get("success") for r in results):
         # Every invoice found on this file failed or was a duplicate —
         # surface the first error rather than a bare empty list.
-        raise HTTPException(status_code=422, detail=results[0].get("error"))
+        raise HTTPException(status_code=422, detail=results[0].get("error") if results else "No invoices could be extracted.")
     return {"invoices": results}

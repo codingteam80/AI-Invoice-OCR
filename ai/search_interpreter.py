@@ -13,6 +13,8 @@ from datetime import date
 
 import requests
 
+from ai import llm_client
+from config.logging import get_logger
 from config.settings import settings
 from services.search_service import normalize_search_plan, search_schema_for
 from utils.helpers import safe_json_loads
@@ -237,23 +239,28 @@ User request:
 """
 
 
-def interpret_natural_language_search(
-    query: str,
-    *,
-    page: str,
-    context: dict | None = None,
-) -> tuple[dict, list[str]]:
-    """Ask the local text model for a search plan, then strictly validate it."""
-    if not query or not query.strip():
-        raise SearchInterpretationError("Enter a search request first.")
+logger = get_logger("ai.search_interpreter")
 
-    # Validate the page up front so unsupported pages never reach Ollama.
-    search_schema_for(page)
 
+def _search_via_openrouter(prompt: str) -> str:
+    model = llm_client.active_search_model()
+    timeout = min(settings.OPENROUTER_TIMEOUT_SECONDS, settings.SEARCH_LLM_TIMEOUT_SECONDS)
+    try:
+        return llm_client.complete_text(prompt, model=model, temperature=0.0, timeout=timeout, max_tokens=1024)
+    except requests.exceptions.Timeout as exc:
+        raise SearchInterpretationError(
+            f"AI Search timed out after {timeout} seconds. "
+            "Try again; the model may be slow or rate-limited."
+        ) from exc
+    except requests.RequestException as exc:
+        raise SearchInterpretationError(f"Could not reach {llm_client.label()} for AI Search ({model}): {exc}") from exc
+
+
+def _search_via_ollama(prompt: str) -> str:
     url = f"{settings.OLLAMA_HOST}/api/generate"
     payload = {
         "model": settings.SEARCH_LLM_MODEL,
-        "prompt": _build_prompt(query, page, context),
+        "prompt": prompt,
         "stream": False,
         "format": "json",
         "keep_alive": settings.OLLAMA_KEEP_ALIVE,
@@ -271,15 +278,48 @@ def interpret_natural_language_search(
         raise SearchInterpretationError(
             f"Could not reach local Ollama AI Search ({settings.SEARCH_LLM_MODEL}): {exc}"
         ) from exc
-
     try:
         body = response.json()
     except ValueError as exc:
         raise SearchInterpretationError("Ollama returned an invalid response.") from exc
+    return body.get("response", "")
 
-    parsed = safe_json_loads(body.get("response", ""))
+
+def interpret_natural_language_search(
+    query: str,
+    *,
+    page: str,
+    context: dict | None = None,
+) -> tuple[dict, list[str]]:
+    """Ask the local text model for a search plan, then strictly validate it."""
+    if not query or not query.strip():
+        raise SearchInterpretationError("Enter a search request first.")
+
+    # Validate the page up front so unsupported pages never reach Ollama.
+    search_schema_for(page)
+
+    prompt = _build_prompt(query, page, context)
+    used_openrouter = llm_client.pick_provider() == "openrouter"
+    if used_openrouter:
+        try:
+            raw_text = _search_via_openrouter(prompt)
+        except SearchInterpretationError as exc:
+            if not llm_client.fallback_enabled():
+                raise
+            llm_client.note_openrouter_failure(exc.__cause__)
+            logger.warning(f"{llm_client.label()} AI Search failed ({exc}); falling back to local Ollama")
+            raw_text = _search_via_ollama(prompt)
+            used_openrouter = False
+    else:
+        raw_text = _search_via_ollama(prompt)
+
+    parsed = safe_json_loads(raw_text)
     if not isinstance(parsed, dict):
-        raise SearchInterpretationError("Qwen did not return a valid JSON search plan. Please rephrase the search.")
+        raise SearchInterpretationError(
+            "The AI model did not return a valid JSON search plan. Please rephrase the search."
+            if used_openrouter else
+            "Qwen did not return a valid JSON search plan. Please rephrase the search."
+        )
 
     plan, warnings = normalize_search_plan(parsed, page)
     plan = _augment_explicit_presence(query, page, plan)

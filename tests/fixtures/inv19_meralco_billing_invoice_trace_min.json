@@ -1,0 +1,1166 @@
+{
+ "_note": "INV-19 re-run (v15): vendor_name was the legal name 'MANILA ELECTRIC COMPANY', which the old vendor-name gate missed.",
+ "ocr": {
+  "text": "Billing Invoice\nNo.4118049545810\nMANILA ELECTRIC COMPANY\nLOPEZLDG ORTGASAVENUE PASQY\n NaN Pr\nVATRECN0001D152800000\nRegstered Asdressc Not Proioec\nMERALCO\nPage 1of2\n4\nCustomer-Account Number (CAN)\nDue Date\n-\n29 Apr 2026\nPlease Pay\nP3,036.37\nBill Computation Summary\nRemaining Balance from previous bill\nee thrs drn s Un\n0.00\ndoec at ancadebis under rone and.stslmar\nCharges for this billing period\n3,036.37\nGeneration\n1227\nTransmission\n298.62\nSystem Loss\n158.92\nDistribution (Meralco)\n414.78\nSenior Citizen\n0.02\nUniversal Charges\nGovernment Taxes\n304.30\nFIT All (Renewable)\n6592\n41.23\nGEA-All (Renewable)\n761\nLileline\n2.05\nOther Charges\n23.71\nTotal Amount Due\nP3,036.37",
+  "lines": [
+   {
+    "text": "Billing Invoice",
+    "confidence": 0.9611549973487854,
+    "bbox": [
+     [
+      9.0,
+      9.0
+     ],
+     [
+      97.0,
+      11.0
+     ],
+     [
+      97.0,
+      27.0
+     ],
+     [
+      9.0,
+      25.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "No.4118049545810",
+    "confidence": 0.9507529735565186,
+    "bbox": [
+     [
+      9.0,
+      24.0
+     ],
+     [
+      98.0,
+      25.0
+     ],
+     [
+      98.0,
+      39.0
+     ],
+     [
+      9.0,
+      38.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "MANILA ELECTRIC COMPANY",
+    "confidence": 0.898984968662262,
+    "bbox": [
+     [
+      10.0,
+      39.0
+     ],
+     [
+      114.0,
+      41.0
+     ],
+     [
+      114.0,
+      52.0
+     ],
+     [
+      10.0,
+      50.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "LOPEZLDG ORTGASAVENUE PASQY",
+    "confidence": 0.7893538475036621,
+    "bbox": [
+     [
+      10.0,
+      48.0
+     ],
+     [
+      168.0,
+      49.0
+     ],
+     [
+      168.0,
+      61.0
+     ],
+     [
+      10.0,
+      60.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": " NaN Pr",
+    "confidence": 0.5668900609016418,
+    "bbox": [
+     [
+      9.0,
+      68.0
+     ],
+     [
+      110.0,
+      68.0
+     ],
+     [
+      110.0,
+      81.0
+     ],
+     [
+      9.0,
+      81.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "VATRECN0001D152800000",
+    "confidence": 0.7611010670661926,
+    "bbox": [
+     [
+      10.0,
+      56.0
+     ],
+     [
+      132.0,
+      58.0
+     ],
+     [
+      131.0,
+      71.0
+     ],
+     [
+      10.0,
+      69.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Regstered Asdressc Not Proioec",
+    "confidence": 0.7479451894760132,
+    "bbox": [
+     [
+      10.0,
+      79.0
+     ],
+     [
+      113.0,
+      79.0
+     ],
+     [
+      113.0,
+      89.0
+     ],
+     [
+      10.0,
+      89.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "MERALCO",
+    "confidence": 0.9969304203987122,
+    "bbox": [
+     [
+      243.0,
+      74.0
+     ],
+     [
+      322.0,
+      74.0
+     ],
+     [
+      322.0,
+      91.0
+     ],
+     [
+      243.0,
+      91.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Page 1of2",
+    "confidence": 0.8165172934532166,
+    "bbox": [
+     [
+      229.0,
+      95.0
+     ],
+     [
+      286.0,
+      95.0
+     ],
+     [
+      286.0,
+      112.0
+     ],
+     [
+      229.0,
+      112.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "4",
+    "confidence": 0.09385482966899872,
+    "bbox": [
+     [
+      294.0,
+      101.0
+     ],
+     [
+      320.0,
+      101.0
+     ],
+     [
+      320.0,
+      116.0
+     ],
+     [
+      294.0,
+      116.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Customer-Account Number (CAN)",
+    "confidence": 0.9212775230407715,
+    "bbox": [
+     [
+      29.0,
+      124.0
+     ],
+     [
+      186.0,
+      126.0
+     ],
+     [
+      186.0,
+      139.0
+     ],
+     [
+      29.0,
+      137.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Due Date",
+    "confidence": 0.9573338031768799,
+    "bbox": [
+     [
+      279.0,
+      126.0
+     ],
+     [
+      325.0,
+      126.0
+     ],
+     [
+      325.0,
+      140.0
+     ],
+     [
+      279.0,
+      140.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "-",
+    "confidence": 0.14536923170089722,
+    "bbox": [
+     [
+      117.0,
+      151.0
+     ],
+     [
+      122.0,
+      151.0
+     ],
+     [
+      122.0,
+      156.0
+     ],
+     [
+      117.0,
+      156.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "29 Apr 2026",
+    "confidence": 0.931480348110199,
+    "bbox": [
+     [
+      232.0,
+      146.0
+     ],
+     [
+      322.0,
+      146.0
+     ],
+     [
+      322.0,
+      164.0
+     ],
+     [
+      232.0,
+      164.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Please Pay",
+    "confidence": 0.9411330223083496,
+    "bbox": [
+     [
+      30.0,
+      194.0
+     ],
+     [
+      82.0,
+      197.0
+     ],
+     [
+      81.0,
+      212.0
+     ],
+     [
+      29.0,
+      208.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P3,036.37",
+    "confidence": 0.922652542591095,
+    "bbox": [
+     [
+      28.0,
+      221.0
+     ],
+     [
+      149.0,
+      223.0
+     ],
+     [
+      148.0,
+      250.0
+     ],
+     [
+      27.0,
+      248.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Bill Computation Summary",
+    "confidence": 0.9727699160575867,
+    "bbox": [
+     [
+      13.0,
+      271.0
+     ],
+     [
+      172.0,
+      274.0
+     ],
+     [
+      172.0,
+      290.0
+     ],
+     [
+      13.0,
+      287.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Remaining Balance from previous bill",
+    "confidence": 0.9093802571296692,
+    "bbox": [
+     [
+      12.0,
+      289.0
+     ],
+     [
+      182.0,
+      291.0
+     ],
+     [
+      182.0,
+      305.0
+     ],
+     [
+      12.0,
+      303.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "ee thrs drn s Un",
+    "confidence": 0.563524603843689,
+    "bbox": [
+     [
+      15.0,
+      304.0
+     ],
+     [
+      223.0,
+      306.0
+     ],
+     [
+      222.0,
+      317.0
+     ],
+     [
+      15.0,
+      315.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0.00",
+    "confidence": 0.9883413314819336,
+    "bbox": [
+     [
+      299.0,
+      294.0
+     ],
+     [
+      326.0,
+      294.0
+     ],
+     [
+      326.0,
+      309.0
+     ],
+     [
+      299.0,
+      309.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "doec at ancadebis under rone and.stslmar",
+    "confidence": 0.6002331972122192,
+    "bbox": [
+     [
+      16.0,
+      314.0
+     ],
+     [
+      190.0,
+      314.0
+     ],
+     [
+      190.0,
+      323.0
+     ],
+     [
+      16.0,
+      323.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Charges for this billing period",
+    "confidence": 0.9356757402420044,
+    "bbox": [
+     [
+      14.0,
+      326.0
+     ],
+     [
+      150.0,
+      327.0
+     ],
+     [
+      150.0,
+      341.0
+     ],
+     [
+      14.0,
+      340.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "3,036.37",
+    "confidence": 0.9457617402076721,
+    "bbox": [
+     [
+      278.0,
+      329.0
+     ],
+     [
+      324.0,
+      329.0
+     ],
+     [
+      324.0,
+      343.0
+     ],
+     [
+      278.0,
+      343.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Generation",
+    "confidence": 0.9953697919845581,
+    "bbox": [
+     [
+      30.0,
+      346.0
+     ],
+     [
+      82.0,
+      346.0
+     ],
+     [
+      82.0,
+      356.0
+     ],
+     [
+      30.0,
+      356.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1227",
+    "confidence": 0.42124056816101074,
+    "bbox": [
+     [
+      275.0,
+      347.0
+     ],
+     [
+      321.0,
+      347.0
+     ],
+     [
+      321.0,
+      360.0
+     ],
+     [
+      275.0,
+      360.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Transmission",
+    "confidence": 0.9946579337120056,
+    "bbox": [
+     [
+      30.0,
+      358.0
+     ],
+     [
+      92.0,
+      358.0
+     ],
+     [
+      92.0,
+      369.0
+     ],
+     [
+      30.0,
+      369.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "298.62",
+    "confidence": 0.9659844040870667,
+    "bbox": [
+     [
+      282.0,
+      359.0
+     ],
+     [
+      322.0,
+      359.0
+     ],
+     [
+      322.0,
+      373.0
+     ],
+     [
+      282.0,
+      373.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "System Loss",
+    "confidence": 0.9620111584663391,
+    "bbox": [
+     [
+      31.0,
+      371.0
+     ],
+     [
+      90.0,
+      371.0
+     ],
+     [
+      90.0,
+      382.0
+     ],
+     [
+      31.0,
+      382.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "158.92",
+    "confidence": 0.9887846112251282,
+    "bbox": [
+     [
+      283.0,
+      372.0
+     ],
+     [
+      322.0,
+      372.0
+     ],
+     [
+      322.0,
+      386.0
+     ],
+     [
+      283.0,
+      386.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Distribution (Meralco)",
+    "confidence": 0.9672613143920898,
+    "bbox": [
+     [
+      30.0,
+      381.0
+     ],
+     [
+      134.0,
+      383.0
+     ],
+     [
+      133.0,
+      396.0
+     ],
+     [
+      29.0,
+      393.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "414.78",
+    "confidence": 0.9683963656425476,
+    "bbox": [
+     [
+      283.0,
+      385.0
+     ],
+     [
+      322.0,
+      385.0
+     ],
+     [
+      322.0,
+      398.0
+     ],
+     [
+      283.0,
+      398.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Senior Citizen",
+    "confidence": 0.9481740593910217,
+    "bbox": [
+     [
+      31.0,
+      395.0
+     ],
+     [
+      97.0,
+      395.0
+     ],
+     [
+      97.0,
+      406.0
+     ],
+     [
+      31.0,
+      406.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0.02",
+    "confidence": 0.9893211126327515,
+    "bbox": [
+     [
+      295.0,
+      398.0
+     ],
+     [
+      320.0,
+      398.0
+     ],
+     [
+      320.0,
+      410.0
+     ],
+     [
+      295.0,
+      410.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Universal Charges",
+    "confidence": 0.9161388278007507,
+    "bbox": [
+     [
+      30.0,
+      420.0
+     ],
+     [
+      116.0,
+      420.0
+     ],
+     [
+      116.0,
+      432.0
+     ],
+     [
+      30.0,
+      432.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Government Taxes",
+    "confidence": 0.9437214136123657,
+    "bbox": [
+     [
+      30.0,
+      407.0
+     ],
+     [
+      117.0,
+      407.0
+     ],
+     [
+      117.0,
+      420.0
+     ],
+     [
+      30.0,
+      420.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "304.30",
+    "confidence": 0.9837932586669922,
+    "bbox": [
+     [
+      282.0,
+      409.0
+     ],
+     [
+      321.0,
+      409.0
+     ],
+     [
+      321.0,
+      423.0
+     ],
+     [
+      282.0,
+      423.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "FIT All (Renewable)",
+    "confidence": 0.906327486038208,
+    "bbox": [
+     [
+      30.0,
+      430.0
+     ],
+     [
+      123.0,
+      432.0
+     ],
+     [
+      123.0,
+      445.0
+     ],
+     [
+      30.0,
+      444.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "6592",
+    "confidence": 0.5707128047943115,
+    "bbox": [
+     [
+      287.0,
+      419.0
+     ],
+     [
+      320.0,
+      422.0
+     ],
+     [
+      319.0,
+      437.0
+     ],
+     [
+      286.0,
+      434.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "41.23",
+    "confidence": 0.9260249137878418,
+    "bbox": [
+     [
+      287.0,
+      433.0
+     ],
+     [
+      320.0,
+      433.0
+     ],
+     [
+      320.0,
+      447.0
+     ],
+     [
+      287.0,
+      447.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "GEA-All (Renewable)",
+    "confidence": 0.9286607503890991,
+    "bbox": [
+     [
+      30.0,
+      442.0
+     ],
+     [
+      128.0,
+      443.0
+     ],
+     [
+      127.0,
+      457.0
+     ],
+     [
+      30.0,
+      456.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "761",
+    "confidence": 0.9755348563194275,
+    "bbox": [
+     [
+      294.0,
+      443.0
+     ],
+     [
+      319.0,
+      447.0
+     ],
+     [
+      317.0,
+      461.0
+     ],
+     [
+      292.0,
+      457.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Lileline",
+    "confidence": 0.8879744410514832,
+    "bbox": [
+     [
+      32.0,
+      457.0
+     ],
+     [
+      69.0,
+      457.0
+     ],
+     [
+      69.0,
+      468.0
+     ],
+     [
+      32.0,
+      468.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "2.05",
+    "confidence": 0.8715753555297852,
+    "bbox": [
+     [
+      292.0,
+      459.0
+     ],
+     [
+      318.0,
+      459.0
+     ],
+     [
+      318.0,
+      470.0
+     ],
+     [
+      292.0,
+      470.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Other Charges",
+    "confidence": 0.9251986742019653,
+    "bbox": [
+     [
+      31.0,
+      466.0
+     ],
+     [
+      98.0,
+      469.0
+     ],
+     [
+      98.0,
+      481.0
+     ],
+     [
+      30.0,
+      479.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "23.71",
+    "confidence": 0.9475345611572266,
+    "bbox": [
+     [
+      286.0,
+      469.0
+     ],
+     [
+      318.0,
+      469.0
+     ],
+     [
+      318.0,
+      483.0
+     ],
+     [
+      286.0,
+      483.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total Amount Due",
+    "confidence": 0.9419150948524475,
+    "bbox": [
+     [
+      19.0,
+      520.0
+     ],
+     [
+      120.0,
+      524.0
+     ],
+     [
+      119.0,
+      538.0
+     ],
+     [
+      18.0,
+      534.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P3,036.37",
+    "confidence": 0.9247061610221863,
+    "bbox": [
+     [
+      250.0,
+      523.0
+     ],
+     [
+      318.0,
+      523.0
+     ],
+     [
+      318.0,
+      540.0
+     ],
+     [
+      250.0,
+      540.0
+     ]
+    ],
+    "engine": "paddleocr"
+   }
+  ]
+ },
+ "wrong_final": {
+  "vendor_name": "MANILA ELECTRIC COMPANY",
+  "vendor_address": "LOPEZLDG ORTGASAVENUE PASQY",
+  "vendor_tax_id": "000-115-280-0000",
+  "customer_name": "-Account Number (CAN)",
+  "customer_address": "Distribution (Meralco), Senior Citizen, Government Taxes, Universal Charges, FIT All (Renewable), GEA-All (Renewable), Lileline, Other Charges",
+  "invoice_number": "4118049545810",
+  "invoice_date": null,
+  "due_date": "2026-04-29",
+  "line_items": [
+   {
+    "description": "Generation",
+    "quantity": 1.0,
+    "unit_price": 1227.0,
+    "amount": 1227.0
+   },
+   {
+    "description": "Transmission",
+    "quantity": 1.0,
+    "unit_price": 298.62,
+    "amount": 298.62
+   },
+   {
+    "description": "System Loss",
+    "quantity": 1.0,
+    "unit_price": 158.92,
+    "amount": 158.92
+   },
+   {
+    "description": "Distribution (Meralco)",
+    "quantity": 1.0,
+    "unit_price": 414.78,
+    "amount": 414.78
+   },
+   {
+    "description": "Senior Citizen",
+    "quantity": 1.0,
+    "unit_price": 0.02,
+    "amount": 0.02
+   },
+   {
+    "description": "Universal Charges",
+    "quantity": 1.0,
+    "unit_price": 6592.0,
+    "amount": 6592.0
+   },
+   {
+    "description": "Government Taxes",
+    "quantity": 1.0,
+    "unit_price": 0.02,
+    "amount": 0.02
+   },
+   {
+    "description": "FIT All (Renewable)",
+    "quantity": 1.0,
+    "unit_price": 41.23,
+    "amount": 41.23
+   },
+   {
+    "description": "GEA-All (Renewable)",
+    "quantity": 1.0,
+    "unit_price": 761.0,
+    "amount": 761.0
+   },
+   {
+    "description": "Other Charges",
+    "quantity": 1.0,
+    "unit_price": 23.71,
+    "amount": 23.71
+   }
+  ],
+  "subtotal": 3036.37,
+  "total_amount": 3036.37,
+  "current_charges_total": 3036.37,
+  "previous_balance": 0.0,
+  "currency": "PHP"
+ }
+}

@@ -12,7 +12,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings:
-    # Stop repeated unavailable vision calls within one upload batch; reset on next batch.
+    # Deprecated: retained for compatibility, no longer includes OCR time.
+    API_TEXT_BUDGET_SECONDS: float = float(os.getenv("API_TEXT_BUDGET_SECONDS", "150"))
+    LOCAL_TEXT_BUDGET_SECONDS: float = float(os.getenv("LOCAL_TEXT_BUDGET_SECONDS", "600"))
+    API_VISION_BUDGET_SECONDS: float = float(os.getenv("API_VISION_BUDGET_SECONDS", "180"))
+    LOCAL_VISION_BUDGET_SECONDS: float = float(os.getenv("LOCAL_VISION_BUDGET_SECONDS", "360"))
+    PROCESSING_BUDGET_SECONDS: float = float(os.getenv("PROCESSING_BUDGET_SECONDS", "30"))
+    # Bound repeated vision failures within a file; the next file gets a fresh scope.
+    # Legacy environment-key name retained for compatibility.
     VISION_BATCH_GUARD_ENABLED: bool = os.getenv("VISION_BATCH_GUARD_ENABLED", "true").lower() == "true"
     LLM_EARLY_CLEANUP_ENABLED: bool = os.getenv("LLM_EARLY_CLEANUP_ENABLED", "true").lower() == "true"
 
@@ -63,7 +70,7 @@ class Settings:
     # real phone-photo receipts (faded thermal paper, glare, uneven
     # lighting) before OCR ever runs. Turn off only if you've confirmed it
     # hurts accuracy for your specific document source.
-    OCR_PREPROCESS_ENABLED: bool = os.getenv("OCR_PREPROCESS_ENABLED", "false").lower() == "true"
+    OCR_PREPROCESS_ENABLED: bool = os.getenv("OCR_PREPROCESS_ENABLED", "true").lower() == "true"
     # Off by default — see ocr/preprocessing.py docstring. Hard binarization
     # tends to hurt PaddleOCR/TrOCR on real phone photos more than it helps.
     OCR_PREPROCESS_BINARIZE: bool = os.getenv("OCR_PREPROCESS_BINARIZE", "false").lower() == "true"
@@ -77,6 +84,76 @@ class Settings:
     # turn off only for a document source that's guaranteed to always
     # already be upright (e.g. a scanner with a fixed feed orientation).
     OCR_AUTO_ORIENT_ENABLED: bool = os.getenv("OCR_AUTO_ORIENT_ENABLED", "true").lower() == "true"
+
+    # LLM provider. "openrouter" -> hosted models through OpenRouter (e.g. the
+    # free router `openrouter/free`); "ollama" -> local models (original
+    # behaviour). When LLM_PROVIDER is unset, OpenRouter is used if an
+    # OPENROUTER_API_KEY is present, otherwise Ollama.
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "").strip()
+
+    # --- Generic OpenAI-compatible provider (Groq, OpenRouter, Together, ----
+    # --- Cerebras, Gemini-OpenAI, Mistral, ... anything with /chat/completions)
+    # Switch sites by changing only these three values in .env:
+    #     LLM_API_KEY=...   LLM_BASE_URL=...   LLM_MODEL=...
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "").strip()
+    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1").strip()
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen/qwen3.8-27b").strip()
+    LLM_SEARCH_MODEL: str = os.getenv("LLM_SEARCH_MODEL", "").strip()
+    LLM_VISION_MODEL: str = os.getenv("LLM_VISION_MODEL", "").strip()
+    # Optional extra param some providers support (e.g. "none" turns thinking
+    # off on Groq Qwen3). Empty = not sent. If the provider rejects it with a
+    # 400 mentioning "reasoning", it is dropped automatically and retried.
+    LLM_REASONING_EFFORT: str = os.getenv("LLM_REASONING_EFFORT", "").strip()
+
+    # Legacy Groq shortcut (kept so older .env files keep working).
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "").strip()
+    GROQ_BASE_URL: str = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+
+    # Which provider was chosen: "api" (generic) / openrouter / ollama.
+    # Unset -> "api" if LLM_API_KEY (or GROQ_API_KEY), else openrouter if an
+    # OPENROUTER_API_KEY exists, else local Ollama.
+    LLM_REMOTE_NAME: str = (
+        os.getenv("LLM_PROVIDER")
+        or ("api" if (os.getenv("LLM_API_KEY", "").strip() or os.getenv("GROQ_API_KEY", "").strip())
+            else "openrouter" if os.getenv("OPENROUTER_API_KEY", "").strip() else "ollama")
+    ).strip().lower()
+    # Every hosted provider shares one OpenAI-style transport (internally named
+    # "openrouter" for backward compatibility). Only "ollama" is local.
+    LLM_PROVIDER: str = "ollama" if LLM_REMOTE_NAME == "ollama" else "openrouter"
+    OPENROUTER_BASE_URL: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    # `openrouter/free` picks a random free model that supports what the
+    # request needs (JSON mode, image input). Pin a specific model id here
+    # (e.g. "some-vendor/some-model:free") for repeatable results.
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+    OPENROUTER_SEARCH_MODEL: str = os.getenv("OPENROUTER_SEARCH_MODEL", os.getenv("OPENROUTER_MODEL", "openrouter/free"))
+    OPENROUTER_VISION_MODEL: str = os.getenv("OPENROUTER_VISION_MODEL", os.getenv("OPENROUTER_MODEL", "openrouter/free"))
+    # Optional attribution headers shown on your OpenRouter dashboard.
+    OPENROUTER_HTTP_REFERER: str = os.getenv("OPENROUTER_HTTP_REFERER", "")
+    OPENROUTER_APP_TITLE: str = os.getenv("OPENROUTER_APP_TITLE", "AI-Invoice-OCR")
+    # Retries on HTTP 429/502/503 only (free models are rate limited).
+    OPENROUTER_MAX_RETRIES: int = int(os.getenv("LLM_API_MAX_RETRIES", os.getenv("OPENROUTER_MAX_RETRIES", "3")))
+    # Exponential backoff between OpenRouter retries: base * 2^(n-1), max 30s
+    # (a Retry-After header from OpenRouter takes precedence).
+    OPENROUTER_RETRY_BACKOFF_SECONDS: float = float(os.getenv("LLM_API_RETRY_BACKOFF_SECONDS", os.getenv("OPENROUTER_RETRY_BACKOFF_SECONDS", "2")))
+    # A timed-out request is expensive, so it gets its own, smaller budget.
+    OPENROUTER_TIMEOUT_RETRIES: int = int(os.getenv("LLM_API_TIMEOUT_RETRIES", os.getenv("OPENROUTER_TIMEOUT_RETRIES", "1")))
+    # Stop retrying once this much total time was spent on one request, then
+    # fail over (or raise) instead of waiting longer.
+    OPENROUTER_RETRY_BUDGET_SECONDS: int = int(os.getenv("LLM_API_RETRY_BUDGET_SECONDS", os.getenv("OPENROUTER_RETRY_BUDGET_SECONDS", "300")))
+    # Output cap for OpenRouter responses (max_tokens). Not used for Ollama.
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "4096"))
+    LLM_CONTEXT_TOKENS: int = int(os.getenv("LLM_CONTEXT_TOKENS", "16384"))
+    # Automatic fallback: if OpenRouter fails (no/invalid key, no credits,
+    # rate limit, timeout, 5xx) the same request is retried on local Ollama.
+    LLM_FALLBACK_TO_OLLAMA: bool = os.getenv("LLM_FALLBACK_TO_OLLAMA", "true").lower() == "true"
+    # Own, shorter timeout for OpenRouter so a hung request fails over quickly.
+    OPENROUTER_TIMEOUT_SECONDS: int = int(os.getenv("LLM_API_TIMEOUT_SECONDS", os.getenv("OPENROUTER_TIMEOUT_SECONDS", "120")))
+    # After a failure, skip OpenRouter and go straight to Ollama for this long.
+    # Auth/credit problems (401/402/403) won't fix themselves, so use the long
+    # one; rate limits/timeouts/5xx use the short one.
+    OPENROUTER_COOLDOWN_SECONDS: int = int(os.getenv("LLM_API_COOLDOWN_SECONDS", os.getenv("OPENROUTER_COOLDOWN_SECONDS", "600")))
+    OPENROUTER_SHORT_COOLDOWN_SECONDS: int = int(os.getenv("LLM_API_SHORT_COOLDOWN_SECONDS", os.getenv("OPENROUTER_SHORT_COOLDOWN_SECONDS", "60")))
 
     # LLM / Ollama
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://localhost:11434")
@@ -175,7 +252,7 @@ class Settings:
     # (see ai/post_processing.sanitize_for_model). Set this to match where
     # your invoices actually come from — e.g. PHP if you're processing
     # Philippine receipts, since "USD" would silently be wrong otherwise.
-    DEFAULT_CURRENCY: str = os.getenv("DEFAULT_CURRENCY", "USD")
+    DEFAULT_CURRENCY: str = os.getenv("DEFAULT_CURRENCY", "PHP")
     # New, off-by-default: run every uploaded photo (not PDFs) through
     # ocr/preprocessing.py::camscan() — auto-crop to the receipt's edges,
     # straighten, enhance contrast — and save the result for History to
@@ -193,4 +270,22 @@ class Settings:
 
 
 settings = Settings()
+if settings.LLM_PROVIDER == "openrouter":
+    _s = settings
+    if _s.LLM_REMOTE_NAME == "groq" or (not _s.LLM_API_KEY and _s.GROQ_API_KEY and _s.LLM_REMOTE_NAME == "api"):
+        # legacy GROQ_* variables
+        _s.LLM_API_KEY = _s.LLM_API_KEY or _s.GROQ_API_KEY
+        _s.LLM_BASE_URL = _s.LLM_BASE_URL or _s.GROQ_BASE_URL
+        _s.LLM_MODEL = _s.LLM_MODEL or _s.GROQ_MODEL
+        _s.LLM_REASONING_EFFORT = _s.LLM_REASONING_EFFORT or "none"
+    if _s.LLM_API_KEY:                       # generic settings win over OPENROUTER_*
+        _s.OPENROUTER_API_KEY = _s.LLM_API_KEY
+        if _s.LLM_BASE_URL:
+            _s.OPENROUTER_BASE_URL = _s.LLM_BASE_URL
+            _s.OPENROUTER_HTTP_REFERER = ""   # OpenRouter-only attribution headers
+            _s.OPENROUTER_APP_TITLE = ""
+        if _s.LLM_MODEL:
+            _s.OPENROUTER_MODEL = _s.LLM_MODEL
+            _s.OPENROUTER_SEARCH_MODEL = _s.LLM_SEARCH_MODEL or _s.LLM_MODEL
+            _s.OPENROUTER_VISION_MODEL = _s.LLM_VISION_MODEL or _s.LLM_MODEL
 settings.ensure_dirs()

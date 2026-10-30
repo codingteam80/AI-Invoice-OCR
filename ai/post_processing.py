@@ -1,6 +1,7 @@
 """Cleans and normalizes raw LLM JSON before it's turned into an Invoice model."""
 import re
 import uuid
+from utils.data_quality import is_missing
 from utils.date_utils import to_iso, parse_date, parse_date_with_context
 from utils.helpers import normalize_tin, is_valid_tin, TIN_RE
 from parser.currency_parser import normalize_currency, to_float, normalize_discount
@@ -108,6 +109,9 @@ def _amounts_on_line(line: str, allow_bare_integers: bool = False) -> list[float
         try:
             value = float(number.replace(",", ""))
         except ValueError:
+            continue
+        # Printed percentages are rates, not money amounts.
+        if re.match(r"\s*%", line[match.end():]):
             continue
         if (open_paren and close_paren) or trailing_minus:
             value = -value
@@ -254,6 +258,24 @@ def clean_vendor_address(value: str | None) -> str | None:
 
 
 def post_process(data: dict) -> dict:
+    data = dict(data)
+    normalization_issues = list(data.get("_normalization_issues") or [])
+    for field in ("invoice_date", "due_date"):
+        if not is_missing(data.get(field)) and to_iso(str(data[field])) is None:
+            normalization_issues.append(f"{field} has an invalid date format: {data[field]}")
+    for field in ("subtotal", "tax_amount", "total_amount", "discount", "withholding_tax", "current_charges_total", "previous_balance"):
+        if not is_missing(data.get(field)) and to_float(data[field]) is None:
+            normalization_issues.append(f"{field} is not a finite numeric value")
+    raw_items = data.get("line_items")
+    if isinstance(raw_items, list):
+        for index, row in enumerate(raw_items, 1):
+            if isinstance(row, dict):
+                for field in ("quantity", "unit_price", "amount"):
+                    if field not in row or to_float(row[field]) is None:
+                        normalization_issues.append(f"line_items row {index} {field} is missing or not numeric")
+    if raw_items is not None and (not isinstance(raw_items, list) or any(not isinstance(li, dict) for li in raw_items)):
+        normalization_issues.append("line_items contains malformed rows")
+    data["_normalization_issues"] = list(dict.fromkeys(normalization_issues))
     data, _ = clear_blank_party_fields(data)
 
     for date_field in ("invoice_date", "due_date"):
@@ -282,11 +304,15 @@ def post_process(data: dict) -> dict:
         data["currency"] = normalize_currency(data["currency"])
 
     items = data.get("line_items") or []
+    if not isinstance(items, list):
+        items = []
     cleaned_items = []
     for item in items:
+        if not isinstance(item, dict):
+            continue
         cleaned_items.append({
             "description": (item.get("description") or "").strip(),
-            "quantity": to_float(item.get("quantity", 1)) or 1.0,
+            "quantity": to_float(item.get("quantity", 1)) if to_float(item.get("quantity", 1)) is not None else 0.0,
             "unit_price": to_float(item.get("unit_price", 0)) or 0.0,
             "amount": to_float(item.get("amount", 0)) or 0.0,
         })
@@ -310,7 +336,7 @@ def post_process(data: dict) -> dict:
         data["customer_address"] = clean_customer_address(data["customer_address"])
 
     if data.get("invoice_number"):
-        data["invoice_number"] = _normalize_id_digits(data["invoice_number"])
+        data["invoice_number"] = str(data["invoice_number"]).strip()
 
     for tin_field in ("vendor_tax_id", "customer_tax_id"):
         if data.get(tin_field):
@@ -1357,18 +1383,15 @@ def add_remaining_balance_line_item(data: dict) -> tuple[dict, list[str]]:
         balance = float(data.get("previous_balance") or 0.0)
     except (TypeError, ValueError):
         return data, notes
-    if abs(balance) <= 0.005:
+    import math
+    if not math.isfinite(balance):
         return data, notes
-    items = list(data.get("line_items") or [])
-    for li in items:
-        desc = str((li or {}).get("description") or "").strip().lower()
-        if desc in {"remaining balance", "previous balance", "carried balance", "balance forward"}:
-            li["description"] = "Remaining Balance"
-            li["quantity"] = 1.0
-            li["unit_price"] = round(balance, 2)
-            li["amount"] = round(balance, 2)
-            out = dict(data); out["line_items"] = items
-            return out, notes
+    items = [dict(li) for li in data.get("line_items") or []
+             if str((li or {}).get("description") or "").strip().lower()
+             not in {"remaining balance", "previous balance", "carried balance", "balance forward"}]
+    if abs(balance) <= 0.005:
+        out = dict(data); out["line_items"] = items
+        return out, notes
     items.append({"description":"Remaining Balance","quantity":1.0,"unit_price":round(balance,2),"amount":round(balance,2)})
     out = dict(data); out["line_items"] = items
     notes.append(f"1.58 billing display: added non-zero Remaining Balance {balance:.2f} to Items Purchased while preserving previous_balance as a separate carried-balance field.")
@@ -1405,6 +1428,65 @@ def reconcile_billing_current_period_financials(data: dict, ocr_lines: list[dict
     return out, notes
 
 
+_AXIS_TICK_RE = re.compile(r"^\s*\d{1,5}\s*$")
+
+def _chart_axis_tick_ids(lines: list[dict]) -> set[int]:
+    """Return ``id()`` of OCR lines that are the numeric tick labels of a chart axis.
+
+    Utility bills (e.g. a "monthly consumption" bar chart printed beside the
+    charges table) put a column of bare integers - 300, 270, 240 ... - to the
+    right of the table.  The line-item geometry backstop treats the right-most
+    number on a row as that row's amount, so those ticks silently replaced the
+    real amounts.  A value axis is recognisable by its shape rather than by any
+    vendor wording: five or more bare integers, right-aligned in one column,
+    evenly spaced vertically, and stepping by a constant amount (OCR may drop or
+    misread one tick, so a majority of constant steps is enough).  Steps below 5
+    are ignored so a row-number / quantity column (1, 2, 3 ...) is never mistaken
+    for an axis.
+    """
+    ticks = []
+    for ln in lines or []:
+        raw = str(ln.get("text") or "")
+        if not _AXIS_TICK_RE.match(raw):
+            continue
+        b = _bbox_bounds(ln.get("bbox"))
+        if b:
+            ticks.append((ln, b, int(raw.strip())))
+    if len(ticks) < 5:
+        return set()
+    heights = sorted(t[1][3] - t[1][1] for t in ticks)
+    tol = max(15.0, 0.8 * heights[len(heights) // 2])
+    ticks.sort(key=lambda t: t[1][2])  # by right edge
+    columns, current = [], [ticks[0]]
+    for t in ticks[1:]:
+        if abs(t[1][2] - current[-1][1][2]) <= tol:
+            current.append(t)
+        else:
+            columns.append(current)
+            current = [t]
+    columns.append(current)
+
+    found: set[int] = set()
+    for col in columns:
+        if len(col) < 5:
+            continue
+        col.sort(key=lambda t: (t[1][1] + t[1][3]) / 2)
+        values = [t[2] for t in col]
+        steps = [b - a for a, b in zip(values, values[1:])]
+        common, common_n = max(((s, steps.count(s)) for s in set(steps)), key=lambda x: x[1])
+        if abs(common) < 5 or common_n < max(3, (len(steps) + 1) // 2):
+            continue
+        if sum(1 for v in values if v % abs(common) == 0) < 0.8 * len(values):
+            continue
+        centers = [(t[1][1] + t[1][3]) / 2 for t in col]
+        gaps = [b - a for a, b in zip(centers, centers[1:])]
+        med = sorted(gaps)[len(gaps) // 2]
+        if med <= 0 or sum(1 for g in gaps if 0.7 * med <= g <= 1.3 * med) < 0.6 * len(gaps):
+            continue
+        found.update(id(t[0]) for t in col)
+    return found
+
+
 def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tuple[dict, list[str]]:
     """Correct line-item quantity/unit price/amount from OCR table geometry.
 
@@ -1422,6 +1504,8 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
     result=dict(data); out=[dict(i) for i in items]; notes=[]
     amount_header = next((l for l in lines if re.search(r"(?i)^\s*total\s+amount\s*$", str(l.get("text") or ""))), None)
     amount_header_box = _bbox_bounds(amount_header.get("bbox")) if amount_header else None
+    # Chart axis ticks / percentage cells are never a row's money amount.
+    axis_ticks = _chart_axis_tick_ids(lines)
 
     def compact(text: str) -> str:
         return re.sub(r'[^a-z0-9]+','',str(text or '').lower())
@@ -1436,17 +1520,52 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
             return None
         return to_float(raw)
 
+    def locate_description(desc: str):
+        # Best match, not first match: "Basic Charge" is a substring of the next row's description
+        # "Environmental Charges (20% of Basic Charge)", so the first line that merely CONTAINS a description
+        # could be a neighbouring row. An exact line wins; otherwise the closest-length containing line.
+        dc=compact(desc); best=None; best_score=0.0
+        for l in lines:
+            t=re.sub(r'\s+',' ',str(l.get('text') or '')).strip(); tc=compact(t)
+            if not t: continue
+            if t.lower()==desc.lower() or (dc and dc==tc):
+                return l
+            if (len(desc)>8 and desc.lower() in t.lower()) or (len(dc)>=8 and (dc in tc or tc in dc) and min(len(dc),len(tc))>=8):
+                score=min(len(dc),len(tc))/max(len(dc),len(tc),1)
+                if score>best_score: best,best_score=l,score
+        return best
+
+    # Row anchors of every line item. In a dense table (row pitch smaller than
+    # the +/-60px search window below) a neighbouring row's amount would
+    # otherwise be picked up as this row's amount.
+    row_anchors: list[tuple[int, float, float]] = []
+    for oidx, oitem in enumerate(out):
+        odesc=re.sub(r'\s+',' ',str(oitem.get('description') or '')).strip()
+        oline=locate_description(odesc) if odesc else None
+        ob=_bbox_bounds(oline.get('bbox')) if oline else None
+        if ob:
+            row_anchors.append((oidx, (ob[1]+ob[3])/2, ob[2]))
+
+    # Text labels (>= 3 letters, not an amount) with their right edge and vertical centre.
+    def is_label_text(t: str) -> bool:
+        # to_float() pulls digits out of prose ("Environmental Charges (20% of Basic Charge)" -> 20.0), so
+        # "parses as a number" cannot mean "is an amount". A label has a real word once currency markers
+        # ("PHP452.84") are removed; a bare amount cell does not.
+        return bool(re.findall(r'[A-Za-z]{3,}', re.sub(r'(?i)php|usd', '', t)))
+
+    label_rows=[]
+    for l in lines:
+        t=str(l.get('text') or '')
+        if is_label_text(t):
+            tb=_bbox_bounds(l.get('bbox'))
+            if tb: label_rows.append((l,tb[2],(tb[1]+tb[3])/2))
+
     for idx,item in enumerate(out):
         desc=re.sub(r'\s+',' ',str(item.get('description') or '')).strip()
         if not desc: continue
         if desc.lower() in {'add-ons','addons','add ons'} and any('statement summary' in str(x.get('text') or '').lower() for x in lines):
             continue
-        desc_line=None; dc=compact(desc)
-        for l in lines:
-            t=re.sub(r'\s+',' ',str(l.get('text') or '')).strip(); tc=compact(t)
-            if not t: continue
-            if t.lower()==desc.lower() or (len(desc)>8 and desc.lower() in t.lower()) or (len(dc)>=8 and (dc in tc or tc in dc) and min(len(dc),len(tc))>=8):
-                desc_line=l; break
+        desc_line=locate_description(desc)
         if not desc_line: continue
         db=_bbox_bounds(desc_line.get('bbox'))
         if not db: continue
@@ -1458,11 +1577,15 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
         # not borrowed.
         qty_candidates=[]; money_candidates=[]
         for l in lines:
-            if l is desc_line: continue
+            if l is desc_line or id(l) in axis_ticks: continue
             b=_bbox_bounds(l.get('bbox'))
             if not b: continue
             cy=(b[1]+b[3])/2
             if cy < dcy-8 or cy > dcy+58: continue
+            # Rows sit closer together than the +58px window. A cell clearly nearer to ANOTHER item's own
+            # row (and to the right of that item's description) is that item's cell: an item whose cells OCR
+            # missed (a free "P0.00" row) must not borrow the next product's qty/price/total.
+            if any(oidx!=idx and ox2<=b[0] and abs(cy-ocy)+3 < abs(cy-dcy) for oidx,ocy,ox2 in row_anchors): continue
             raw=str(l.get('text') or '').strip()
             if re.fullmatch(r'\d{1,3}(?:\.0+)?', raw):
                 q=to_float(raw)
@@ -1499,6 +1622,7 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
         # Original generic backstop: rightmost same-row money cell owns amount.
         candidates=[]
         for l in lines:
+            if id(l) in axis_ticks: continue
             b=_bbox_bounds(l.get('bbox'))
             if not b or b[0] <= db[2]: continue
             cy=(b[1]+b[3])/2
@@ -1506,10 +1630,28 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
             if amount_header_box and b[0] < amount_header_box[0] - 80:
                 continue
             raw_value=str(l.get('text') or '').strip()
-            if '/' in raw_value or re.fullmatch(r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}', raw_value):
+            if '/' in raw_value or '%' in raw_value or re.fullmatch(r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}', raw_value):
+                continue
+            # On a page that also carries a chart (dense charges table beside a
+            # bar chart) a cell that is clearly closer to ANOTHER item's
+            # description line (to its left) belongs to that item's row. Scoped
+            # to chart pages so layouts without one keep their existing behaviour.
+            own_dist=abs(cy-dcy)
+            if axis_ticks and any(oidx!=idx and ox2<=b[0] and abs(cy-ocy)+8<own_dist for oidx,ocy,ox2 in row_anchors):
                 continue
             v=to_float(raw_value)
             if v is None or v<=0: continue
+            # A bare integer equal to the item's own quantity is the Qty cell, not a money amount
+            # (otherwise a free item whose price cells were not read ends up "amount = 1").
+            if re.fullmatch(r'\d{1,3}', raw_value) and abs(float(raw_value)-(to_float(item.get('quantity')) or 1.0))<0.005: continue
+            # A text cell that merely contains a number ("Black 25W Adapter" -> 25.0) is not a money amount.
+            if is_label_text(raw_value): continue
+            # The +/-60 px window exists for tall rows whose amount sits on a lower baseline. In a dense
+            # table (row pitch ~12 px) it also reaches the section totals of OTHER rows in the right-hand
+            # column. A cell that is clearly nearer to a different row's text label (to its left) than to
+            # this item's description belongs to that other row.
+            if any(tl is not desc_line and tx2<=b[0] and abs(tcy-cy)+6<own_dist for tl,tx2,tcy in label_rows):
+                continue
             candidates.append((b[0],float(v)))
         if not candidates: continue
         candidates.sort(key=lambda x:x[0])
@@ -1527,6 +1669,7 @@ def reconcile_line_item_geometry(data: dict, ocr_lines: list[dict] | None) -> tu
             )
     result['line_items']=out
     return result, notes
+
 
 def _looks_address_like(text: str) -> bool:
     """Conservative generic test for a postal-address line/block."""
@@ -2127,7 +2270,7 @@ def reconcile_invoice_date(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
                 break
 
     for i, line in enumerate(lines):
-        if not re.search(r"(?i)\binvoice\s+date\b", line):
+        if not re.search(r"(?i)\b(?:invoice|bill|billing|statement)\s+date\b", line):
             continue
         window = " ".join(lines[i:min(len(lines), i + 7)])
         for m in _DATE_CANDIDATE_RE.finditer(window):
@@ -2563,6 +2706,33 @@ _CUSTOMER_LABEL_PRIORITY = {
 }
 
 
+_BILL_TO_COLUMN_HEADERS = {"invoice number", "invoice #", "date", "invoice date", "payment terms", "terms"}
+
+
+def _customer_below_bill_to_headers(lines: list[str], index: int) -> str | None:
+    """Read a Bill to value separated by an adjacent invoice-metadata table.
+
+    Some invoices have OCR order: Bill to / Invoice number / Date /
+    Payment terms / Customer name / number / date / terms. Do not accept the
+    metadata column heading itself as a customer name. Limit the skip to a
+    short contiguous heading cluster to avoid guessing unrelated content.
+    """
+    window = [str(s).strip() for s in lines[index + 1:index + 9]]
+    skipped = 0
+    for candidate in window:
+        normalized = candidate.lower().rstrip(":.").strip()
+        if not candidate:
+            continue
+        if normalized in _BILL_TO_COLUMN_HEADERS:
+            skipped += 1
+            continue
+        if skipped >= 1 and re.search(r"[A-Za-z]", candidate) and not _is_customer_block_label_line(candidate):
+            if normalized not in _BILL_TO_COLUMN_HEADERS and not re.fullmatch(r"(?:po\s*#?|due date|service period)", normalized):
+                return candidate
+        break
+    return None
+
+
 def _find_customer_label_candidate(lines: list[str]) -> str | None:
     """
     Look for an explicit customer-block label ("BILLED TO:", "SOLD TO:",
@@ -2589,6 +2759,11 @@ def _find_customer_label_candidate(lines: list[str]) -> str | None:
             continue
 
         if lower in CUSTOMER_LABELS:
+            if lower in {"bill to", "billed to"}:
+                table_candidate = _customer_below_bill_to_headers(lines, i)
+                if table_candidate:
+                    candidates.append((_CUSTOMER_LABEL_PRIORITY.get(lower, 9), table_candidate))
+                    continue
             j = i + 1
             while j < len(lines) and _is_customer_block_label_line(lines[j]):
                 j += 1
@@ -2672,7 +2847,7 @@ def reconcile_customer_name(data: dict, ocr_text: str) -> tuple[dict, list[str]]
     should_check_replacement = not current
     reason = "customer_name was missing"
 
-    if current and (_is_customer_name_placeholder(current) or current.lower().rstrip(".:") in _CUSTOMER_LABEL_FALSE_FRIENDS):
+    if current and (_is_customer_name_placeholder(current) or current.lower().rstrip(".:") in _CUSTOMER_LABEL_FALSE_FRIENDS or current.lower().rstrip(".:") in _BILL_TO_COLUMN_HEADERS):
         should_check_replacement = True
         reason = f"'{current}' is an unfilled customer field label, not a plausible company/person name"
     elif current:
@@ -2692,7 +2867,7 @@ def reconcile_customer_name(data: dict, ocr_text: str) -> tuple[dict, list[str]]
     if not should_check_replacement:
         return data, notes
 
-    is_implausible_value = bool(current and (_is_customer_name_placeholder(current) or current.lower().rstrip(".:") in _CUSTOMER_LABEL_FALSE_FRIENDS))
+    is_implausible_value = bool(current and (_is_customer_name_placeholder(current) or current.lower().rstrip(".:") in _CUSTOMER_LABEL_FALSE_FRIENDS or current.lower().rstrip(".:") in _BILL_TO_COLUMN_HEADERS))
 
     candidate = _find_customer_label_candidate(lines)
     if not candidate or candidate.lower() == current.lower():
@@ -2955,31 +3130,24 @@ def apply_identity_corrections_with_gate(
     return out, corrections, locked, notes, accepted, rejected
 
 def sanitize_for_model(data: dict) -> dict:
-    """
-    Fill in safe placeholders for fields the Invoice model requires as
-    non-optional (invoice_number, vendor_name, subtotal, total_amount,
-    currency), so a document the LLM genuinely couldn't fully read (e.g. a
-    retail receipt with no labeled "Invoice Number") doesn't crash
-    Invoice(**data) with a pydantic validation error.
+    """Provide review identifiers without inventing monetary values or currency.
 
-    IMPORTANT: call this ONLY after validate_extraction()/score_extraction()
-    have already run on the un-sanitized data. Those steps are what
-    correctly flag the invoice as needs_review / low-confidence because a
-    required field was truly missing — if you sanitize first, that signal
-    is lost because the placeholder looks like a "present" value.
+    Validation and scoring run first, preserving missing-source warnings.
+    The five requested sales/tax fields default to zero only for storage.
     """
     data = dict(data)
 
-    if not data.get("invoice_number"):
+    if is_missing(data.get("invoice_number")):
         data["invoice_number"] = f"UNVERIFIED-{uuid.uuid4().hex[:8]}"
-    if not data.get("vendor_name"):
+    if is_missing(data.get("vendor_name")):
         data["vendor_name"] = "Unknown Vendor"
-    if data.get("subtotal") is None:
-        data["subtotal"] = 0.0
+    for field in ("subtotal", "vat_exempt_sales", "zero_rated_sales", "tax_amount", "withholding_tax"):
+        if is_missing(data.get(field)):
+            data[field] = 0.0
     if data.get("total_amount") is None:
-        data["total_amount"] = 0.0
+        data["total_amount"] = None
     if not data.get("currency"):
-        data["currency"] = settings.DEFAULT_CURRENCY
+        data["currency"] = None
 
     return data
 

@@ -5,6 +5,8 @@ from sqlalchemy.exc import IntegrityError
 from database.models import InvoiceORM, LineItemORM, VendorORM, CustomCategoryORM, UserORM
 from models.invoice import Invoice
 from models.vendor import Vendor
+from utils.data_quality import duplicate_key, identity_text, document_content_key
+import json
 from datetime import date
 from config.constants import CATEGORY_OPTIONS
 from utils.categorizer import categorize_with_custom_categories
@@ -98,12 +100,27 @@ class InvoiceRepository:
             .first()
         )
 
+    def find_duplicate(self, vendor_name, invoice_number, exclude_id=None):
+        key = duplicate_key(vendor_name, invoice_number)
+        if key is None:
+            return None
+        query = self.session.query(InvoiceORM).filter(InvoiceORM.duplicate_key == key)
+        if exclude_id is not None:
+            query = query.filter(InvoiceORM.id != exclude_id)
+        return query.first()
+
+    def find_content_duplicate(self, raw_text):
+        key = document_content_key(raw_text)
+        if key is None:
+            return None
+        return self.session.query(InvoiceORM).filter(InvoiceORM.content_key == key).first()
+
     def save(self, invoice: Invoice) -> InvoiceORM:
         invoice.vendor_name = (invoice.vendor_name or "Unknown Vendor").strip().upper()
         invoice.customer_name = (invoice.customer_name or "").strip().upper() or None
         # Reject duplicate invoice numbers up front — a duplicate must never
         # be persisted (and therefore never appears in History).
-        existing = self.get_by_invoice_number(invoice.invoice_number)
+        existing = self.find_duplicate(invoice.vendor_name, invoice.invoice_number) or self.find_content_duplicate(invoice.raw_text)
         if existing:
             raise DuplicateInvoiceError(invoice.invoice_number, existing.id)
 
@@ -113,6 +130,8 @@ class InvoiceRepository:
 
         orm_invoice = InvoiceORM(
             invoice_number=invoice.invoice_number,
+            duplicate_key=duplicate_key(invoice.vendor_name, invoice.invoice_number),
+            content_key=document_content_key(invoice.raw_text),
             invoice_date=invoice.invoice_date,
             date_uploaded=invoice.date_uploaded or date.today(),
             due_date=invoice.due_date,
@@ -143,6 +162,9 @@ class InvoiceRepository:
             original_filename=invoice.original_filename,
             ocr_engine_used=invoice.ocr_engine_used,
             confidence_score=invoice.confidence_score,
+            validation_issues=json.dumps(invoice.validation_issues),
+            field_confidences=json.dumps(invoice.field_confidences),
+            field_evidence=json.dumps(invoice.field_evidence, ensure_ascii=False),
             status=invoice.status,
             raw_text=invoice.raw_text,
             vision_notes=invoice.vision_notes,
@@ -165,8 +187,10 @@ class InvoiceRepository:
             # past the check above — the unique constraint on invoice_number
             # is the last line of defense.
             self.session.rollback()
-            existing = self.get_by_invoice_number(invoice.invoice_number)
-            raise DuplicateInvoiceError(invoice.invoice_number, existing.id if existing else None)
+            existing = self.find_duplicate(invoice.vendor_name, invoice.invoice_number) or self.find_content_duplicate(invoice.raw_text)
+            if existing:
+                raise DuplicateInvoiceError(invoice.invoice_number, existing.id)
+            raise
         self.session.refresh(orm_invoice)
         return orm_invoice
 
@@ -194,11 +218,24 @@ class InvoiceRepository:
         if obj.locked:
             raise InvoiceLockedError(invoice_id)
 
-        new_number = data.get("invoice_number")
-        if new_number and new_number != obj.invoice_number:
-            existing = self.get_by_invoice_number(new_number)
-            if existing and existing.id != invoice_id:
-                raise DuplicateInvoiceError(new_number, existing.id)
+        from utils.data_quality import finite_number
+        numeric_fields = {"subtotal", "tax_amount", "tax_rate", "discount", "withholding_tax",
+                          "zero_rated_sales", "vat_exempt_sales", "total_amount", "current_charges_total", "previous_balance"}
+        for field in numeric_fields & data.keys():
+            if data[field] is not None and finite_number(data[field]) is None:
+                raise ValueError(f"{field} must be finite and numeric")
+        for row in data.get("line_items") or []:
+            if not isinstance(row, dict):
+                raise ValueError("line_items must contain objects")
+            for field in ("quantity", "unit_price", "amount"):
+                if row.get(field) is not None and finite_number(row[field]) is None:
+                    raise ValueError(f"line_items {field} must be finite and numeric")
+        new_number = data.get("invoice_number", obj.invoice_number)
+        new_vendor = data.get("vendor_name", obj.vendor_name)
+        existing = self.find_duplicate(new_vendor, new_number, exclude_id=invoice_id)
+        if existing:
+            raise DuplicateInvoiceError(new_number, existing.id)
+        obj.duplicate_key = duplicate_key(new_vendor, new_number)
 
         if "vendor_name" in data and data.get("vendor_name"):
             data["vendor_name"] = str(data["vendor_name"]).strip().upper()
@@ -218,11 +255,14 @@ class InvoiceRepository:
             "subtotal", "tax_amount", "tax_rate", "discount", "withholding_tax",
             "zero_rated_sales", "vat_exempt_sales", "total_amount",
             "current_charges_total", "previous_balance",
-            "currency", "payment_terms", "status", "category",
+            "currency", "payment_terms", "status", "category", "source_file",
         ]
         for field in editable_fields:
             if field in data:
                 setattr(obj, field, data[field])
+
+        if "field_evidence" in data:
+            obj.field_evidence = json.dumps(data["field_evidence"], ensure_ascii=False)
 
         if "line_items" in data:
             # Full replace, not a merge — matches how the History page's
@@ -241,13 +281,27 @@ class InvoiceRepository:
                 for li in (data["line_items"] or [])
             ]
 
+        if set(data) - {"source_file", "enhanced_image_path", "category", "status"}:
+            from ai.validator import validate_extraction
+            payload = {field: getattr(obj, field) for field in editable_fields if field != "line_items"}
+            payload["vendor_name"] = obj.vendor_name
+            payload["line_items"] = [{"description": li.description, "quantity": li.quantity,
+                                       "unit_price": li.unit_price, "amount": li.amount} for li in obj.line_items]
+            issues = validate_extraction(payload)
+            obj.validation_issues = json.dumps(issues)
+            obj.field_confidences = "[]"
+            obj.confidence_score = None
+            if issues:
+                obj.status = "needs_review"
         try:
             self.session.commit()
         except IntegrityError:
             self.session.rollback()
             number = data.get("invoice_number") or obj.invoice_number
-            existing = self.get_by_invoice_number(number)
-            raise DuplicateInvoiceError(number, existing.id if existing else None)
+            existing = self.find_duplicate(new_vendor, number, exclude_id=invoice_id)
+            if existing:
+                raise DuplicateInvoiceError(number, existing.id)
+            raise
 
         self.session.refresh(obj)
         return obj
@@ -324,18 +378,19 @@ class InvoiceRepository:
         q = self.session.query(InvoiceORM)
         if status:
             q = q.filter(InvoiceORM.status == status)
-        return q.order_by(desc(InvoiceORM.created_at)).offset(offset).limit(limit).all()
+        return q.order_by(desc(InvoiceORM.created_at), desc(InvoiceORM.id)).offset(offset).limit(limit).all()
 
     def search(self, keyword: str) -> list[InvoiceORM]:
-        like = f"%{keyword}%"
+        keyword = str(keyword or "").strip()
+        like = "%" + keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         return (
             self.session.query(InvoiceORM)
             .filter(
-                (InvoiceORM.invoice_number.ilike(like))
-                | (InvoiceORM.vendor_name.ilike(like))
-                | (InvoiceORM.customer_name.ilike(like))
+                (InvoiceORM.invoice_number.ilike(like, escape="\\"))
+                | (InvoiceORM.vendor_name.ilike(like, escape="\\"))
+                | (InvoiceORM.customer_name.ilike(like, escape="\\"))
             )
-            .order_by(desc(InvoiceORM.created_at))
+            .order_by(desc(InvoiceORM.created_at), desc(InvoiceORM.id))
             .all()
         )
 
@@ -352,7 +407,9 @@ class InvoiceRepository:
     def stats(self) -> dict:
         from sqlalchemy import func
         total_invoices = self.session.query(func.count(InvoiceORM.id)).scalar() or 0
-        total_amount = self.session.query(func.sum(InvoiceORM.total_amount)).scalar() or 0.0
+        from services.currency_totals import totals_by_currency
+        amounts = self.session.query(InvoiceORM.currency, InvoiceORM.total_amount).all()
+        currency_totals = totals_by_currency([{"currency": c, "total_amount": a} for c, a in amounts])
         # Distinct vendors among invoices that currently exist — not a count
         # of the `vendors` table itself. That table is a permanent dimension
         # table (kept around for name-normalization/dedup lookups even after
@@ -372,7 +429,10 @@ class InvoiceRepository:
         )
         return {
             "total_invoices": total_invoices,
-            "total_amount": round(total_amount, 2),
+            # Backwards-compatible field is deliberately None: summing across
+            # currencies silently invents an invalid grand total.
+            "total_amount": None,
+            "total_by_currency": currency_totals,
             "vendor_count": vendor_count,
             "needs_review": needs_review,
         }

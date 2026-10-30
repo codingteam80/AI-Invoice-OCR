@@ -543,3 +543,13 @@ def summarize_search_plan(plan: dict | None) -> str:
         label = FIELD_LABELS.get(cond["field"], cond["field"])
         parts.append(f"{label} is present" if cond["operator"] == "present" else f"{label} is missing")
     return "; ".join(parts) if parts else "No filtering conditions were recognized."
+
+
+def filter_invoice_keyword(invoices, keyword):
+    """Literal case-insensitive keyword lookup shared by History and Reports."""
+    from utils.data_quality import identity_text
+    query = identity_text(keyword)
+    if not query:
+        return invoices
+    fields = ("invoice_number", "vendor_name", "customer_name", "original_filename")
+    return [inv for inv in invoices if any(query in identity_text(inv.get(field)) for field in fields)]

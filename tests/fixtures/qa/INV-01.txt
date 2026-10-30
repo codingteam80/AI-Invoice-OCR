@@ -1,0 +1,284 @@
+[DOCUMENT PAGE 1]
+For inquiries please contact our Call Center: 16211 (Residential) or
+16210 (Business), or visit our website at www.meralco.com.ph.
+AVIDA LAND CORP. 
+0001 LT(212) PRIME ST. ST
+MADRIGAL BUSINESS PARK BGY AYALA-ALABANG
+MUNTINLUPA
+METRO MANILA
+ALABANG BUS. CENTER
+PRIME ST.
+MUNTINLUPA
+Tel. No. 16222522
+TIN -000-101-528-000-VAT
+AVIDA LAND CORP TOWER 1
+253469
+      
+     
+Page 1 of 2
+713BAL023764
+4230 04 0003
+ELECTRIC BILL
+EB Invoice No. 4230011264445 
+         CUSTOMER TIN:       
+Account Summary for Account Number 174451556-7
+Current Charges
+Balance From Previous Billing
+Total Amount Due
+Amount Due
+Due Date
+^ 1,508.52
+Please pay immediately
+^ 1,034.55
+01/19/2020
+^ 2,543.07 
+Payments made after 01/10/2020 will be reflected on your next billing statement.                                                                                                                                           
+                                                                                                                                                  
+Service Info
+Service ID Number
+: 427881610101
+Rate
+: Residential
+Contract in the name of
+: AVIDA LAND CORP.
+Service Address
+: 0001 LT(212) PRIME ST. MADRIGAL BUSINESS
+  METRO MANILA
+  
+Billing Info
+Bill Date
+: 10 Jan 2020
+Meter Reading Date
+: 10 Jan 2020
+Bill Period
+: 11 Dec 2019 to 10 Jan 2020
+Due Date
+: 19 Jan 2020
+Total KWH
+: 108
+Total current amount
+: ^ 1,034.55
+Next Meter Reading 
+: 10 Feb 2020
+Your monthly electricity consumption chart
+BREAKDOWN OF ELECTRICITY CHARGES
+300
+BILL SUBGROUP
+SUBTOTAL
+PERCENTAGE
+270
+240
+Generation
+529.62
+51.19 %
+Transmission
+71.88
+6.95 %
+210
+System Loss
+44.79
+4.33 %
+180
+Distribution (Meralco)
+221.25
+21.39 %
+150
+Subsidies
+10.15
+0.98 %
+120
+Government Taxes
+105.21
+10.17 %
+90
+Universal Charges
+27.61
+2.67 %
+60
+FiT-All (Renewable)     
+24.04
+2.32 %
+30
+Other Charges
+0.00
+0.00 %
+0
+Ja19 Fe19 Ma19 Ap19 My19 Ju19
+Jl19
+Au19 Se19 Oc19 No19 De19 Ja20
+Average usage for 13 months
+Please be informed that MERALCO may conduct a routine maintenance/inspection of our
+customer metering facilities within your area this quarter.
+145 kWh/month
+For authorized collecting agents
+ATM / Phone Reference No.
+Meralco Reference No.
+Total Amount Due
+0 174451556 7 1210 3
+0 174451556 7 191210 3 191225 0 7
+^ 2,543.07
+B1 - C3 - T1
+Please pay at any Meralco Business Center.                                                                                                                                                                                 
+                                                                                                                                                                                                                           
+CAS Permit No.: 0305-116-00036-BA/AR dtd: March 21, 2005
+
+[DOCUMENT PAGE 2]
+BRN : 20014548337
+CUSTOMER NAME: AVIDA LAND CORP.
+Billing Period : 11 Dec 2019 to 10 Jan 2020
+                  Page 2 of 2
+EB Invoice Number : 4230011264445   
+Statement number : 501638587
+SIN : 427881610101
+Billing Details (continued...)
+  Rate Components                    Base         Price      Amount
+                                                                          
+  FIT-ALL (RENEWABLE)
+   FiT-All (Renewable)                    108kWh    0.2226           24.04
+    SUBTOTAL                                                         24.04
+Energy Bill Amount
+                                      Base            VAT
+VAT Sales                               884.27            98.63
+VAT Zero Rated                            0.00
+Non-VAT                                  51.65
+TOTAL ENERGY AMOUNT                               
+               1,034.55
+Total Bill
+                                                                          
+TOTAL CURRENT BILL AMOUNT                         
+               1,034.55
+Additional Bill Information
+Metering Information
+-------------------------------------------------------------------------
+Meter Number      Prev Rdg    Pres Rdg     Mult           Registered
+-------------------------------------------------------------------------
+713BAL023764       8092.00     8200.00     1.0              108 kWh  
+=========================================================================
+Billing Details
+  Rate Components                    Base         Price      Amount
+  GENERATION
+   Generation Charge (PhP/kWh)            108kWh    4.9039          529.62
+   Prev Mos Adj on Gen Cost                                           0.00
+   Previous Years Adjustment                                          0.00
+    SUBTOTAL                                                        529.62
+                                                                          
+  TRANSMISSION
+   TRANSMISSION CHARGE(PhP/kWh)           108kWh    0.6656           71.88
+    SUBTOTAL                                                         71.88
+                                                                          
+  SYSTEM LOSS
+   System Loss Charge (PhP/kWh)           108kWh    0.4147           44.79
+    SUBTOTAL                                                         44.79
+                                                                          
+  DISTRIBUTION (MERALCO)
+   Distribution Charge (PhP/kWh)          108kWh    1.0012          108.13
+   METERING CHARGE
+   Fixed Metering Charge (PhP/cus        1.00 mo    5.0000            5.00
+   Metering Charge per kWh                108kWh    0.3377           36.47
+   SUPPLY CHARGE
+   Fixed Supply Charge (PhP/cust/        1.00 mo   16.7300           16.73
+   Supply Charge per kWh                  108kWh    0.5085           54.92
+    SUBTOTAL                                                        221.25
+                                                                          
+  SUBSIDIES
+   Lifeline Rate Subsidy (PhP/kWh         108kWh    0.0939           10.14
+   Senior Citizen Subsidy                 108kWh    0.0001            0.01
+    SUBTOTAL                                                         10.15
+                                                                          
+  GOVERNMENT TAXES
+   Local Franchise Tax                 877.69      0.7500%            6.58
+   VALUE ADDED TAX
+   Generation Charge                   529.62     10.9400%           57.94
+   Power Act Reduction                                                0.00
+   Prev Mos Adj on Gen Cost                                           0.00
+   Transmission Charge                  71.88     10.1100%            7.27
+   System Loss Charge                   44.79     10.8400%            4.86
+   Distribution Charge                 221.25     12.0000%           26.55
+   Subsidies and Others                 16.73     12.0000%            2.01
+    SUBTOTAL                                                        105.21
+                                                                          
+  UNIVERSAL CHARGES
+   Missionary                             108kWh    0.1561           16.86
+   Environmental Fund                     108kWh    0.0025            0.27
+   NPC Stranded Contract Costs            108kWh    0.0543            5.86
+   NPC Stranded Debts                     108kWh    0.0428            4.62
+   DU Stranded Contract Costs                                         0.00
+   Equalization of Taxes and Royalties                                0.00
+    SUBTOTAL                                                         27.61
+LOAD FACTOR :   0.0 %
+VOLTAGE LEVEL CLASS :   Secondary
+Previous Service Id Number (SIN) :   347324601
+Subject to CWT deduction amounting to 18.72 if with submitted BIR Form
+2307
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+For inquiries, please contact our
+       To contact the Energy Regulatory
+Automatic Debit Arrangement (ADA)
+Authorize your bank to debit the bill amount from your account on the due date and remit
+the payment to Meralco. Visit your bank of account to enroll in this option.
+Meralco bill payments are accepted through these accredited ADA Partners:
+Call Center at 16211. Refund Hotline at        Commission(ERC), you can get in touch
+1622-8888 or visit our website at
+       with Consumer Affairs Service Office, ERC:
+1. Asia United Bank
+5. Philippine National Bank
+www.meralco.com.ph
+2. Banco de Oro
+6. Security Bank
+3. Bank of the Philippine Islands
+7. Union Bank of the Philippines
+       Email: consumer@erc.gov.ph
+       Website: http://www.erc.gov.ph
+4. Citibank 
+8. United Coconut Planters Bank
+You can also pay at our Bayad Centers and bank
+partners!
+Payments received thru Third Party Agents (TPA) will be applied to the oldest
+unpaid bill under your Meralco account. If you wish your payment to be applied
+otherwise, please pay directly at Meralco business centers. Please ensure that
+your payments are up-to-date to avoid any inconveniences.
+Payment Instructions
+At Meralco, part of our service is to make paying your bills easy, convenient and quick as possible.
+Here are a few tips to make sure that paying your bill is hassle-free:
+1. Bring your electric bill every time you pay your bill.
+2. Check payment should be payable to "Meralco" or "Manila Electric Company". At the back of the check, write
+    your Account No., Contact Person Name and Contact Number. 
+3. Pay on or before your due date. All accredited banks and Bayad Centers will accept payment for accounts
+    without overdue bills.
+4. Accounts with overdue bills can be paid only at any Meralco Business Center or Extension Office. 
+CAS Permit No.: 0305-116-00036-BA/AR dtd: March 21, 2005

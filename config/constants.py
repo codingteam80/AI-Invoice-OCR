@@ -16,8 +16,8 @@ INVOICE_STATUS_REVIEW = "needs_review"
 INVOICE_STATUS_FAILED = "failed"
 
 CURRENCY_SYMBOLS = {
-    "$": "USD", "â‚¬": "EUR", "Â£": "GBP", "Â¥": "JPY",
-    "â‚±": "PHP", "â‚¹": "INR", "â‚©": "KRW",
+    "$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY",
+    "₱": "PHP", "₹": "INR", "₩": "KRW",
 }
 
 REQUIRED_FIELDS = [

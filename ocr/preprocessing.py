@@ -27,6 +27,14 @@ def adaptive_threshold(img: np.ndarray) -> np.ndarray:
     )
 
 
+def normalize_lighting(gray: np.ndarray) -> np.ndarray:
+    small = cv2.resize(gray, (max(1, gray.shape[1] // 4), max(1, gray.shape[0] // 4)))
+    background = cv2.morphologyEx(small, cv2.MORPH_CLOSE, np.ones((25, 25), np.uint8))
+    background = cv2.GaussianBlur(background, (0, 0), 5)
+    background = cv2.resize(background, (gray.shape[1], gray.shape[0]))
+    return cv2.divide(gray, np.maximum(background, 1), scale=255)
+
+
 def enhance_contrast(img: np.ndarray) -> np.ndarray:
     """CLAHE (Contrast Limited Adaptive Histogram Equalization) on a
     grayscale image.
@@ -70,11 +78,11 @@ def deskew(img: np.ndarray) -> np.ndarray:
     gray = img if len(img.shape) == 2 else to_grayscale(img)
     inverted = cv2.bitwise_not(gray)
     thresh = cv2.threshold(inverted, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-    coords = np.column_stack(np.where(thresh > 0))
-    if coords.shape[0] < 20:
+    coords = cv2.findNonZero(thresh)
+    if coords is None or coords.shape[0] < 20:
         return img
     angle = cv2.minAreaRect(coords)[-1]
-    angle = -(90 + angle) if angle < -45 else -angle
+    angle = (angle + 45) % 90 - 45
     if abs(angle) < 0.3:
         return img
     # deskew is only for small camera/scanner tilt. Full 90/180/270 page
@@ -213,7 +221,7 @@ def camscan(
     if enhance:
         gray = to_grayscale(img)
         gray = denoise(gray)
-        gray = enhance_contrast(gray)
+        gray = enhance_contrast(normalize_lighting(gray))
         # Blend the contrast-enhanced luminance back into the color image
         # rather than discarding color entirely — this keeps it looking
         # like a "scanned document", not a grayscale OCR-intermediate.
@@ -257,7 +265,7 @@ def preprocess(
     gray = to_grayscale(img)
     gray = denoise(gray)
     if enhance:
-        gray = enhance_contrast(gray)
+        gray = enhance_contrast(normalize_lighting(gray))
     result = adaptive_threshold(gray) if binarize else gray
     if save_path:
         cv2.imwrite(save_path, result)

@@ -7,7 +7,7 @@ from reportlab.lib.units import mm, inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from config.settings import settings
-from exports.common import EXPORT_COLUMNS, invoice_export_row, invoice_totals_row, timestamped_export_filename
+from exports.common import EXPORT_COLUMNS, invoice_export_row, invoice_totals_rows, timestamped_export_filename
 
 # Relative weights let long text fields breathe while guaranteeing that the
 # complete 19-column table fits inside the printable A3 landscape width.
@@ -54,8 +54,8 @@ def export_to_pdf(invoices: list[dict], filename: str | None = None, chart_path:
     for inv in invoices:
         row = invoice_export_row(inv)
         data.append([Paragraph(escape(str(row[col])), cell_style) for col in EXPORT_COLUMNS])
-    totals = invoice_totals_row(invoices)
-    data.append([Paragraph(str(totals[col]), total_style) for col in EXPORT_COLUMNS])
+    for totals in invoice_totals_rows(invoices):
+        data.append([Paragraph(escape(str(totals[col])), total_style) for col in EXPORT_COLUMNS])
 
     table = Table(data, repeatRows=1, colWidths=_column_widths(doc.width), hAlign="CENTER")
     table.setStyle(TableStyle([
@@ -68,7 +68,7 @@ def export_to_pdf(invoices: list[dict], filename: str | None = None, chart_path:
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
         ("GRID", (0, 0), (-1, -1), 0.35, colors.grey),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F2F2F2")]),
-        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E4E9E3")),
+        ("BACKGROUND", (0, -len(invoice_totals_rows(invoices))), (-1, -1), colors.HexColor("#E4E9E3")),
     ]))
     elements.append(table)
 

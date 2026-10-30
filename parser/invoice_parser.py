@@ -3,8 +3,10 @@ Top-level orchestrator: turns a raw invoice file into a validated Invoice
 object by chaining OCR -> LLM extraction -> validation -> post-processing.
 """
 from pathlib import Path
+from parser.page_groups import group_invoice_pages
 import time
 
+from ai.processing_budget import processing_scope
 from ai.vision_budget import vision_scope, verification_summary, verification_warning
 from config.logging import get_logger
 from config.settings import settings
@@ -12,6 +14,7 @@ from ocr.ocr_engine import extract_from_file, extract_pages_from_file
 from ai.extractor import extract_invoice_data, ExtractionError
 from ai.validator import validate_extraction
 from ai.confidence import score_extraction
+from ai.vision_decision import choose_full_image_vision
 from ai.party_master import apply_final_master_pass
 from ai.post_processing import (
     post_process, sanitize_for_model, reconcile_total_amount, reconcile_tax, reconcile_subtotal,
@@ -122,12 +125,14 @@ def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -
 
     invoices: list[Invoice] = []
     skip_reasons: list[str] = []
-    for page in pages:
+    for page in group_invoice_pages(pages):
         page_number = page.get("page_number", 1)
         total_pages = page.get("total_pages", len(pages))
         ocr_text = page.get("text", "")
 
         if not ocr_text.strip():
+            if page.get("blank_page"):
+                continue
             msg = f"page {page_number}/{total_pages}: OCR produced no text"
             logger.warning(f"{file_path} — {msg}, skipping.")
             skip_reasons.append(msg)
@@ -136,7 +141,7 @@ def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -
         try:
             invoice = _build_invoice_from_ocr(
                 file_path=file_path,
-                image_path=page.get("image_path", file_path),
+                image_path=page.get("processed_image_path") or page.get("image_path", file_path),
                 ocr_text=ocr_text,
                 ocr_confidence=page.get("avg_confidence", 0.0),
                 ocr_engine=page.get("engine"),
@@ -144,7 +149,7 @@ def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -
                 ocr_result=page,
                 page_number=page_number,
             )
-        except InvoiceParsingError as e:
+        except Exception as e:
             msg = f"page {page_number}/{total_pages}: {e}"
             logger.warning(f"{file_path} — extraction failed for {msg}")
             skip_reasons.append(msg)
@@ -156,9 +161,15 @@ def parse_invoice_pages(file_path: str, force_handwritten: bool | None = None) -
         reasons = "; ".join(skip_reasons) if skip_reasons else "no pages found"
         raise InvoiceParsingError(f"No invoice could be extracted from any page of {file_path} ({reasons}).")
 
+    if skip_reasons:
+        warning = "Incomplete document processing: " + "; ".join(skip_reasons)
+        for invoice in invoices:
+            invoice.validation_issues.append(warning)
+            invoice.status = INVOICE_STATUS_REVIEW
     return invoices
 
 
+@processing_scope
 @vision_scope
 def _build_invoice_from_ocr(
     file_path: str,
@@ -186,6 +197,9 @@ def _build_invoice_from_ocr(
     """
     # 2. Detect a stable vendor-specific invoice layout, then run the LLM
     # extraction with that template injected into the prompt.
+    from ai.source_evidence import is_unused_form, review_fallback, reconcile_source_layout
+    if is_unused_form(ocr_text):
+        raise InvoiceParsingError("Unused blank receipt template: no completed transaction was found; invoice was not saved.")
     pipeline_start = time.perf_counter()
     vision_before = verification_summary({})
     template_name = detect_invoice_template(ocr_text)
@@ -206,7 +220,12 @@ def _build_invoice_from_ocr(
             text_llm_trace=text_llm_trace, vision_trace=vision_trace, stages=stages,
             validation_issues=[], final_data=None, error=str(e),
         )
-        raise InvoiceParsingError(str(e)) from e
+        extracted = review_fallback(ocr_text, ocr_lines or [])
+        if extracted is None:
+            raise InvoiceParsingError(str(e)) from e
+        text_llm_trace["initial_extraction_failed"] = str(e)
+        stages["text_llm_extracted"] = dict(extracted)
+        stages["timing_seconds"] = {"text_extraction_and_corrections": round(time.perf_counter()-text_start, 3), "ocr_entire_source_file": (ocr_result or {}).get("file_ocr_elapsed_seconds")}
 
     # 3. Fallback line items if the LLM returned none
     if not extracted.get("line_items"):
@@ -450,7 +469,22 @@ def _build_invoice_from_ocr(
     # correction, which feeds into `issues` and forces needs_review=True
     # (see ai/confidence.py), so an auto-corrected value still requires a
     # human to review and lock it before it's treated as final.
-    vision_corrections, vision_issues = verify_against_image(image_path, cleaned, template_name=template_name, trace=vision_trace)
+    # Conditional whole-image check; focused/cropped checks above retain
+    # their original field-specific rules. Never use a vision model to decide
+    # whether the vision model is needed.
+    needs_vision, vision_reasons = choose_full_image_vision(
+        cleaned, ocr_confidence=ocr_confidence, ocr_engine=ocr_engine,
+        ocr_text=ocr_text, ocr_lines=ocr_lines,
+    )
+    vision_trace["conditional_decision"] = {"whole_image_needed": needs_vision, "reasons": vision_reasons}
+    if settings.VISION_VERIFICATION_ENABLED and needs_vision:
+        vision_corrections, vision_issues = verify_against_image(image_path, cleaned, template_name=template_name, trace=vision_trace)
+    else:
+        vision_corrections, vision_issues = {}, []
+        vision_trace["whole_image_skipped_reason"] = (
+            "Vision verification disabled" if not settings.VISION_VERIFICATION_ENABLED
+            else "Evidence and arithmetic passed conditional checks"
+        )
 
     # 1.50: vision financial values do not get a blind ``dict.update``. Treat
     # the image-read financial set as evidence, gate it through the accounting
@@ -588,7 +622,12 @@ def _build_invoice_from_ocr(
     # the same reason: an independent vision reading should not be able to
     # reintroduce a printer-footer/unrelated-field value over an explicit
     # "Billed To"/"Sold To" label match already established above.
-    cleaned, post_vision_customer_notes = reconcile_customer_name(cleaned, ocr_text)
+    # A full name read from the image must not be shortened back to a garbled
+    # single OCR token simply because the complete name is absent from OCR.
+    if vision_accepted.get("customer_name"):
+        post_vision_customer_notes = []
+    else:
+        cleaned, post_vision_customer_notes = reconcile_customer_name(cleaned, ocr_text)
     if post_vision_customer_notes:
         reconciliation_notes.extend(post_vision_customer_notes)
 
@@ -621,6 +660,12 @@ def _build_invoice_from_ocr(
     cleaned, buyer_tin_159 = reconcile_customer_tax_id_context(cleaned, ocr_text, ocr_lines or [])
     cleaned, buyer_address_159 = reconcile_blank_customer_address(cleaned, ocr_text)
     cleaned, retail_items_159 = reconcile_retail_line_items(cleaned, ocr_text)
+    # Only explicit Description/Qty/Unit Price/Amount tables qualify for
+    # structured cell recovery. Later October 26 source evidence still wins.
+    from ai.structured_table_recovery import reconcile_explicit_item_table, reconcile_explicit_zero_rows
+    cleaned, structured_notes = reconcile_explicit_item_table(cleaned, ocr_text)
+    cleaned, zero_row_notes = reconcile_explicit_zero_rows(cleaned, ocr_text)
+    retail_items_159.extend(structured_notes + zero_row_notes)
     cleaned, retail_tax_159 = reconcile_retail_tax_summary(cleaned, ocr_text)
     cleaned, parking_tax_159 = reconcile_parking_tax_summary(cleaned, ocr_text)
     reconciliation_notes.extend(
@@ -673,14 +718,17 @@ def _build_invoice_from_ocr(
     cleaned, split_item_notes = reconcile_split_retail_price(cleaned, ocr_text)
     reconciliation_notes.extend(explicit_field_notes + plan_item_notes + split_item_notes)
 
-    # 1.58: add a non-zero carried balance only after ownership cleanup.
-    cleaned, balance_item_notes = add_remaining_balance_line_item(cleaned)
-    reconciliation_notes.extend(balance_item_notes)
-
     # Recover parties before trimming the vendor suffix: Dan's recovery can
     # use misplaced customer fragments as evidence for the customer address.
-    cleaned, master_notes = apply_final_master_pass(cleaned, ocr_text)
+    cleaned, master_notes = apply_final_master_pass(cleaned, ocr_text, seller_header=header_ocr or ocr_text)
     reconciliation_notes.extend(master_notes)
+
+    # Teammate low-spec recovery: never assign the same ID to both seller and buyer;
+    # preserve source-derived identities and tidy broken middle-initial spacing.
+    from ai.party_master import repair_vendor_tin_equal_to_customer, tidy_party_name_spacing
+    cleaned, shared_tin_notes = repair_vendor_tin_equal_to_customer(cleaned, ocr_text)
+    cleaned, spacing_notes = tidy_party_name_spacing(cleaned)
+    reconciliation_notes.extend(shared_tin_notes + spacing_notes)
 
     # Final UI/storage policy: absent buyer details stay null and the seller
     # address holds only the first printed postal location.
@@ -690,16 +738,103 @@ def _build_invoice_from_ocr(
     cleaned, first_address_notes = keep_first_vendor_address(cleaned)
     reconciliation_notes.extend(blank_party_notes + first_address_notes)
 
+    from ai.statement_evidence import reconcile_statement_evidence
+    cleaned, statement_notes = reconcile_statement_evidence(cleaned, ocr_text)
+    reconciliation_notes.extend(statement_notes)
+
+    # Final source geometry takes priority over generic model reconciliation.
+    detail_lines = (ocr_result or {}).get("detail_lines") or ocr_lines or []
+    regions = (ocr_result or {}).get("detail_regions") or {}
+    if ocr_engine != "pdf_text" and ocr_lines and not (ocr_result or {}).get("details_recovered"):
+        try:
+            from ocr.detail_recovery import recover_detail_lines, recover_regions
+            detail_lines = recover_detail_lines(image_path, ocr_lines)
+            original = (ocr_result or {}).get("oriented_image_path") or (ocr_result or {}).get("image_path") or image_path
+            regions = recover_regions(original, ocr_text)
+        except Exception as detail_error:
+            logger.warning(f"Focused OCR unavailable: {detail_error}")
+    cleaned, source_notes = reconcile_source_layout(cleaned, ocr_text, detail_lines, regions)
+    reconciliation_notes.extend(source_notes)
+    if not cleaned.get("invoice_number"):
+        from ai.field_ownership import reconcile_owned_fields
+        for header_attempt in header_trace.get("ocr_attempts", []):
+            recovered_id, _ = reconcile_owned_fields({}, header_attempt.get("text", ""), header_attempt.get("lines", []))
+            if recovered_id.get("invoice_number"):
+                cleaned["invoice_number"] = recovered_id["invoice_number"]
+                reconciliation_notes.append("Invoice number recovered from the numbered invoice header using label geometry.")
+                break
+    # Re-read unresolved summary amounts and missing service rows directly from
+    # their image region AFTER all heuristic passes, so OCR cannot undo the read.
+    from ai.focused_review import review_unresolved_regions
+    cleaned, focused_notes = review_unresolved_regions(cleaned, image_path, ocr_lines or [], vision_trace.setdefault("focused_review", {}))
+    reconciliation_notes.extend(focused_notes)
+    # Final, document-grounded QA review: recover printed billing fields,
+    # preserve credit signs and zero-fee rows, and flag contradictory amounts.
+    # Never substitute fixture answers or vendor-specific hardcoded totals.
+    from ai.qa_source_review import reconcile_qa_source_review
+    cleaned, qa_review_notes = reconcile_qa_source_review(cleaned, ocr_text, ocr_lines or [])
+    reconciliation_notes.extend(qa_review_notes)
+
+    # 2026-10-29: source-bound recovery from the teammate's low-spec QA branch.
+    # Do not replace the October 28 orchestration, OCR engines or finance policy.
+    # Every specialist is gated by its own printed layout; no fabricated amounts.
+    from ai.party_columns import reconcile_from_ship_to_columns, normalize_letter_o_invoice_number
+    from parser.ecommerce_invoice import normalize_ecommerce_invoice
+    from ai.invoice_templates.meralco import (
+        is_new_layout, normalize_meralco_new_layout, is_billing_invoice_layout,
+        normalize_meralco_billing_invoice,
+    )
+    cleaned, column_notes = reconcile_from_ship_to_columns(cleaned, ocr_lines or [])
+    cleaned, number_glyph_notes = normalize_letter_o_invoice_number(cleaned)
+    cleaned, ecommerce_notes = normalize_ecommerce_invoice(cleaned, ocr_text, ocr_lines or [])
+    teammate_layout_notes = column_notes + number_glyph_notes + ecommerce_notes
+    if is_new_layout(ocr_lines or []):
+        cleaned, meralco_layout_notes = normalize_meralco_new_layout(cleaned, ocr_text, ocr_lines or [])
+        teammate_layout_notes.extend(meralco_layout_notes)
+    elif is_billing_invoice_layout(ocr_lines or []):
+        cleaned, meralco_layout_notes = normalize_meralco_billing_invoice(cleaned, ocr_text, ocr_lines or [])
+        teammate_layout_notes.extend(meralco_layout_notes)
+    from ai.party_master import repair_vendor_tin_from_master
+    cleaned, repaired_tin_notes = repair_vendor_tin_from_master(cleaned)
+    teammate_layout_notes.extend(repaired_tin_notes)
+    reconciliation_notes.extend(teammate_layout_notes)
+
+    # Source recovery can replace rows or correct the carried balance. Sync
+    # its display row only after that recovery has finished.
+    cleaned, balance_item_notes = add_remaining_balance_line_item(cleaned)
+    reconciliation_notes.extend(balance_item_notes)
+    stages["source_detail_lines"] = detail_lines
+    stages["source_detail_regions"] = regions
+
     # 5. Validate + score FINAL information confidence. Successful
     # reconciliation notes are provenance, not unresolved correctness defects.
     unresolved_validation_issues = validate_extraction(cleaned, template_name=template_name, ocr_text=ocr_text)
+    # Proven-invalid source Bill Dates must remain visible as REVIEW issues,
+    # even when normalized invoice_date is null and no guessing took place.
+    unresolved_validation_issues.extend(
+        n for n in teammate_layout_notes
+        if n.startswith("Invoice date verification required:")
+    )
+    # A one-character invoice-number OCR correction requires human confirmation even when the
+    # corrected identifier is syntactically valid. Keep the evidence score internal.
+    if number_glyph_notes:
+        unresolved_validation_issues.append(
+            "Invoice # was corrected from an ambiguous O/0 glyph; verify it against the original document."
+        )
+    unresolved_validation_issues.extend((ocr_result or {}).get("warnings") or [])
+    if ocr_confidence < 0.85:
+        unresolved_validation_issues.append("Low OCR confidence: verify identifiers, dates and amounts against the original document.")
+    if text_llm_trace.get("initial_extraction_failed"):
+        unresolved_validation_issues.append("AI extraction was unavailable: " + text_llm_trace["initial_extraction_failed"])
+    if text_llm_trace.get("stopped_on_failed_correction"):
+        unresolved_validation_issues.append("AI correction was incomplete: " + text_llm_trace["stopped_on_failed_correction"])
     availability = verification_summary(vision_trace)
     vision_trace["verification_availability"] = availability
     unavailable_note = verification_warning(availability)
     if unavailable_note:
         unresolved_validation_issues.append(unavailable_note)
         vision_issues.append(unavailable_note)
-    prediction = score_extraction(cleaned, ocr_confidence, unresolved_validation_issues, ocr_engine=ocr_engine)
+    prediction = score_extraction(cleaned, ocr_confidence, unresolved_validation_issues, ocr_engine=ocr_engine, ocr_text=ocr_text, ocr_lines=ocr_lines)
     issues = unresolved_validation_issues + reconciliation_notes + vision_issues
 
     # 6. Build Invoice model. Sanitize placeholders now (not earlier) so
@@ -716,6 +851,9 @@ def _build_invoice_from_ocr(
     invoice.source_file = file_path
     invoice.ocr_engine_used = ocr_engine
     invoice.confidence_score = prediction.overall_confidence
+    invoice.validation_issues = list(dict.fromkeys(unresolved_validation_issues))
+    invoice.field_confidences = [fc.model_dump(mode="json") for fc in prediction.field_confidences]
+    invoice.field_evidence = prediction.field_evidence
     invoice.raw_text = ocr_text
     invoice.vision_notes = "\n".join(vision_issues) if vision_issues else None
     invoice.status = INVOICE_STATUS_REVIEW if prediction.needs_review else INVOICE_STATUS_PROCESSED

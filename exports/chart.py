@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use("Agg")  # headless — Streamlit runs with no display server
 import matplotlib.pyplot as plt
 from config.settings import settings
+from services.currency_totals import currency_code
 
 # Brand colors (see ui/components/nav.py / .streamlit/config.toml)
 _BAR_COLOR = "#3AAF11"
@@ -29,6 +30,7 @@ def generate_chart(invoices: list[dict], group_by: str | list[str] = "Vendor", f
     totals: dict[str, float] = {}
     for inv in invoices:
         key = " / ".join(str(f(inv)) for f in key_funcs)
+        key += " / " + currency_code(inv.get("currency"))
         totals[key] = totals.get(key, 0) + (inv.get("total_amount") or 0)
 
     # Largest first, so the chart reads like a ranked summary.

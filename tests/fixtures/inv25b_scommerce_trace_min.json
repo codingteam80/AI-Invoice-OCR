@@ -1,0 +1,1706 @@
+{
+ "_note": "INV-25 re-run: zero_rated_sales 12.0 (from the '12%' VAT-rate line), invoice_date 2023-04-02 (printed Date Issued is blank).",
+ "ocr": {
+  "text": "Scommerce\nInvoice (Sale Of Goods)\nREPRINT\nSeller Name:SCommerce Philippines, Inc\nInvoice No.:ISS1000010134539\nSeller Address: Honest St.Cor.Determined St\nDate Issued:\nCPIP Batino4027.City of Calamba Laguna\nOrder ID:250115GJHVA17C\nPhilippines\nSeller VAT REG.TIN:010-691-151-00000\nOrder Paid Date:\nPayment Method:SPayLater\nSeller Business Style:SCommerce Philippines,\nInc.\nBuyer Name:Hannah Bambao\nBuyer Address:33B Morning Star,Payatas\nPayatas,Quezon City.Metro Manila,Metro\nManila,1119\nBuyer TIN:-\nBusiness Style:-\nOrder Details\nNo.\nProduct\nVariation\nProduct Price\nQty\nSubtotal\n1\nFREEBIE25W Trsvsi Adapter (no caole)\nBlack 25W Adapter\nPO.00\n1\nPO.00\n2\nSamsung Galaxy A05s 4+128G8\nSlack.4+128GB\nP4,650.00\n1\nP4,650.00\nSubtotal\nP4650.00\nTetst Qusntity\n2itemz\nSubtotal(Products)-VATahlez saies\nP4.650.00\nTotal sales (Net.ofVAT)\nP4.630.00\nSubtotallProducts)-Exempt saies\n0\nAcd:VAT Amount\nP5S8.00\nSubtotal(Productz)-Zero-ratedsaies\nVAT amount12%\nP558.00\nTotat\nP5,208.00\nPaid by Shopee\nP782.00\nTotal\nP5,208.00\nPaid by Buyer\nP4.426.00\nAcknewiedgement Certificate\nAC-044-OZ-2023-000245\nFive Thousand Two Hundred Eignt Peso\nTotal amount in words\nDate Issued\nEffective Date\nSeries Number\nISS1000000000001-195999988989899",
+  "lines": [
+   {
+    "text": "Scommerce",
+    "confidence": 0.9987443089485168,
+    "bbox": [
+     [
+      122.0,
+      46.0
+     ],
+     [
+      301.0,
+      46.0
+     ],
+     [
+      301.0,
+      73.0
+     ],
+     [
+      122.0,
+      73.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Invoice (Sale Of Goods)",
+    "confidence": 0.9082641005516052,
+    "bbox": [
+     [
+      759.0,
+      43.0
+     ],
+     [
+      934.0,
+      44.0
+     ],
+     [
+      934.0,
+      60.0
+     ],
+     [
+      759.0,
+      59.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "REPRINT",
+    "confidence": 0.9974083304405212,
+    "bbox": [
+     [
+      868.0,
+      60.0
+     ],
+     [
+      931.0,
+      60.0
+     ],
+     [
+      931.0,
+      72.0
+     ],
+     [
+      868.0,
+      72.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Seller Name:SCommerce Philippines, Inc",
+    "confidence": 0.9373739957809448,
+    "bbox": [
+     [
+      129.0,
+      123.0
+     ],
+     [
+      441.0,
+      127.0
+     ],
+     [
+      440.0,
+      142.0
+     ],
+     [
+      129.0,
+      139.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Invoice No.:ISS1000010134539",
+    "confidence": 0.9207146763801575,
+    "bbox": [
+     [
+      667.0,
+      129.0
+     ],
+     [
+      905.0,
+      130.0
+     ],
+     [
+      905.0,
+      146.0
+     ],
+     [
+      667.0,
+      145.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Seller Address: Honest St.Cor.Determined St",
+    "confidence": 0.952763557434082,
+    "bbox": [
+     [
+      129.0,
+      149.0
+     ],
+     [
+      476.0,
+      153.0
+     ],
+     [
+      476.0,
+      168.0
+     ],
+     [
+      129.0,
+      165.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Date Issued:",
+    "confidence": 0.9622084498405457,
+    "bbox": [
+     [
+      668.0,
+      156.0
+     ],
+     [
+      771.0,
+      156.0
+     ],
+     [
+      771.0,
+      172.0
+     ],
+     [
+      668.0,
+      172.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "CPIP Batino4027.City of Calamba Laguna",
+    "confidence": 0.9379088878631592,
+    "bbox": [
+     [
+      128.0,
+      168.0
+     ],
+     [
+      433.0,
+      173.0
+     ],
+     [
+      432.0,
+      191.0
+     ],
+     [
+      127.0,
+      186.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Order ID:250115GJHVA17C",
+    "confidence": 0.948137104511261,
+    "bbox": [
+     [
+      667.0,
+      180.0
+     ],
+     [
+      877.0,
+      182.0
+     ],
+     [
+      877.0,
+      198.0
+     ],
+     [
+      667.0,
+      195.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Philippines",
+    "confidence": 0.9562062621116638,
+    "bbox": [
+     [
+      128.0,
+      190.0
+     ],
+     [
+      209.0,
+      192.0
+     ],
+     [
+      208.0,
+      209.0
+     ],
+     [
+      127.0,
+      207.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Seller VAT REG.TIN:010-691-151-00000",
+    "confidence": 0.9245802760124207,
+    "bbox": [
+     [
+      129.0,
+      215.0
+     ],
+     [
+      442.0,
+      218.0
+     ],
+     [
+      442.0,
+      234.0
+     ],
+     [
+      129.0,
+      230.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Order Paid Date:",
+    "confidence": 0.9701622128486633,
+    "bbox": [
+     [
+      667.0,
+      204.0
+     ],
+     [
+      805.0,
+      208.0
+     ],
+     [
+      805.0,
+      224.0
+     ],
+     [
+      667.0,
+      220.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Payment Method:SPayLater",
+    "confidence": 0.9713435173034668,
+    "bbox": [
+     [
+      666.0,
+      230.0
+     ],
+     [
+      890.0,
+      232.0
+     ],
+     [
+      890.0,
+      251.0
+     ],
+     [
+      666.0,
+      250.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Seller Business Style:SCommerce Philippines,",
+    "confidence": 0.9608510732650757,
+    "bbox": [
+     [
+      129.0,
+      242.0
+     ],
+     [
+      481.0,
+      246.0
+     ],
+     [
+      480.0,
+      261.0
+     ],
+     [
+      129.0,
+      256.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Inc.",
+    "confidence": 0.9904984831809998,
+    "bbox": [
+     [
+      126.0,
+      260.0
+     ],
+     [
+      155.0,
+      264.0
+     ],
+     [
+      153.0,
+      282.0
+     ],
+     [
+      124.0,
+      278.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Buyer Name:Hannah Bambao",
+    "confidence": 0.9656327366828918,
+    "bbox": [
+     [
+      129.0,
+      323.0
+     ],
+     [
+      356.0,
+      325.0
+     ],
+     [
+      356.0,
+      341.0
+     ],
+     [
+      129.0,
+      339.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Buyer Address:33B Morning Star,Payatas",
+    "confidence": 0.9502830505371094,
+    "bbox": [
+     [
+      127.0,
+      346.0
+     ],
+     [
+      450.0,
+      350.0
+     ],
+     [
+      450.0,
+      369.0
+     ],
+     [
+      126.0,
+      365.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Payatas,Quezon City.Metro Manila,Metro",
+    "confidence": 0.9315176606178284,
+    "bbox": [
+     [
+      126.0,
+      368.0
+     ],
+     [
+      434.0,
+      371.0
+     ],
+     [
+      434.0,
+      386.0
+     ],
+     [
+      126.0,
+      384.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Manila,1119",
+    "confidence": 0.9670498371124268,
+    "bbox": [
+     [
+      126.0,
+      391.0
+     ],
+     [
+      220.0,
+      391.0
+     ],
+     [
+      220.0,
+      407.0
+     ],
+     [
+      126.0,
+      407.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Buyer TIN:-",
+    "confidence": 0.9315053820610046,
+    "bbox": [
+     [
+      126.0,
+      412.0
+     ],
+     [
+      226.0,
+      415.0
+     ],
+     [
+      225.0,
+      434.0
+     ],
+     [
+      125.0,
+      431.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Business Style:-",
+    "confidence": 0.946222186088562,
+    "bbox": [
+     [
+      127.0,
+      439.0
+     ],
+     [
+      261.0,
+      442.0
+     ],
+     [
+      261.0,
+      458.0
+     ],
+     [
+      126.0,
+      455.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Order Details",
+    "confidence": 0.9722934365272522,
+    "bbox": [
+     [
+      115.0,
+      504.0
+     ],
+     [
+      225.0,
+      504.0
+     ],
+     [
+      225.0,
+      520.0
+     ],
+     [
+      115.0,
+      520.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "No.",
+    "confidence": 0.9169313907623291,
+    "bbox": [
+     [
+      112.0,
+      529.0
+     ],
+     [
+      135.0,
+      529.0
+     ],
+     [
+      135.0,
+      547.0
+     ],
+     [
+      112.0,
+      547.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Product",
+    "confidence": 0.9902318716049194,
+    "bbox": [
+     [
+      173.0,
+      530.0
+     ],
+     [
+      219.0,
+      530.0
+     ],
+     [
+      219.0,
+      546.0
+     ],
+     [
+      173.0,
+      546.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Variation",
+    "confidence": 0.9939403533935547,
+    "bbox": [
+     [
+      601.0,
+      534.0
+     ],
+     [
+      652.0,
+      534.0
+     ],
+     [
+      652.0,
+      550.0
+     ],
+     [
+      601.0,
+      550.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Product Price",
+    "confidence": 0.9563747048377991,
+    "bbox": [
+     [
+      729.0,
+      533.0
+     ],
+     [
+      802.0,
+      536.0
+     ],
+     [
+      801.0,
+      551.0
+     ],
+     [
+      728.0,
+      549.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Qty",
+    "confidence": 0.9267323017120361,
+    "bbox": [
+     [
+      833.0,
+      534.0
+     ],
+     [
+      858.0,
+      537.0
+     ],
+     [
+      855.0,
+      555.0
+     ],
+     [
+      830.0,
+      552.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Subtotal",
+    "confidence": 0.9829075336456299,
+    "bbox": [
+     [
+      919.0,
+      535.0
+     ],
+     [
+      969.0,
+      538.0
+     ],
+     [
+      968.0,
+      554.0
+     ],
+     [
+      918.0,
+      551.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1",
+    "confidence": 0.874423623085022,
+    "bbox": [
+     [
+      112.0,
+      552.0
+     ],
+     [
+      125.0,
+      552.0
+     ],
+     [
+      125.0,
+      569.0
+     ],
+     [
+      112.0,
+      569.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "FREEBIE25W Trsvsi Adapter (no caole)",
+    "confidence": 0.8812324404716492,
+    "bbox": [
+     [
+      173.0,
+      552.0
+     ],
+     [
+      386.0,
+      555.0
+     ],
+     [
+      386.0,
+      571.0
+     ],
+     [
+      173.0,
+      568.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Black 25W Adapter",
+    "confidence": 0.9394429922103882,
+    "bbox": [
+     [
+      599.0,
+      556.0
+     ],
+     [
+      701.0,
+      558.0
+     ],
+     [
+      701.0,
+      574.0
+     ],
+     [
+      599.0,
+      571.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "PO.00",
+    "confidence": 0.8103002309799194,
+    "bbox": [
+     [
+      744.0,
+      555.0
+     ],
+     [
+      781.0,
+      558.0
+     ],
+     [
+      780.0,
+      575.0
+     ],
+     [
+      743.0,
+      572.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1",
+    "confidence": 0.7390691637992859,
+    "bbox": [
+     [
+      836.0,
+      558.0
+     ],
+     [
+      849.0,
+      558.0
+     ],
+     [
+      849.0,
+      575.0
+     ],
+     [
+      836.0,
+      575.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "PO.00",
+    "confidence": 0.8833180665969849,
+    "bbox": [
+     [
+      923.0,
+      557.0
+     ],
+     [
+      960.0,
+      560.0
+     ],
+     [
+      959.0,
+      577.0
+     ],
+     [
+      922.0,
+      573.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "2",
+    "confidence": 0.9972227811813354,
+    "bbox": [
+     [
+      112.0,
+      580.0
+     ],
+     [
+      125.0,
+      580.0
+     ],
+     [
+      125.0,
+      596.0
+     ],
+     [
+      112.0,
+      596.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Samsung Galaxy A05s 4+128G8",
+    "confidence": 0.9216922521591187,
+    "bbox": [
+     [
+      172.0,
+      579.0
+     ],
+     [
+      343.0,
+      582.0
+     ],
+     [
+      343.0,
+      598.0
+     ],
+     [
+      172.0,
+      595.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Slack.4+128GB",
+    "confidence": 0.8814609050750732,
+    "bbox": [
+     [
+      599.0,
+      583.0
+     ],
+     [
+      687.0,
+      585.0
+     ],
+     [
+      686.0,
+      601.0
+     ],
+     [
+      599.0,
+      599.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P4,650.00",
+    "confidence": 0.8564826250076294,
+    "bbox": [
+     [
+      734.0,
+      584.0
+     ],
+     [
+      792.0,
+      587.0
+     ],
+     [
+      791.0,
+      602.0
+     ],
+     [
+      733.0,
+      600.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1",
+    "confidence": 0.8425346612930298,
+    "bbox": [
+     [
+      837.0,
+      586.0
+     ],
+     [
+      847.0,
+      586.0
+     ],
+     [
+      847.0,
+      601.0
+     ],
+     [
+      837.0,
+      601.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P4,650.00",
+    "confidence": 0.9363617300987244,
+    "bbox": [
+     [
+      913.0,
+      585.0
+     ],
+     [
+      970.0,
+      588.0
+     ],
+     [
+      969.0,
+      605.0
+     ],
+     [
+      912.0,
+      602.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Subtotal",
+    "confidence": 0.9971979260444641,
+    "bbox": [
+     [
+      817.0,
+      620.0
+     ],
+     [
+      880.0,
+      620.0
+     ],
+     [
+      880.0,
+      636.0
+     ],
+     [
+      817.0,
+      636.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P4650.00",
+    "confidence": 0.9861108660697937,
+    "bbox": [
+     [
+      895.0,
+      619.0
+     ],
+     [
+      970.0,
+      621.0
+     ],
+     [
+      970.0,
+      637.0
+     ],
+     [
+      895.0,
+      635.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Tetst Qusntity",
+    "confidence": 0.8704217672348022,
+    "bbox": [
+     [
+      817.0,
+      638.0
+     ],
+     [
+      888.0,
+      638.0
+     ],
+     [
+      888.0,
+      651.0
+     ],
+     [
+      817.0,
+      651.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "2itemz",
+    "confidence": 0.7546768188476562,
+    "bbox": [
+     [
+      894.0,
+      637.0
+     ],
+     [
+      934.0,
+      640.0
+     ],
+     [
+      933.0,
+      653.0
+     ],
+     [
+      893.0,
+      650.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Subtotal(Products)-VATahlez saies",
+    "confidence": 0.9218474626541138,
+    "bbox": [
+     [
+      144.0,
+      703.0
+     ],
+     [
+      354.0,
+      707.0
+     ],
+     [
+      354.0,
+      724.0
+     ],
+     [
+      143.0,
+      719.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P4.650.00",
+    "confidence": 0.938766360282898,
+    "bbox": [
+     [
+      418.0,
+      708.0
+     ],
+     [
+      475.0,
+      708.0
+     ],
+     [
+      475.0,
+      724.0
+     ],
+     [
+      418.0,
+      724.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total sales (Net.ofVAT)",
+    "confidence": 0.9224412441253662,
+    "bbox": [
+     [
+      676.0,
+      709.0
+     ],
+     [
+      816.0,
+      712.0
+     ],
+     [
+      816.0,
+      728.0
+     ],
+     [
+      676.0,
+      725.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P4.630.00",
+    "confidence": 0.8865043520927429,
+    "bbox": [
+     [
+      952.0,
+      713.0
+     ],
+     [
+      1009.0,
+      713.0
+     ],
+     [
+      1009.0,
+      729.0
+     ],
+     [
+      952.0,
+      729.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "SubtotallProducts)-Exempt saies",
+    "confidence": 0.934014618396759,
+    "bbox": [
+     [
+      144.0,
+      725.0
+     ],
+     [
+      344.0,
+      729.0
+     ],
+     [
+      344.0,
+      743.0
+     ],
+     [
+      143.0,
+      740.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0",
+    "confidence": 0.1854439228773117,
+    "bbox": [
+     [
+      467.0,
+      734.0
+     ],
+     [
+      475.0,
+      734.0
+     ],
+     [
+      475.0,
+      747.0
+     ],
+     [
+      467.0,
+      747.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Acd:VAT Amount",
+    "confidence": 0.9036942720413208,
+    "bbox": [
+     [
+      677.0,
+      732.0
+     ],
+     [
+      782.0,
+      732.0
+     ],
+     [
+      782.0,
+      747.0
+     ],
+     [
+      677.0,
+      747.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P5S8.00",
+    "confidence": 0.7552610635757446,
+    "bbox": [
+     [
+      960.0,
+      731.0
+     ],
+     [
+      1010.0,
+      733.0
+     ],
+     [
+      1009.0,
+      750.0
+     ],
+     [
+      959.0,
+      748.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Subtotal(Productz)-Zero-ratedsaies",
+    "confidence": 0.973547637462616,
+    "bbox": [
+     [
+      144.0,
+      745.0
+     ],
+     [
+      361.0,
+      749.0
+     ],
+     [
+      361.0,
+      764.0
+     ],
+     [
+      143.0,
+      760.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "VAT amount12%",
+    "confidence": 0.9587761163711548,
+    "bbox": [
+     [
+      143.0,
+      767.0
+     ],
+     [
+      251.0,
+      769.0
+     ],
+     [
+      250.0,
+      785.0
+     ],
+     [
+      142.0,
+      783.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P558.00",
+    "confidence": 0.9833663702011108,
+    "bbox": [
+     [
+      428.0,
+      770.0
+     ],
+     [
+      476.0,
+      770.0
+     ],
+     [
+      476.0,
+      786.0
+     ],
+     [
+      428.0,
+      786.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Totat",
+    "confidence": 0.9832161664962769,
+    "bbox": [
+     [
+      676.0,
+      765.0
+     ],
+     [
+      721.0,
+      765.0
+     ],
+     [
+      721.0,
+      781.0
+     ],
+     [
+      676.0,
+      781.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P5,208.00",
+    "confidence": 0.923324704170227,
+    "bbox": [
+     [
+      947.0,
+      766.0
+     ],
+     [
+      1009.0,
+      768.0
+     ],
+     [
+      1008.0,
+      784.0
+     ],
+     [
+      946.0,
+      781.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Paid by Shopee",
+    "confidence": 0.9544101357460022,
+    "bbox": [
+     [
+      675.0,
+      777.0
+     ],
+     [
+      769.0,
+      780.0
+     ],
+     [
+      768.0,
+      794.0
+     ],
+     [
+      675.0,
+      792.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P782.00",
+    "confidence": 0.9721555709838867,
+    "bbox": [
+     [
+      960.0,
+      778.0
+     ],
+     [
+      1010.0,
+      781.0
+     ],
+     [
+      1009.0,
+      797.0
+     ],
+     [
+      959.0,
+      794.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total",
+    "confidence": 0.9965858459472656,
+    "bbox": [
+     [
+      142.0,
+      802.0
+     ],
+     [
+      178.0,
+      802.0
+     ],
+     [
+      178.0,
+      818.0
+     ],
+     [
+      142.0,
+      818.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P5,208.00",
+    "confidence": 0.9665982723236084,
+    "bbox": [
+     [
+      414.0,
+      807.0
+     ],
+     [
+      474.0,
+      807.0
+     ],
+     [
+      474.0,
+      819.0
+     ],
+     [
+      414.0,
+      819.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Paid by Buyer",
+    "confidence": 0.9327540993690491,
+    "bbox": [
+     [
+      675.0,
+      796.0
+     ],
+     [
+      761.0,
+      799.0
+     ],
+     [
+      760.0,
+      815.0
+     ],
+     [
+      675.0,
+      812.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P4.426.00",
+    "confidence": 0.9591661095619202,
+    "bbox": [
+     [
+      950.0,
+      798.0
+     ],
+     [
+      1009.0,
+      801.0
+     ],
+     [
+      1008.0,
+      817.0
+     ],
+     [
+      949.0,
+      814.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Acknewiedgement Certificate",
+    "confidence": 0.962830126285553,
+    "bbox": [
+     [
+      124.0,
+      865.0
+     ],
+     [
+      297.0,
+      865.0
+     ],
+     [
+      297.0,
+      880.0
+     ],
+     [
+      124.0,
+      880.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "AC-044-OZ-2023-000245",
+    "confidence": 0.9527880549430847,
+    "bbox": [
+     [
+      408.0,
+      866.0
+     ],
+     [
+      534.0,
+      869.0
+     ],
+     [
+      534.0,
+      883.0
+     ],
+     [
+      407.0,
+      881.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Five Thousand Two Hundred Eignt Peso",
+    "confidence": 0.9390079975128174,
+    "bbox": [
+     [
+      820.0,
+      882.0
+     ],
+     [
+      1026.0,
+      885.0
+     ],
+     [
+      1026.0,
+      899.0
+     ],
+     [
+      820.0,
+      897.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total amount in words",
+    "confidence": 0.9742005467414856,
+    "bbox": [
+     [
+      892.0,
+      865.0
+     ],
+     [
+      1026.0,
+      866.0
+     ],
+     [
+      1026.0,
+      882.0
+     ],
+     [
+      891.0,
+      881.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Date Issued",
+    "confidence": 0.9621515870094299,
+    "bbox": [
+     [
+      124.0,
+      883.0
+     ],
+     [
+      195.0,
+      886.0
+     ],
+     [
+      194.0,
+      902.0
+     ],
+     [
+      124.0,
+      899.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Effective Date",
+    "confidence": 0.928254246711731,
+    "bbox": [
+     [
+      122.0,
+      904.0
+     ],
+     [
+      210.0,
+      906.0
+     ],
+     [
+      209.0,
+      921.0
+     ],
+     [
+      122.0,
+      918.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Series Number",
+    "confidence": 0.9732240438461304,
+    "bbox": [
+     [
+      122.0,
+      924.0
+     ],
+     [
+      213.0,
+      925.0
+     ],
+     [
+      213.0,
+      941.0
+     ],
+     [
+      122.0,
+      940.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "ISS1000000000001-195999988989899",
+    "confidence": 0.8311065435409546,
+    "bbox": [
+     [
+      328.0,
+      927.0
+     ],
+     [
+      532.0,
+      930.0
+     ],
+     [
+      532.0,
+      944.0
+     ],
+     [
+      328.0,
+      942.0
+     ]
+    ],
+    "engine": "paddleocr"
+   }
+  ]
+ },
+ "post_process": {
+  "invoice_number": "ISS1000010134539",
+  "invoice_date": "2025-01-15",
+  "due_date": null,
+  "vendor_name": "SCommerce Philippines, Inc",
+  "vendor_address": "Honest St.Cor.Determined St, CPIP Batino4027.City of Calamba Laguna, Philippines",
+  "vendor_tax_id": "010-691-151-00000",
+  "customer_name": "Hannah Bambao",
+  "customer_contact": null,
+  "customer_address": "33B Morning Star,Payatas, Payatas,Quezon City.Metro Manila,Metro Manila,1119",
+  "customer_tax_id": null,
+  "plate_number": null,
+  "line_items": [
+   {
+    "description": "FREEBIE25W Trsvsi Adapter (no caole) Black 25W Adapter",
+    "quantity": 1.0,
+    "unit_price": 0.0,
+    "amount": 0.0
+   },
+   {
+    "description": "Samsung Galaxy A05s 4+128G8 Slack.4+128GB",
+    "quantity": 1.0,
+    "unit_price": 4650.0,
+    "amount": 4650.0
+   }
+  ],
+  "subtotal": 4650.0,
+  "tax_amount": 558.0,
+  "tax_rate": 12.0,
+  "discount": null,
+  "withholding_tax": null,
+  "zero_rated_sales": null,
+  "vat_exempt_sales": 0.0,
+  "total_amount": 5208.0,
+  "current_charges_total": null,
+  "previous_balance": null,
+  "currency": "PHP",
+  "payment_terms": null
+ },
+ "wrong_final": {
+  "vendor_name": "SCommerce Philippines, Inc.",
+  "invoice_number": "ISSI000010134539",
+  "invoice_date": "2023-04-02",
+  "subtotal": 4650.0,
+  "tax_amount": 558.0,
+  "tax_rate": 12.0,
+  "discount": 12.0,
+  "zero_rated_sales": 12.0,
+  "vat_exempt_sales": 0.0,
+  "total_amount": 5208.0,
+  "line_items": [
+   {
+    "description": "FREEBIE25W Trsvsi Adapter (no caole) Black 25W Adapter",
+    "quantity": 1.0,
+    "unit_price": 0.0,
+    "amount": 0.0
+   },
+   {
+    "description": "Samsung Galaxy A05s 4+128G8 Slack.4+128GB",
+    "quantity": 1.0,
+    "unit_price": 4650.0,
+    "amount": 4650.0
+   }
+  ]
+ }
+}

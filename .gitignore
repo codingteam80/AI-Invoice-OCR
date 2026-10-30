@@ -1,5 +1,6 @@
 # ---- Secrets / local config ----
-!.env
+# .env holds API keys: never commit it
+.env
 .env.*
 !.env.example
 

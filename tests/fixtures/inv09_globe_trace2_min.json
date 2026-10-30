@@ -1,0 +1,2109 @@
+{
+ "source_file": "INV-09.jpg",
+ "ocr": {
+  "text": "Pndsree\nGlobe\n1634\nTURAvenue\nBIR CASPem No 0415-126-00187CAS\n951960000 aqnSSS\nthe most important appearance\n862104379\nStatement of Account\nBill Number\nManupac Carenderia\nUpper Campo slam.\nBill Period\n13 Jul 17 to 12 Aug17\n18\nLabangan Zamboanga De Sur\nAccount Number\n862104379\n7017Philippines\nPrevious Balance\nDue Immediately\n1,296.89\nCurrent Balance\nDue Date Sep 02.2017\n1,299.00\nTotal Amount Due\nStatement Summary\nP2.595.89\nPrevious Bill Charges\nAmount Due from Prevlous l\nAmount\nIMPORTANT NOTICE\nLess:Payments Thank You)\n2,596.89\ne Bus  ie\n(1,300.00)\nTechnology and Broadand Accesssedwonk\nRemaining Balance from Prevlous\nP1.296.89\nonnectivity or your business.upporg\nBAXo deliver high-speed Netnek\nCurrent Bill Charges\nwide range of network interfacesntt\nArnernre\nMonthly Recurring Fee MRF\n1,248.21\nDiret us e mst avacopr adier\nVAT\n(0066)\ntent conntions drt to yur \nfcilties to provideyou nwokwtabe\nTotal Current Bill\n149.79\nConnect your business to adedcated ntme\nP1,299.00\nDirect.\nsee e  e\nFor  more information,\nTOTAL AMOUNT DUE:\ncustomersupport@globebusiness.com.ph\nemail\nP2,595.89\ny eookd pat\nThank you\ncharges immediately.\nee\ne\nUpper Campo slam.\nManupac Carenderia\nLabangan Zamboanga Del Sur\n7017Philippines\nSERVICE\nACCOUNT NUMBER\nBILL NUMBER\nGlobe\nBILLPERIOD\nPAYMENT DUE DATE:\nAMOUNT DUE:\nLandline/\n862104379\n18\n13Jul 17 to 12\nDue Immediately\n1,296.89\nBroadband\nAug17\nSep02.2017\n1,299.00\nTOTALAMOUNT DUE:\nP2,595.89\n862104379MANUPACCARENDERIA*00025958910",
+  "avg_confidence": 0.8736,
+  "engine": "paddleocr+trocr",
+  "lines": [
+   {
+    "text": "Pndsree",
+    "confidence": 0.6319802403450012,
+    "bbox": [
+     [
+      401.0,
+      4.0
+     ],
+     [
+      442.0,
+      4.0
+     ],
+     [
+      442.0,
+      11.0
+     ],
+     [
+      401.0,
+      11.0
+     ]
+    ]
+   },
+   {
+    "text": "Globe",
+    "confidence": 0.9985952377319336,
+    "bbox": [
+     [
+      78.0,
+      1.0
+     ],
+     [
+      171.0,
+      4.0
+     ],
+     [
+      169.0,
+      33.0
+     ],
+     [
+      77.0,
+      29.0
+     ]
+    ]
+   },
+   {
+    "text": "1634",
+    "confidence": 0.9497178196907043,
+    "bbox": [
+     [
+      468.0,
+      19.0
+     ],
+     [
+      495.0,
+      24.0
+     ],
+     [
+      493.0,
+      35.0
+     ],
+     [
+      466.0,
+      30.0
+     ]
+    ]
+   },
+   {
+    "text": "TURAvenue",
+    "confidence": 0.4796086549758911,
+    "bbox": [
+     [
+      474.0,
+      6.0
+     ],
+     [
+      520.0,
+      9.0
+     ],
+     [
+      519.0,
+      18.0
+     ],
+     [
+      473.0,
+      15.0
+     ]
+    ]
+   },
+   {
+    "text": "BIR CASPem No 0415-126-00187CAS",
+    "confidence": 0.8294200897216797,
+    "bbox": [
+     [
+      9.0,
+      54.0
+     ],
+     [
+      178.0,
+      62.0
+     ],
+     [
+      178.0,
+      73.0
+     ],
+     [
+      9.0,
+      65.0
+     ]
+    ]
+   },
+   {
+    "text": "951960000 aqnSSS",
+    "confidence": 0.5161147117614746,
+    "bbox": [
+     [
+      390.0,
+      70.0
+     ],
+     [
+      513.0,
+      77.0
+     ],
+     [
+      512.0,
+      90.0
+     ],
+     [
+      389.0,
+      84.0
+     ]
+    ]
+   },
+   {
+    "text": "the most important appearance",
+    "confidence": 0.1683,
+    "bbox": [
+     [
+      564.0,
+      82.0
+     ],
+     [
+      704.0,
+      90.0
+     ],
+     [
+      704.0,
+      104.0
+     ],
+     [
+      564.0,
+      97.0
+     ]
+    ]
+   },
+   {
+    "text": "862104379",
+    "confidence": 0.995426595211029,
+    "bbox": [
+     [
+      53.0,
+      135.0
+     ],
+     [
+      112.0,
+      137.0
+     ],
+     [
+      112.0,
+      151.0
+     ],
+     [
+      53.0,
+      149.0
+     ]
+    ]
+   },
+   {
+    "text": "Statement of Account",
+    "confidence": 0.9859644174575806,
+    "bbox": [
+     [
+      524.0,
+      136.0
+     ],
+     [
+      648.0,
+      142.0
+     ],
+     [
+      647.0,
+      156.0
+     ],
+     [
+      523.0,
+      149.0
+     ]
+    ]
+   },
+   {
+    "text": "Bill Number",
+    "confidence": 0.9486812949180603,
+    "bbox": [
+     [
+      462.0,
+      162.0
+     ],
+     [
+      526.0,
+      166.0
+     ],
+     [
+      525.0,
+      180.0
+     ],
+     [
+      461.0,
+      176.0
+     ]
+    ]
+   },
+   {
+    "text": "Manupac Carenderia",
+    "confidence": 0.96280437707901,
+    "bbox": [
+     [
+      51.0,
+      173.0
+     ],
+     [
+      167.0,
+      179.0
+     ],
+     [
+      167.0,
+      192.0
+     ],
+     [
+      51.0,
+      186.0
+     ]
+    ]
+   },
+   {
+    "text": "Upper Campo slam.",
+    "confidence": 0.8930062055587769,
+    "bbox": [
+     [
+      51.0,
+      188.0
+     ],
+     [
+      177.0,
+      194.0
+     ],
+     [
+      177.0,
+      208.0
+     ],
+     [
+      51.0,
+      202.0
+     ]
+    ]
+   },
+   {
+    "text": "Bill Period",
+    "confidence": 0.8874399065971375,
+    "bbox": [
+     [
+      460.0,
+      177.0
+     ],
+     [
+      517.0,
+      181.0
+     ],
+     [
+      516.0,
+      195.0
+     ],
+     [
+      459.0,
+      191.0
+     ]
+    ]
+   },
+   {
+    "text": "13 Jul 17 to 12 Aug17",
+    "confidence": 0.9300020337104797,
+    "bbox": [
+     [
+      587.0,
+      182.0
+     ],
+     [
+      704.0,
+      190.0
+     ],
+     [
+      703.0,
+      204.0
+     ],
+     [
+      587.0,
+      196.0
+     ]
+    ]
+   },
+   {
+    "text": "18",
+    "confidence": 0.9929633736610413,
+    "bbox": [
+     [
+      688.0,
+      173.0
+     ],
+     [
+      704.0,
+      173.0
+     ],
+     [
+      704.0,
+      188.0
+     ],
+     [
+      688.0,
+      188.0
+     ]
+    ]
+   },
+   {
+    "text": "Labangan Zamboanga De Sur",
+    "confidence": 0.9680555462837219,
+    "bbox": [
+     [
+      75.0,
+      203.0
+     ],
+     [
+      221.0,
+      210.0
+     ],
+     [
+      220.0,
+      224.0
+     ],
+     [
+      74.0,
+      218.0
+     ]
+    ]
+   },
+   {
+    "text": "Account Number",
+    "confidence": 0.9879371523857117,
+    "bbox": [
+     [
+      460.0,
+      193.0
+     ],
+     [
+      554.0,
+      198.0
+     ],
+     [
+      553.0,
+      211.0
+     ],
+     [
+      459.0,
+      207.0
+     ]
+    ]
+   },
+   {
+    "text": "862104379",
+    "confidence": 0.9947042465209961,
+    "bbox": [
+     [
+      637.0,
+      200.0
+     ],
+     [
+      703.0,
+      204.0
+     ],
+     [
+      703.0,
+      218.0
+     ],
+     [
+      637.0,
+      215.0
+     ]
+    ]
+   },
+   {
+    "text": "7017Philippines",
+    "confidence": 0.9798024296760559,
+    "bbox": [
+     [
+      74.0,
+      216.0
+     ],
+     [
+      155.0,
+      220.0
+     ],
+     [
+      155.0,
+      234.0
+     ],
+     [
+      73.0,
+      230.0
+     ]
+    ]
+   },
+   {
+    "text": "Previous Balance",
+    "confidence": 0.9822245836257935,
+    "bbox": [
+     [
+      468.0,
+      211.0
+     ],
+     [
+      554.0,
+      217.0
+     ],
+     [
+      553.0,
+      231.0
+     ],
+     [
+      467.0,
+      226.0
+     ]
+    ]
+   },
+   {
+    "text": "Due Immediately",
+    "confidence": 0.9618749618530273,
+    "bbox": [
+     [
+      473.0,
+      223.0
+     ],
+     [
+      558.0,
+      227.0
+     ],
+     [
+      557.0,
+      241.0
+     ],
+     [
+      472.0,
+      237.0
+     ]
+    ]
+   },
+   {
+    "text": "1,296.89",
+    "confidence": 0.9351438283920288,
+    "bbox": [
+     [
+      650.0,
+      219.0
+     ],
+     [
+      698.0,
+      223.0
+     ],
+     [
+      697.0,
+      238.0
+     ],
+     [
+      649.0,
+      235.0
+     ]
+    ]
+   },
+   {
+    "text": "Current Balance",
+    "confidence": 0.985114336013794,
+    "bbox": [
+     [
+      467.0,
+      236.0
+     ],
+     [
+      549.0,
+      240.0
+     ],
+     [
+      548.0,
+      254.0
+     ],
+     [
+      466.0,
+      250.0
+     ]
+    ]
+   },
+   {
+    "text": "Due Date Sep 02.2017",
+    "confidence": 0.9272384643554688,
+    "bbox": [
+     [
+      470.0,
+      247.0
+     ],
+     [
+      585.0,
+      250.0
+     ],
+     [
+      585.0,
+      264.0
+     ],
+     [
+      470.0,
+      261.0
+     ]
+    ]
+   },
+   {
+    "text": "1,299.00",
+    "confidence": 0.9471685886383057,
+    "bbox": [
+     [
+      648.0,
+      243.0
+     ],
+     [
+      695.0,
+      246.0
+     ],
+     [
+      694.0,
+      261.0
+     ],
+     [
+      647.0,
+      258.0
+     ]
+    ]
+   },
+   {
+    "text": "Total Amount Due",
+    "confidence": 0.9481906890869141,
+    "bbox": [
+     [
+      466.0,
+      265.0
+     ],
+     [
+      558.0,
+      270.0
+     ],
+     [
+      557.0,
+      285.0
+     ],
+     [
+      465.0,
+      279.0
+     ]
+    ]
+   },
+   {
+    "text": "Statement Summary",
+    "confidence": 0.9773127436637878,
+    "bbox": [
+     [
+      40.0,
+      274.0
+     ],
+     [
+      154.0,
+      281.0
+     ],
+     [
+      154.0,
+      295.0
+     ],
+     [
+      39.0,
+      288.0
+     ]
+    ]
+   },
+   {
+    "text": "P2.595.89",
+    "confidence": 0.9377040863037109,
+    "bbox": [
+     [
+      640.0,
+      273.0
+     ],
+     [
+      694.0,
+      277.0
+     ],
+     [
+      693.0,
+      292.0
+     ],
+     [
+      639.0,
+      288.0
+     ]
+    ]
+   },
+   {
+    "text": "Previous Bill Charges",
+    "confidence": 0.9548206329345703,
+    "bbox": [
+     [
+      40.0,
+      297.0
+     ],
+     [
+      157.0,
+      304.0
+     ],
+     [
+      157.0,
+      318.0
+     ],
+     [
+      39.0,
+      311.0
+     ]
+    ]
+   },
+   {
+    "text": "Amount Due from Prevlous l",
+    "confidence": 0.7720044851303101,
+    "bbox": [
+     [
+      37.0,
+      319.0
+     ],
+     [
+      202.0,
+      327.0
+     ],
+     [
+      201.0,
+      341.0
+     ],
+     [
+      37.0,
+      334.0
+     ]
+    ]
+   },
+   {
+    "text": "Amount",
+    "confidence": 0.9983928799629211,
+    "bbox": [
+     [
+      302.0,
+      308.0
+     ],
+     [
+      351.0,
+      312.0
+     ],
+     [
+      350.0,
+      327.0
+     ],
+     [
+      301.0,
+      323.0
+     ]
+    ]
+   },
+   {
+    "text": "IMPORTANT NOTICE",
+    "confidence": 0.974862813949585,
+    "bbox": [
+     [
+      519.0,
+      309.0
+     ],
+     [
+      640.0,
+      316.0
+     ],
+     [
+      639.0,
+      330.0
+     ],
+     [
+      518.0,
+      323.0
+     ]
+    ]
+   },
+   {
+    "text": "Less:Payments Thank You)",
+    "confidence": 0.945242702960968,
+    "bbox": [
+     [
+      36.0,
+      335.0
+     ],
+     [
+      188.0,
+      341.0
+     ],
+     [
+      188.0,
+      355.0
+     ],
+     [
+      36.0,
+      349.0
+     ]
+    ]
+   },
+   {
+    "text": "2,596.89",
+    "confidence": 0.9352390766143799,
+    "bbox": [
+     [
+      298.0,
+      330.0
+     ],
+     [
+      349.0,
+      334.0
+     ],
+     [
+      348.0,
+      349.0
+     ],
+     [
+      297.0,
+      346.0
+     ]
+    ]
+   },
+   {
+    "text": "e Bus  ie",
+    "confidence": 0.5746238231658936,
+    "bbox": [
+     [
+      463.0,
+      337.0
+     ],
+     [
+      691.0,
+      348.0
+     ],
+     [
+      691.0,
+      362.0
+     ],
+     [
+      462.0,
+      351.0
+     ]
+    ]
+   },
+   {
+    "text": "(1,300.00)",
+    "confidence": 0.9100089073181152,
+    "bbox": [
+     [
+      293.0,
+      345.0
+     ],
+     [
+      352.0,
+      349.0
+     ],
+     [
+      351.0,
+      364.0
+     ],
+     [
+      292.0,
+      360.0
+     ]
+    ]
+   },
+   {
+    "text": "Technology and Broadand Accesssedwonk",
+    "confidence": 0.8111674785614014,
+    "bbox": [
+     [
+      462.0,
+      350.0
+     ],
+     [
+      691.0,
+      361.0
+     ],
+     [
+      691.0,
+      375.0
+     ],
+     [
+      461.0,
+      364.0
+     ]
+    ]
+   },
+   {
+    "text": "Remaining Balance from Prevlous",
+    "confidence": 0.7969138622283936,
+    "bbox": [
+     [
+      35.0,
+      360.0
+     ],
+     [
+      233.0,
+      369.0
+     ],
+     [
+      232.0,
+      382.0
+     ],
+     [
+      35.0,
+      373.0
+     ]
+    ]
+   },
+   {
+    "text": "P1.296.89",
+    "confidence": 0.9308910369873047,
+    "bbox": [
+     [
+      291.0,
+      371.0
+     ],
+     [
+      347.0,
+      374.0
+     ],
+     [
+      346.0,
+      388.0
+     ],
+     [
+      290.0,
+      385.0
+     ]
+    ]
+   },
+   {
+    "text": "onnectivity or your business.upporg",
+    "confidence": 0.7486531138420105,
+    "bbox": [
+     [
+      461.0,
+      377.0
+     ],
+     [
+      690.0,
+      388.0
+     ],
+     [
+      690.0,
+      402.0
+     ],
+     [
+      460.0,
+      390.0
+     ]
+    ]
+   },
+   {
+    "text": "BAXo deliver high-speed Netnek",
+    "confidence": 0.7888782024383545,
+    "bbox": [
+     [
+      462.0,
+      364.0
+     ],
+     [
+      690.0,
+      374.0
+     ],
+     [
+      690.0,
+      388.0
+     ],
+     [
+      461.0,
+      378.0
+     ]
+    ]
+   },
+   {
+    "text": "Current Bill Charges",
+    "confidence": 0.8815019726753235,
+    "bbox": [
+     [
+      36.0,
+      381.0
+     ],
+     [
+      147.0,
+      387.0
+     ],
+     [
+      147.0,
+      402.0
+     ],
+     [
+      35.0,
+      395.0
+     ]
+    ]
+   },
+   {
+    "text": "wide range of network interfacesntt",
+    "confidence": 0.7950436472892761,
+    "bbox": [
+     [
+      460.0,
+      390.0
+     ],
+     [
+      689.0,
+      401.0
+     ],
+     [
+      689.0,
+      415.0
+     ],
+     [
+      459.0,
+      404.0
+     ]
+    ]
+   },
+   {
+    "text": "Arnernre",
+    "confidence": 0.27219706773757935,
+    "bbox": [
+     [
+      34.0,
+      416.0
+     ],
+     [
+      176.0,
+      424.0
+     ],
+     [
+      175.0,
+      438.0
+     ],
+     [
+      33.0,
+      430.0
+     ]
+    ]
+   },
+   {
+    "text": "Monthly Recurring Fee MRF",
+    "confidence": 0.8994104266166687,
+    "bbox": [
+     [
+      33.0,
+      402.0
+     ],
+     [
+      189.0,
+      410.0
+     ],
+     [
+      189.0,
+      424.0
+     ],
+     [
+      33.0,
+      416.0
+     ]
+    ]
+   },
+   {
+    "text": "1,248.21",
+    "confidence": 0.9346434473991394,
+    "bbox": [
+     [
+      299.0,
+      413.0
+     ],
+     [
+      345.0,
+      417.0
+     ],
+     [
+      344.0,
+      432.0
+     ],
+     [
+      298.0,
+      428.0
+     ]
+    ]
+   },
+   {
+    "text": "Diret us e mst avacopr adier",
+    "confidence": 0.6252554655075073,
+    "bbox": [
+     [
+      460.0,
+      403.0
+     ],
+     [
+      688.0,
+      414.0
+     ],
+     [
+      688.0,
+      428.0
+     ],
+     [
+      459.0,
+      417.0
+     ]
+    ]
+   },
+   {
+    "text": "VAT",
+    "confidence": 0.9942161440849304,
+    "bbox": [
+     [
+      33.0,
+      428.0
+     ],
+     [
+      60.0,
+      432.0
+     ],
+     [
+      58.0,
+      446.0
+     ],
+     [
+      30.0,
+      442.0
+     ]
+    ]
+   },
+   {
+    "text": "(0066)",
+    "confidence": 0.9714572429656982,
+    "bbox": [
+     [
+      301.0,
+      427.0
+     ],
+     [
+      345.0,
+      430.0
+     ],
+     [
+      344.0,
+      445.0
+     ],
+     [
+      300.0,
+      442.0
+     ]
+    ]
+   },
+   {
+    "text": "tent conntions drt to yur ",
+    "confidence": 0.6951296925544739,
+    "bbox": [
+     [
+      458.0,
+      429.0
+     ],
+     [
+      686.0,
+      440.0
+     ],
+     [
+      686.0,
+      454.0
+     ],
+     [
+      457.0,
+      443.0
+     ]
+    ]
+   },
+   {
+    "text": "fcilties to provideyou nwokwtabe",
+    "confidence": 0.6716200113296509,
+    "bbox": [
+     [
+      459.0,
+      416.0
+     ],
+     [
+      687.0,
+      427.0
+     ],
+     [
+      687.0,
+      441.0
+     ],
+     [
+      458.0,
+      430.0
+     ]
+    ]
+   },
+   {
+    "text": "Total Current Bill",
+    "confidence": 0.8830451965332031,
+    "bbox": [
+     [
+      31.0,
+      457.0
+     ],
+     [
+      123.0,
+      461.0
+     ],
+     [
+      123.0,
+      474.0
+     ],
+     [
+      31.0,
+      470.0
+     ]
+    ]
+   },
+   {
+    "text": "149.79",
+    "confidence": 0.9794464111328125,
+    "bbox": [
+     [
+      304.0,
+      440.0
+     ],
+     [
+      344.0,
+      444.0
+     ],
+     [
+      342.0,
+      459.0
+     ],
+     [
+      303.0,
+      455.0
+     ]
+    ]
+   },
+   {
+    "text": "Connect your business to adedcated ntme",
+    "confidence": 0.8690347075462341,
+    "bbox": [
+     [
+      458.0,
+      443.0
+     ],
+     [
+      686.0,
+      453.0
+     ],
+     [
+      686.0,
+      466.0
+     ],
+     [
+      457.0,
+      457.0
+     ]
+    ]
+   },
+   {
+    "text": "P1,299.00",
+    "confidence": 0.9315958023071289,
+    "bbox": [
+     [
+      286.0,
+      468.0
+     ],
+     [
+      343.0,
+      471.0
+     ],
+     [
+      342.0,
+      485.0
+     ],
+     [
+      285.0,
+      482.0
+     ]
+    ]
+   },
+   {
+    "text": "Direct.",
+    "confidence": 0.9502582550048828,
+    "bbox": [
+     [
+      457.0,
+      470.0
+     ],
+     [
+      497.0,
+      473.0
+     ],
+     [
+      496.0,
+      484.0
+     ],
+     [
+      456.0,
+      481.0
+     ]
+    ]
+   },
+   {
+    "text": "see e  e",
+    "confidence": 0.4168335795402527,
+    "bbox": [
+     [
+      457.0,
+      456.0
+     ],
+     [
+      686.0,
+      466.0
+     ],
+     [
+      686.0,
+      480.0
+     ],
+     [
+      456.0,
+      470.0
+     ]
+    ]
+   },
+   {
+    "text": "For  more information,",
+    "confidence": 0.8991184830665588,
+    "bbox": [
+     [
+      501.0,
+      471.0
+     ],
+     [
+      643.0,
+      478.0
+     ],
+     [
+      642.0,
+      492.0
+     ],
+     [
+      500.0,
+      485.0
+     ]
+    ]
+   },
+   {
+    "text": "TOTAL AMOUNT DUE:",
+    "confidence": 0.9386231899261475,
+    "bbox": [
+     [
+      31.0,
+      486.0
+     ],
+     [
+      166.0,
+      493.0
+     ],
+     [
+      166.0,
+      507.0
+     ],
+     [
+      30.0,
+      500.0
+     ]
+    ]
+   },
+   {
+    "text": "customersupport@globebusiness.com.ph",
+    "confidence": 0.9803431034088135,
+    "bbox": [
+     [
+      456.0,
+      483.0
+     ],
+     [
+      655.0,
+      491.0
+     ],
+     [
+      655.0,
+      505.0
+     ],
+     [
+      455.0,
+      497.0
+     ]
+    ]
+   },
+   {
+    "text": "email",
+    "confidence": 0.9907010793685913,
+    "bbox": [
+     [
+      655.0,
+      479.0
+     ],
+     [
+      685.0,
+      481.0
+     ],
+     [
+      684.0,
+      492.0
+     ],
+     [
+      654.0,
+      490.0
+     ]
+    ]
+   },
+   {
+    "text": "P2,595.89",
+    "confidence": 0.9775599241256714,
+    "bbox": [
+     [
+      275.0,
+      496.0
+     ],
+     [
+      342.0,
+      499.0
+     ],
+     [
+      341.0,
+      517.0
+     ],
+     [
+      274.0,
+      513.0
+     ]
+    ]
+   },
+   {
+    "text": "y eookd pat",
+    "confidence": 0.6529799103736877,
+    "bbox": [
+     [
+      448.0,
+      690.0
+     ],
+     [
+      669.0,
+      702.0
+     ],
+     [
+      668.0,
+      718.0
+     ],
+     [
+      447.0,
+      707.0
+     ]
+    ]
+   },
+   {
+    "text": "Thank you",
+    "confidence": 0.9728680849075317,
+    "bbox": [
+     [
+      20.0,
+      720.0
+     ],
+     [
+      64.0,
+      724.0
+     ],
+     [
+      63.0,
+      735.0
+     ],
+     [
+      19.0,
+      731.0
+     ]
+    ]
+   },
+   {
+    "text": "charges immediately.",
+    "confidence": 0.9487183690071106,
+    "bbox": [
+     [
+      444.0,
+      711.0
+     ],
+     [
+      553.0,
+      717.0
+     ],
+     [
+      552.0,
+      731.0
+     ],
+     [
+      443.0,
+      725.0
+     ]
+    ]
+   },
+   {
+    "text": "ee",
+    "confidence": 0.2592873275279999,
+    "bbox": [
+     [
+      438.0,
+      741.0
+     ],
+     [
+      561.0,
+      746.0
+     ],
+     [
+      560.0,
+      757.0
+     ],
+     [
+      437.0,
+      752.0
+     ]
+    ]
+   },
+   {
+    "text": "e",
+    "confidence": 0.33837270736694336,
+    "bbox": [
+     [
+      438.0,
+      730.0
+     ],
+     [
+      668.0,
+      740.0
+     ],
+     [
+      668.0,
+      754.0
+     ],
+     [
+      437.0,
+      744.0
+     ]
+    ]
+   },
+   {
+    "text": "Upper Campo slam.",
+    "confidence": 0.9162955284118652,
+    "bbox": [
+     [
+      18.0,
+      759.0
+     ],
+     [
+      123.0,
+      766.0
+     ],
+     [
+      123.0,
+      780.0
+     ],
+     [
+      17.0,
+      773.0
+     ]
+    ]
+   },
+   {
+    "text": "Manupac Carenderia",
+    "confidence": 0.9605264663696289,
+    "bbox": [
+     [
+      17.0,
+      744.0
+     ],
+     [
+      133.0,
+      749.0
+     ],
+     [
+      133.0,
+      764.0
+     ],
+     [
+      17.0,
+      758.0
+     ]
+    ]
+   },
+   {
+    "text": "Labangan Zamboanga Del Sur",
+    "confidence": 0.9327088594436646,
+    "bbox": [
+     [
+      16.0,
+      770.0
+     ],
+     [
+      163.0,
+      777.0
+     ],
+     [
+      163.0,
+      791.0
+     ],
+     [
+      16.0,
+      784.0
+     ]
+    ]
+   },
+   {
+    "text": "7017Philippines",
+    "confidence": 0.9450675845146179,
+    "bbox": [
+     [
+      16.0,
+      779.0
+     ],
+     [
+      99.0,
+      785.0
+     ],
+     [
+      99.0,
+      799.0
+     ],
+     [
+      15.0,
+      793.0
+     ]
+    ]
+   },
+   {
+    "text": "SERVICE",
+    "confidence": 0.9987844228744507,
+    "bbox": [
+     [
+      44.0,
+      826.0
+     ],
+     [
+      89.0,
+      830.0
+     ],
+     [
+      87.0,
+      844.0
+     ],
+     [
+      43.0,
+      841.0
+     ]
+    ]
+   },
+   {
+    "text": "ACCOUNT NUMBER",
+    "confidence": 0.9595708250999451,
+    "bbox": [
+     [
+      114.0,
+      831.0
+     ],
+     [
+      216.0,
+      836.0
+     ],
+     [
+      215.0,
+      849.0
+     ],
+     [
+      113.0,
+      844.0
+     ]
+    ]
+   },
+   {
+    "text": "BILL NUMBER",
+    "confidence": 0.9151105880737305,
+    "bbox": [
+     [
+      225.0,
+      837.0
+     ],
+     [
+      295.0,
+      840.0
+     ],
+     [
+      294.0,
+      851.0
+     ],
+     [
+      224.0,
+      848.0
+     ]
+    ]
+   },
+   {
+    "text": "Globe",
+    "confidence": 0.9965461492538452,
+    "bbox": [
+     [
+      46.0,
+      847.0
+     ],
+     [
+      80.0,
+      852.0
+     ],
+     [
+      78.0,
+      867.0
+     ],
+     [
+      43.0,
+      862.0
+     ]
+    ]
+   },
+   {
+    "text": "BILLPERIOD",
+    "confidence": 0.9877535104751587,
+    "bbox": [
+     [
+      328.0,
+      841.0
+     ],
+     [
+      388.0,
+      844.0
+     ],
+     [
+      387.0,
+      857.0
+     ],
+     [
+      327.0,
+      854.0
+     ]
+    ]
+   },
+   {
+    "text": "PAYMENT DUE DATE:",
+    "confidence": 0.9262262582778931,
+    "bbox": [
+     [
+      418.0,
+      845.0
+     ],
+     [
+      523.0,
+      850.0
+     ],
+     [
+      522.0,
+      863.0
+     ],
+     [
+      417.0,
+      858.0
+     ]
+    ]
+   },
+   {
+    "text": "AMOUNT DUE:",
+    "confidence": 0.9444080591201782,
+    "bbox": [
+     [
+      576.0,
+      852.0
+     ],
+     [
+      651.0,
+      856.0
+     ],
+     [
+      650.0,
+      870.0
+     ],
+     [
+      576.0,
+      866.0
+     ]
+    ]
+   },
+   {
+    "text": "Landline/",
+    "confidence": 0.9854615330696106,
+    "bbox": [
+     [
+      34.0,
+      862.0
+     ],
+     [
+      87.0,
+      864.0
+     ],
+     [
+      87.0,
+      878.0
+     ],
+     [
+      34.0,
+      876.0
+     ]
+    ]
+   },
+   {
+    "text": "862104379",
+    "confidence": 0.9972472786903381,
+    "bbox": [
+     [
+      134.0,
+      867.0
+     ],
+     [
+      193.0,
+      870.0
+     ],
+     [
+      192.0,
+      885.0
+     ],
+     [
+      133.0,
+      881.0
+     ]
+    ]
+   },
+   {
+    "text": "18",
+    "confidence": 0.9810703992843628,
+    "bbox": [
+     [
+      251.0,
+      873.0
+     ],
+     [
+      268.0,
+      873.0
+     ],
+     [
+      268.0,
+      887.0
+     ],
+     [
+      251.0,
+      887.0
+     ]
+    ]
+   },
+   {
+    "text": "13Jul 17 to 12",
+    "confidence": 0.8840550780296326,
+    "bbox": [
+     [
+      323.0,
+      871.0
+     ],
+     [
+      393.0,
+      874.0
+     ],
+     [
+      392.0,
+      889.0
+     ],
+     [
+      322.0,
+      885.0
+     ]
+    ]
+   },
+   {
+    "text": "Due Immediately",
+    "confidence": 0.9771163463592529,
+    "bbox": [
+     [
+      417.0,
+      860.0
+     ],
+     [
+      504.0,
+      863.0
+     ],
+     [
+      503.0,
+      877.0
+     ],
+     [
+      416.0,
+      874.0
+     ]
+    ]
+   },
+   {
+    "text": "1,296.89",
+    "confidence": 0.9602973461151123,
+    "bbox": [
+     [
+      602.0,
+      868.0
+     ],
+     [
+      647.0,
+      870.0
+     ],
+     [
+      646.0,
+      885.0
+     ],
+     [
+      602.0,
+      882.0
+     ]
+    ]
+   },
+   {
+    "text": "Broadband",
+    "confidence": 0.9927854537963867,
+    "bbox": [
+     [
+      32.0,
+      875.0
+     ],
+     [
+      88.0,
+      879.0
+     ],
+     [
+      88.0,
+      893.0
+     ],
+     [
+      31.0,
+      889.0
+     ]
+    ]
+   },
+   {
+    "text": "Aug17",
+    "confidence": 0.9936395883560181,
+    "bbox": [
+     [
+      338.0,
+      885.0
+     ],
+     [
+      376.0,
+      888.0
+     ],
+     [
+      375.0,
+      903.0
+     ],
+     [
+      337.0,
+      900.0
+     ]
+    ]
+   },
+   {
+    "text": "Sep02.2017",
+    "confidence": 0.9597052335739136,
+    "bbox": [
+     [
+      417.0,
+      877.0
+     ],
+     [
+      483.0,
+      879.0
+     ],
+     [
+      482.0,
+      894.0
+     ],
+     [
+      416.0,
+      891.0
+     ]
+    ]
+   },
+   {
+    "text": "1,299.00",
+    "confidence": 0.9683418273925781,
+    "bbox": [
+     [
+      601.0,
+      884.0
+     ],
+     [
+      646.0,
+      888.0
+     ],
+     [
+      645.0,
+      903.0
+     ],
+     [
+      599.0,
+      899.0
+     ]
+    ]
+   },
+   {
+    "text": "TOTALAMOUNT DUE:",
+    "confidence": 0.9567910432815552,
+    "bbox": [
+     [
+      414.0,
+      896.0
+     ],
+     [
+      523.0,
+      902.0
+     ],
+     [
+      522.0,
+      916.0
+     ],
+     [
+      413.0,
+      910.0
+     ]
+    ]
+   },
+   {
+    "text": "P2,595.89",
+    "confidence": 0.9612358808517456,
+    "bbox": [
+     [
+      591.0,
+      904.0
+     ],
+     [
+      645.0,
+      908.0
+     ],
+     [
+      644.0,
+      922.0
+     ],
+     [
+      591.0,
+      918.0
+     ]
+    ]
+   },
+   {
+    "text": "862104379MANUPACCARENDERIA*00025958910",
+    "confidence": 0.8237470388412476,
+    "bbox": [
+     [
+      11.0,
+      924.0
+     ],
+     [
+      240.0,
+      936.0
+     ],
+     [
+      239.0,
+      949.0
+     ],
+     [
+      11.0,
+      938.0
+     ]
+    ]
+   }
+  ]
+ },
+ "text_llm_extracted": {
+  "invoice_number": "18",
+  "invoice_date": "2017-08-12",
+  "due_date": "2017-09-02",
+  "vendor_name": "Globe",
+  "vendor_address": null,
+  "vendor_tax_id": null,
+  "customer_name": "Manupac Carenderia",
+  "customer_contact": null,
+  "customer_address": "Upper Campo slam. Labangan Zamboanga De Sur 7017 Philippines",
+  "customer_tax_id": null,
+  "plate_number": null,
+  "line_items": [],
+  "subtotal": 1248.21,
+  "tax_amount": 50.79,
+  "tax_rate": 4.07,
+  "discount": null,
+  "withholding_tax": null,
+  "zero_rated_sales": null,
+  "vat_exempt_sales": null,
+  "total_amount": 2595.89,
+  "current_charges_total": 1299.0,
+  "previous_balance": 1296.89,
+  "currency": "PHP",
+  "payment_terms": "Due Immediately"
+ },
+ "vision": {
+  "mismatches": [
+   {
+    "field": "invoice_number",
+    "image_shows": "862104379",
+    "note": "The Account Number 862104379 is the primary identifier. The SOA Number 1000019396156 is a reference number, not the invoice number."
+   },
+   {
+    "field": "invoice_date",
+    "image_shows": "13 Jul 17 to 12 Aug 17",
+    "note": "The document shows a Bill Period, not a single invoice date."
+   },
+   {
+    "field": "vendor_address",
+    "image_shows": "32nd Street corner 7th Avenue Bonifacio Global City Taguig, Philippines 1634",
+    "note": "The extracted address is missing the comma after 'Avenue' and 'City'."
+   },
+   {
+    "field": "vendor_tax_id",
+    "image_shows": "300-350-816-000",
+    "note": "The extracted tax ID is missing the 'TIN:' prefix."
+   },
+   {
+    "field": "customer_address",
+    "image_shows": "Upper Campo Islam. Labangan Zamboanga Del Sur 7017 Philippines",
+    "note": "The extracted address has a typo 'slam' instead of 'Islam'."
+   },
+   {
+    "field": "subtotal",
+    "image_shows": "1,248.21",
+    "note": "The extracted value is missing the comma."
+   },
+   {
+    "field": "tax_amount",
+    "image_shows": "149.79",
+    "note": "The extracted value is incorrect."
+   },
+   {
+    "field": "total_amount",
+    "image_shows": "P2,595.89",
+    "note": "The extracted value is missing the currency symbol and comma."
+   }
+  ],
+  "corrections": {
+   "invoice_number": "862104379",
+   "invoice_date": "13 Jul 17 to 12 Aug 17",
+   "customer_address": "Upper Campo Islam. Labangan Zamboanga Del Sur 7017 Philippines",
+   "tax_amount": 149.79
+  },
+  "notes": [
+   "Vision check: auto-corrected 'invoice_number' from '1000019396156' to '862104379' — still needs review. (The Account Number 862104379 is the primary identifier. The SOA Number 1000019396156 is a reference number, not the invoice number.)",
+   "Vision check: auto-corrected 'invoice_date' from '2017-08-12' to '13 Jul 17 to 12 Aug 17' — still needs review. (The document shows a Bill Period, not a single invoice date.)",
+   "Vision check: auto-corrected 'customer_address' from 'Upper Campo slam. Labangan Zamboanga De Sur 7017 Philippines' to 'Upper Campo Islam. Labangan Zamboanga Del Sur 7017 Philippines' — still needs review. (The extracted address has a typo 'slam' instead of 'Islam'.)",
+   "Vision check: auto-corrected 'tax_amount' from '50.79' to '149.79' — still needs review. (The extracted value is incorrect.)"
+  ]
+ },
+ "header": {
+  "recovered_fields": {
+   "vendor_tax_id": "300-350-816-000",
+   "vendor_address": "32nd Street corner 7th Avenue Bonifacio Global City Taguig, Philippines 1634"
+  },
+  "locked_fields": [
+   "vendor_address",
+   "vendor_tax_id"
+  ],
+  "best_ocr_text": "Globe\nBensosGlatalcty\n32ndstreet.conorTtnAwenue\nwww.tacebook.conw/glob\nwwwgiebecsm.ph\nBIRA5Pem No 041512600187CAS\nSOANumber:1000019396156\nT3000-S16-000VAT Reg0e\n862104379\nStatement of Account\nBillNumber\nManupac Carenderia\nBill Perlod\n13Jul 17 to 12 Aug17\n18\nUpper Campo Islam.\nAccount Number\n862104379\n7017 Philippines\nLabangan Zamboanga Del Sur\nPrevious Balance\n1.296.89\nCurrent Balance\nDue Immediately\nDue Date Sep 02.2017\n1,299.00"
+ },
+ "header_notes": [
+  "Vendor header recovery: vendor_tax_id=300-350-816-000 recovered from the high-resolution header vision pass.",
+  "Vendor header recovery: vendor_address recovered from the high-resolution header vision pass."
+ ]
+}

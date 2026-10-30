@@ -32,7 +32,9 @@ class InvoiceORM(Base):
     __tablename__ = "invoices"
 
     id = Column(Integer, primary_key=True)
-    invoice_number = Column(String, unique=True, index=True, nullable=False)
+    invoice_number = Column(String, index=True, nullable=False)
+    duplicate_key = Column(String, unique=True, nullable=True)
+    content_key = Column(String, unique=True, nullable=True)
     invoice_date = Column(Date, nullable=True)
     date_uploaded = Column(Date, default=date.today, nullable=True)
     due_date = Column(Date, nullable=True)
@@ -54,7 +56,7 @@ class InvoiceORM(Base):
     customer_tax_id = Column(String, nullable=True)
     plate_number = Column(String, nullable=True)
 
-    subtotal = Column(Float, default=0.0)
+    subtotal = Column(Float, nullable=True)
     tax_amount = Column(Float, nullable=True)
     tax_rate = Column(Float, nullable=True)
     discount = Column(Float, nullable=True)
@@ -64,10 +66,10 @@ class InvoiceORM(Base):
     # EXTRACTION_SCHEMA for what these represent.
     zero_rated_sales = Column(Float, nullable=True)
     vat_exempt_sales = Column(Float, nullable=True)
-    total_amount = Column(Float, default=0.0)
+    total_amount = Column(Float, nullable=True)
     current_charges_total = Column(Float, nullable=True)
     previous_balance = Column(Float, nullable=True)
-    currency = Column(String, default="USD")
+    currency = Column(String, nullable=True)
 
     payment_terms = Column(String, nullable=True)
     category = Column(String, default="Others", nullable=False)
@@ -80,6 +82,9 @@ class InvoiceORM(Base):
     original_filename = Column(String, nullable=True)
     ocr_engine_used = Column(String, nullable=True)
     confidence_score = Column(Float, nullable=True)
+    validation_issues = Column(Text, nullable=True)
+    field_confidences = Column(Text, nullable=True)
+    field_evidence = Column(Text, nullable=True)
     status = Column(String, default="pending")
     raw_text = Column(Text, nullable=True)
     # Notes from ai/vision_verifier.py's independent image cross-check —

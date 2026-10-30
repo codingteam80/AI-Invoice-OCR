@@ -1,0 +1,2919 @@
+{
+ "_note": "INV-23 water-utility Statement of Account (real OCR + the wrong final it produced). post_process_items = LLM items after post_process(), which were still correct.",
+ "ocr": {
+  "text": "Machine SN: 597A0623\nN/A\nSOA #17000000000014787013\nSTATEMENT\nOFACCOUNT\nFor the Month of: December 2023\nSERVICE\nINFORMATION\nContract Account No:\n61717541\nAccount Name\nESTRELLAD.DEGUZMAN\nService Address\n: B3 L21-B BAYFAIR DR BAYFAIR SUBD\nMUNTINLUPA\nTIN\n:N/A\nRate class\n: Residential\nBusiness Area\n:Muntinlupa\n-Las Pinas\nMETERINGINFORMATION\nMeter No.\nMRO No.\nSeq No.\nAJP-15-23-193183\n17001352\n0750\nReading Date\n:12/13/2023\nPresent Reading\n:\nPrevious Reading\n:\nConsumption (cu.m.)\n18AVE\nAVERAGE\nBILLING\nADVISORY\nYour billing consumption for this month is average due to suspected DEFective METeR.\nYour charged volume for the month is computed based on actual historical\nconsumption as follows:\nREADING DATE\nCONSUMPTION\nNO.OF DAYS\nOctober 13,2023\n55\n30\nSeptember 13,2023\n41\n31\nAugust 13, 2023\n8\n30\nJune 13,2023\n0\n31\nMay 13, 2023\n0\n30\nApril 13, 2023\n6\n31\nTotal\n110\n183\nVolume for the month =\n110/183) 30 days\n=18 cu.m.\nWe will implement water meter replacement (if needed) the soonest\npossible time.\nPrevious 3 Months\nNoV\nOct\nSep\nConsumption\n19\n55\n41\nBILL\n&\nPAYMENT\nHISTORY\nDesc\nTotal Amount\nOR#\nDate\nWB\n480.85\n011005759016\n11/26/2023\nDescription: WB-Water Bill, GD-Guarantee Deposit, MIsc-Reopening Fee,Connection Fee,Metering Charge\nBILLING\nSUMMARY\nBILLING\nCurrent Charges\n.\nPERIOD\n11/13/2023\nTO\n12/13/2023\n452.99\nBasic Charge\nEnvironmental Charges (20% of Basic Charge)\n366.86\n73.37\nMaintenance Service Charge (Msc)\n1.50\nTotal Current Charges Before Taxes\n441.73\nGovernment Taxes\n11.26\nRefund/Rebate/Overpayment/Adjustment\n0.15\nTOTAL AMOUNT DUE\nPHP452.84\nPAYMENT DUE DATE\n12/20/2023\nPlease examine your bill carefully. If no complaint is made within 60 days of receipt, the bill is\nconsidered true and correct.\nTHIS DOCUMENT IS NOT VALID FOR CLAIM OF INPUT TAX.\"\nFOR INOUIRIES AND CONCERNS ON SANITATION SERVICES.PLEASE CALL",
+  "lines": [
+   {
+    "text": "Machine SN: 597A0623",
+    "confidence": 0.9972565770149231,
+    "bbox": [
+     [
+      635.0,
+      16.0
+     ],
+     [
+      853.0,
+      14.0
+     ],
+     [
+      853.0,
+      37.0
+     ],
+     [
+      635.0,
+      38.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "N/A",
+    "confidence": 0.9970366358757019,
+    "bbox": [
+     [
+      85.0,
+      18.0
+     ],
+     [
+      176.0,
+      18.0
+     ],
+     [
+      176.0,
+      59.0
+     ],
+     [
+      85.0,
+      59.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "SOA #17000000000014787013",
+    "confidence": 0.9745219945907593,
+    "bbox": [
+     [
+      56.0,
+      62.0
+     ],
+     [
+      416.0,
+      62.0
+     ],
+     [
+      416.0,
+      83.0
+     ],
+     [
+      56.0,
+      83.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "STATEMENT",
+    "confidence": 0.9892333149909973,
+    "bbox": [
+     [
+      322.0,
+      85.0
+     ],
+     [
+      523.0,
+      85.0
+     ],
+     [
+      523.0,
+      106.0
+     ],
+     [
+      322.0,
+      106.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "OFACCOUNT",
+    "confidence": 0.993762731552124,
+    "bbox": [
+     [
+      517.0,
+      85.0
+     ],
+     [
+      718.0,
+      85.0
+     ],
+     [
+      718.0,
+      106.0
+     ],
+     [
+      517.0,
+      106.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "For the Month of: December 2023",
+    "confidence": 0.9697744250297546,
+    "bbox": [
+     [
+      270.0,
+      106.0
+     ],
+     [
+      771.0,
+      107.0
+     ],
+     [
+      771.0,
+      130.0
+     ],
+     [
+      270.0,
+      128.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "SERVICE",
+    "confidence": 0.9953216910362244,
+    "bbox": [
+     [
+      342.0,
+      146.0
+     ],
+     [
+      474.0,
+      146.0
+     ],
+     [
+      474.0,
+      162.0
+     ],
+     [
+      342.0,
+      162.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "INFORMATION",
+    "confidence": 0.9960194230079651,
+    "bbox": [
+     [
+      483.0,
+      144.0
+     ],
+     [
+      698.0,
+      144.0
+     ],
+     [
+      698.0,
+      165.0
+     ],
+     [
+      483.0,
+      165.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Contract Account No:",
+    "confidence": 0.9393122792243958,
+    "bbox": [
+     [
+      59.0,
+      173.0
+     ],
+     [
+      333.0,
+      173.0
+     ],
+     [
+      333.0,
+      189.0
+     ],
+     [
+      59.0,
+      189.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "61717541",
+    "confidence": 0.9988359808921814,
+    "bbox": [
+     [
+      331.0,
+      170.0
+     ],
+     [
+      475.0,
+      170.0
+     ],
+     [
+      475.0,
+      192.0
+     ],
+     [
+      331.0,
+      192.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Account Name",
+    "confidence": 0.9856355786323547,
+    "bbox": [
+     [
+      56.0,
+      197.0
+     ],
+     [
+      218.0,
+      197.0
+     ],
+     [
+      218.0,
+      218.0
+     ],
+     [
+      56.0,
+      218.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "ESTRELLAD.DEGUZMAN",
+    "confidence": 0.985149085521698,
+    "bbox": [
+     [
+      307.0,
+      198.0
+     ],
+     [
+      610.0,
+      198.0
+     ],
+     [
+      610.0,
+      214.0
+     ],
+     [
+      307.0,
+      214.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Service Address",
+    "confidence": 0.9897097945213318,
+    "bbox": [
+     [
+      56.0,
+      218.0
+     ],
+     [
+      253.0,
+      218.0
+     ],
+     [
+      253.0,
+      238.0
+     ],
+     [
+      56.0,
+      238.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ": B3 L21-B BAYFAIR DR BAYFAIR SUBD",
+    "confidence": 0.9490759372711182,
+    "bbox": [
+     [
+      302.0,
+      218.0
+     ],
+     [
+      744.0,
+      221.0
+     ],
+     [
+      744.0,
+      242.0
+     ],
+     [
+      302.0,
+      238.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "MUNTINLUPA",
+    "confidence": 0.995546817779541,
+    "bbox": [
+     [
+      331.0,
+      238.0
+     ],
+     [
+      462.0,
+      238.0
+     ],
+     [
+      462.0,
+      259.0
+     ],
+     [
+      331.0,
+      259.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "TIN",
+    "confidence": 0.9980594515800476,
+    "bbox": [
+     [
+      58.0,
+      262.0
+     ],
+     [
+      102.0,
+      262.0
+     ],
+     [
+      102.0,
+      283.0
+     ],
+     [
+      58.0,
+      283.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ":N/A",
+    "confidence": 0.8897427320480347,
+    "bbox": [
+     [
+      306.0,
+      262.0
+     ],
+     [
+      386.0,
+      262.0
+     ],
+     [
+      386.0,
+      285.0
+     ],
+     [
+      306.0,
+      285.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Rate class",
+    "confidence": 0.9464839100837708,
+    "bbox": [
+     [
+      56.0,
+      285.0
+     ],
+     [
+      189.0,
+      285.0
+     ],
+     [
+      189.0,
+      306.0
+     ],
+     [
+      56.0,
+      306.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ": Residential",
+    "confidence": 0.9807977080345154,
+    "bbox": [
+     [
+      307.0,
+      286.0
+     ],
+     [
+      461.0,
+      286.0
+     ],
+     [
+      461.0,
+      307.0
+     ],
+     [
+      307.0,
+      307.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Business Area",
+    "confidence": 0.9942271709442139,
+    "bbox": [
+     [
+      58.0,
+      309.0
+     ],
+     [
+      227.0,
+      309.0
+     ],
+     [
+      227.0,
+      330.0
+     ],
+     [
+      58.0,
+      330.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ":Muntinlupa",
+    "confidence": 0.9693006277084351,
+    "bbox": [
+     [
+      309.0,
+      312.0
+     ],
+     [
+      469.0,
+      312.0
+     ],
+     [
+      469.0,
+      328.0
+     ],
+     [
+      309.0,
+      328.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "-Las Pinas",
+    "confidence": 0.9567931890487671,
+    "bbox": [
+     [
+      462.0,
+      312.0
+     ],
+     [
+      600.0,
+      312.0
+     ],
+     [
+      600.0,
+      328.0
+     ],
+     [
+      462.0,
+      328.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "METERINGINFORMATION",
+    "confidence": 0.9865255951881409,
+    "bbox": [
+     [
+      334.0,
+      355.0
+     ],
+     [
+      677.0,
+      355.0
+     ],
+     [
+      677.0,
+      371.0
+     ],
+     [
+      334.0,
+      371.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Meter No.",
+    "confidence": 0.9996258616447449,
+    "bbox": [
+     [
+      58.0,
+      377.0
+     ],
+     [
+      171.0,
+      381.0
+     ],
+     [
+      171.0,
+      403.0
+     ],
+     [
+      57.0,
+      400.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "MRO No.",
+    "confidence": 0.8926376104354858,
+    "bbox": [
+     [
+      436.0,
+      376.0
+     ],
+     [
+      528.0,
+      379.0
+     ],
+     [
+      527.0,
+      402.0
+     ],
+     [
+      435.0,
+      398.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Seq No.",
+    "confidence": 0.9238478541374207,
+    "bbox": [
+     [
+      683.0,
+      382.0
+     ],
+     [
+      768.0,
+      382.0
+     ],
+     [
+      768.0,
+      400.0
+     ],
+     [
+      683.0,
+      400.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "AJP-15-23-193183",
+    "confidence": 0.9936960935592651,
+    "bbox": [
+     [
+      70.0,
+      400.0
+     ],
+     [
+      272.0,
+      400.0
+     ],
+     [
+      272.0,
+      421.0
+     ],
+     [
+      70.0,
+      421.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "17001352",
+    "confidence": 0.998856246471405,
+    "bbox": [
+     [
+      438.0,
+      403.0
+     ],
+     [
+      536.0,
+      403.0
+     ],
+     [
+      536.0,
+      421.0
+     ],
+     [
+      438.0,
+      421.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0750",
+    "confidence": 0.9985921382904053,
+    "bbox": [
+     [
+      685.0,
+      403.0
+     ],
+     [
+      738.0,
+      403.0
+     ],
+     [
+      738.0,
+      421.0
+     ],
+     [
+      685.0,
+      421.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Reading Date",
+    "confidence": 0.9973933696746826,
+    "bbox": [
+     [
+      59.0,
+      421.0
+     ],
+     [
+      213.0,
+      419.0
+     ],
+     [
+      213.0,
+      442.0
+     ],
+     [
+      59.0,
+      443.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ":12/13/2023",
+    "confidence": 0.9532912969589233,
+    "bbox": [
+     [
+      373.0,
+      424.0
+     ],
+     [
+      526.0,
+      424.0
+     ],
+     [
+      526.0,
+      445.0
+     ],
+     [
+      373.0,
+      445.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Present Reading",
+    "confidence": 0.9994552135467529,
+    "bbox": [
+     [
+      59.0,
+      442.0
+     ],
+     [
+      245.0,
+      443.0
+     ],
+     [
+      245.0,
+      466.0
+     ],
+     [
+      59.0,
+      464.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ":",
+    "confidence": 0.9799290299415588,
+    "bbox": [
+     [
+      374.0,
+      450.0
+     ],
+     [
+      389.0,
+      450.0
+     ],
+     [
+      389.0,
+      464.0
+     ],
+     [
+      374.0,
+      464.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Previous Reading",
+    "confidence": 0.9882951378822327,
+    "bbox": [
+     [
+      59.0,
+      464.0
+     ],
+     [
+      261.0,
+      466.0
+     ],
+     [
+      261.0,
+      488.0
+     ],
+     [
+      59.0,
+      486.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ":",
+    "confidence": 0.9728992581367493,
+    "bbox": [
+     [
+      374.0,
+      470.0
+     ],
+     [
+      387.0,
+      470.0
+     ],
+     [
+      387.0,
+      485.0
+     ],
+     [
+      374.0,
+      485.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Consumption (cu.m.)",
+    "confidence": 0.999433696269989,
+    "bbox": [
+     [
+      59.0,
+      486.0
+     ],
+     [
+      283.0,
+      488.0
+     ],
+     [
+      283.0,
+      510.0
+     ],
+     [
+      59.0,
+      509.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "18AVE",
+    "confidence": 0.9915685653686523,
+    "bbox": [
+     [
+      373.0,
+      486.0
+     ],
+     [
+      483.0,
+      486.0
+     ],
+     [
+      483.0,
+      509.0
+     ],
+     [
+      373.0,
+      509.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "AVERAGE",
+    "confidence": 0.9971383213996887,
+    "bbox": [
+     [
+      314.0,
+      526.0
+     ],
+     [
+      434.0,
+      526.0
+     ],
+     [
+      434.0,
+      542.0
+     ],
+     [
+      314.0,
+      542.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "BILLING",
+    "confidence": 0.9958391189575195,
+    "bbox": [
+     [
+      446.0,
+      523.0
+     ],
+     [
+      586.0,
+      523.0
+     ],
+     [
+      586.0,
+      544.0
+     ],
+     [
+      446.0,
+      544.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "ADVISORY",
+    "confidence": 0.9924296736717224,
+    "bbox": [
+     [
+      582.0,
+      523.0
+     ],
+     [
+      738.0,
+      523.0
+     ],
+     [
+      738.0,
+      544.0
+     ],
+     [
+      582.0,
+      544.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Your billing consumption for this month is average due to suspected DEFective METeR.",
+    "confidence": 0.93220454454422,
+    "bbox": [
+     [
+      59.0,
+      544.0
+     ],
+     [
+      968.0,
+      546.0
+     ],
+     [
+      968.0,
+      568.0
+     ],
+     [
+      59.0,
+      566.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Your charged volume for the month is computed based on actual historical",
+    "confidence": 0.9992088675498962,
+    "bbox": [
+     [
+      61.0,
+      570.0
+     ],
+     [
+      840.0,
+      568.0
+     ],
+     [
+      840.0,
+      590.0
+     ],
+     [
+      61.0,
+      592.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "consumption as follows:",
+    "confidence": 0.9822012186050415,
+    "bbox": [
+     [
+      62.0,
+      594.0
+     ],
+     [
+      307.0,
+      594.0
+     ],
+     [
+      307.0,
+      614.0
+     ],
+     [
+      62.0,
+      614.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "READING DATE",
+    "confidence": 0.9786247611045837,
+    "bbox": [
+     [
+      93.0,
+      635.0
+     ],
+     [
+      235.0,
+      635.0
+     ],
+     [
+      235.0,
+      656.0
+     ],
+     [
+      93.0,
+      656.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "CONSUMPTION",
+    "confidence": 0.9976085424423218,
+    "bbox": [
+     [
+      446.0,
+      635.0
+     ],
+     [
+      581.0,
+      635.0
+     ],
+     [
+      581.0,
+      656.0
+     ],
+     [
+      446.0,
+      656.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "NO.OF DAYS",
+    "confidence": 0.9476994276046753,
+    "bbox": [
+     [
+      688.0,
+      635.0
+     ],
+     [
+      821.0,
+      635.0
+     ],
+     [
+      821.0,
+      658.0
+     ],
+     [
+      688.0,
+      658.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "October 13,2023",
+    "confidence": 0.9649031758308411,
+    "bbox": [
+     [
+      91.0,
+      661.0
+     ],
+     [
+      278.0,
+      661.0
+     ],
+     [
+      278.0,
+      682.0
+     ],
+     [
+      91.0,
+      682.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "55",
+    "confidence": 0.9994896650314331,
+    "bbox": [
+     [
+      445.0,
+      661.0
+     ],
+     [
+      474.0,
+      661.0
+     ],
+     [
+      474.0,
+      682.0
+     ],
+     [
+      445.0,
+      682.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "30",
+    "confidence": 0.9989535808563232,
+    "bbox": [
+     [
+      688.0,
+      661.0
+     ],
+     [
+      718.0,
+      661.0
+     ],
+     [
+      718.0,
+      682.0
+     ],
+     [
+      688.0,
+      682.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "September 13,2023",
+    "confidence": 0.9701155424118042,
+    "bbox": [
+     [
+      93.0,
+      685.0
+     ],
+     [
+      301.0,
+      685.0
+     ],
+     [
+      301.0,
+      706.0
+     ],
+     [
+      93.0,
+      706.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "41",
+    "confidence": 0.99945068359375,
+    "bbox": [
+     [
+      445.0,
+      685.0
+     ],
+     [
+      470.0,
+      685.0
+     ],
+     [
+      470.0,
+      706.0
+     ],
+     [
+      445.0,
+      706.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "31",
+    "confidence": 0.9995123744010925,
+    "bbox": [
+     [
+      688.0,
+      685.0
+     ],
+     [
+      717.0,
+      685.0
+     ],
+     [
+      717.0,
+      706.0
+     ],
+     [
+      688.0,
+      706.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "August 13, 2023",
+    "confidence": 0.9907243251800537,
+    "bbox": [
+     [
+      91.0,
+      709.0
+     ],
+     [
+      265.0,
+      705.0
+     ],
+     [
+      266.0,
+      728.0
+     ],
+     [
+      91.0,
+      731.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "8",
+    "confidence": 0.9983431100845337,
+    "bbox": [
+     [
+      443.0,
+      707.0
+     ],
+     [
+      464.0,
+      707.0
+     ],
+     [
+      464.0,
+      731.0
+     ],
+     [
+      443.0,
+      731.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "30",
+    "confidence": 0.9992148876190186,
+    "bbox": [
+     [
+      688.0,
+      709.0
+     ],
+     [
+      717.0,
+      709.0
+     ],
+     [
+      717.0,
+      730.0
+     ],
+     [
+      688.0,
+      730.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "June 13,2023",
+    "confidence": 0.9424654841423035,
+    "bbox": [
+     [
+      93.0,
+      733.0
+     ],
+     [
+      235.0,
+      733.0
+     ],
+     [
+      235.0,
+      755.0
+     ],
+     [
+      93.0,
+      755.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0",
+    "confidence": 0.9752517938613892,
+    "bbox": [
+     [
+      443.0,
+      733.0
+     ],
+     [
+      464.0,
+      733.0
+     ],
+     [
+      464.0,
+      755.0
+     ],
+     [
+      443.0,
+      755.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "31",
+    "confidence": 0.9994969367980957,
+    "bbox": [
+     [
+      688.0,
+      733.0
+     ],
+     [
+      717.0,
+      733.0
+     ],
+     [
+      717.0,
+      754.0
+     ],
+     [
+      688.0,
+      754.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "May 13, 2023",
+    "confidence": 0.9439416527748108,
+    "bbox": [
+     [
+      89.0,
+      757.0
+     ],
+     [
+      229.0,
+      755.0
+     ],
+     [
+      229.0,
+      778.0
+     ],
+     [
+      90.0,
+      779.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0",
+    "confidence": 0.9786435961723328,
+    "bbox": [
+     [
+      443.0,
+      757.0
+     ],
+     [
+      464.0,
+      757.0
+     ],
+     [
+      464.0,
+      779.0
+     ],
+     [
+      443.0,
+      779.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "30",
+    "confidence": 0.9988308548927307,
+    "bbox": [
+     [
+      688.0,
+      757.0
+     ],
+     [
+      718.0,
+      757.0
+     ],
+     [
+      718.0,
+      778.0
+     ],
+     [
+      688.0,
+      778.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "April 13, 2023",
+    "confidence": 0.9413418173789978,
+    "bbox": [
+     [
+      91.0,
+      781.0
+     ],
+     [
+      251.0,
+      781.0
+     ],
+     [
+      251.0,
+      803.0
+     ],
+     [
+      91.0,
+      803.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "6",
+    "confidence": 0.9986305236816406,
+    "bbox": [
+     [
+      443.0,
+      779.0
+     ],
+     [
+      462.0,
+      779.0
+     ],
+     [
+      462.0,
+      803.0
+     ],
+     [
+      443.0,
+      803.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "31",
+    "confidence": 0.9996538162231445,
+    "bbox": [
+     [
+      686.0,
+      779.0
+     ],
+     [
+      718.0,
+      779.0
+     ],
+     [
+      718.0,
+      805.0
+     ],
+     [
+      686.0,
+      805.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total",
+    "confidence": 0.9993124008178711,
+    "bbox": [
+     [
+      94.0,
+      813.0
+     ],
+     [
+      158.0,
+      813.0
+     ],
+     [
+      158.0,
+      835.0
+     ],
+     [
+      94.0,
+      835.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "110",
+    "confidence": 0.9986134171485901,
+    "bbox": [
+     [
+      445.0,
+      813.0
+     ],
+     [
+      485.0,
+      813.0
+     ],
+     [
+      485.0,
+      832.0
+     ],
+     [
+      445.0,
+      832.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "183",
+    "confidence": 0.9996451735496521,
+    "bbox": [
+     [
+      690.0,
+      814.0
+     ],
+     [
+      725.0,
+      814.0
+     ],
+     [
+      725.0,
+      834.0
+     ],
+     [
+      690.0,
+      834.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Volume for the month =",
+    "confidence": 0.9427506923675537,
+    "bbox": [
+     [
+      291.0,
+      834.0
+     ],
+     [
+      555.0,
+      834.0
+     ],
+     [
+      555.0,
+      854.0
+     ],
+     [
+      291.0,
+      854.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "110/183) 30 days",
+    "confidence": 0.9663146734237671,
+    "bbox": [
+     [
+      551.0,
+      832.0
+     ],
+     [
+      755.0,
+      835.0
+     ],
+     [
+      755.0,
+      858.0
+     ],
+     [
+      550.0,
+      854.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "=18 cu.m.",
+    "confidence": 0.9738729000091553,
+    "bbox": [
+     [
+      536.0,
+      854.0
+     ],
+     [
+      648.0,
+      858.0
+     ],
+     [
+      648.0,
+      879.0
+     ],
+     [
+      536.0,
+      875.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "We will implement water meter replacement (if needed) the soonest",
+    "confidence": 0.984291136264801,
+    "bbox": [
+     [
+      94.0,
+      875.0
+     ],
+     [
+      805.0,
+      877.0
+     ],
+     [
+      805.0,
+      899.0
+     ],
+     [
+      94.0,
+      898.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "possible time.",
+    "confidence": 0.9751290082931519,
+    "bbox": [
+     [
+      96.0,
+      896.0
+     ],
+     [
+      250.0,
+      896.0
+     ],
+     [
+      250.0,
+      917.0
+     ],
+     [
+      96.0,
+      917.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Previous 3 Months",
+    "confidence": 0.9742569923400879,
+    "bbox": [
+     [
+      62.0,
+      949.0
+     ],
+     [
+      264.0,
+      949.0
+     ],
+     [
+      264.0,
+      970.0
+     ],
+     [
+      62.0,
+      970.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "NoV",
+    "confidence": 0.696567714214325,
+    "bbox": [
+     [
+      483.0,
+      949.0
+     ],
+     [
+      525.0,
+      949.0
+     ],
+     [
+      525.0,
+      968.0
+     ],
+     [
+      483.0,
+      968.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Oct",
+    "confidence": 0.9745284914970398,
+    "bbox": [
+     [
+      669.0,
+      949.0
+     ],
+     [
+      707.0,
+      949.0
+     ],
+     [
+      707.0,
+      968.0
+     ],
+     [
+      669.0,
+      968.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Sep",
+    "confidence": 0.9961839318275452,
+    "bbox": [
+     [
+      835.0,
+      945.0
+     ],
+     [
+      882.0,
+      949.0
+     ],
+     [
+      880.0,
+      973.0
+     ],
+     [
+      833.0,
+      969.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Consumption",
+    "confidence": 0.9969061017036438,
+    "bbox": [
+     [
+      78.0,
+      973.0
+     ],
+     [
+      224.0,
+      973.0
+     ],
+     [
+      224.0,
+      994.0
+     ],
+     [
+      78.0,
+      994.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "19",
+    "confidence": 0.9983974695205688,
+    "bbox": [
+     [
+      483.0,
+      968.0
+     ],
+     [
+      517.0,
+      968.0
+     ],
+     [
+      517.0,
+      990.0
+     ],
+     [
+      483.0,
+      990.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "55",
+    "confidence": 0.9991172552108765,
+    "bbox": [
+     [
+      670.0,
+      968.0
+     ],
+     [
+      699.0,
+      968.0
+     ],
+     [
+      699.0,
+      989.0
+     ],
+     [
+      670.0,
+      989.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "41",
+    "confidence": 0.9990105628967285,
+    "bbox": [
+     [
+      837.0,
+      971.0
+     ],
+     [
+      867.0,
+      971.0
+     ],
+     [
+      867.0,
+      992.0
+     ],
+     [
+      837.0,
+      992.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "BILL",
+    "confidence": 0.996513843536377,
+    "bbox": [
+     [
+      318.0,
+      1003.0
+     ],
+     [
+      382.0,
+      1003.0
+     ],
+     [
+      382.0,
+      1021.0
+     ],
+     [
+      318.0,
+      1021.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "&",
+    "confidence": 0.9970224499702454,
+    "bbox": [
+     [
+      402.0,
+      1006.0
+     ],
+     [
+      418.0,
+      1006.0
+     ],
+     [
+      418.0,
+      1019.0
+     ],
+     [
+      402.0,
+      1019.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "PAYMENT",
+    "confidence": 0.995837390422821,
+    "bbox": [
+     [
+      437.0,
+      1005.0
+     ],
+     [
+      563.0,
+      1005.0
+     ],
+     [
+      563.0,
+      1021.0
+     ],
+     [
+      437.0,
+      1021.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "HISTORY",
+    "confidence": 0.996192991733551,
+    "bbox": [
+     [
+      578.0,
+      1003.0
+     ],
+     [
+      706.0,
+      1003.0
+     ],
+     [
+      706.0,
+      1024.0
+     ],
+     [
+      578.0,
+      1024.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Desc",
+    "confidence": 0.9927763938903809,
+    "bbox": [
+     [
+      70.0,
+      1030.0
+     ],
+     [
+      124.0,
+      1034.0
+     ],
+     [
+      122.0,
+      1058.0
+     ],
+     [
+      68.0,
+      1054.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total Amount",
+    "confidence": 0.9744670987129211,
+    "bbox": [
+     [
+      259.0,
+      1034.0
+     ],
+     [
+      389.0,
+      1034.0
+     ],
+     [
+      389.0,
+      1054.0
+     ],
+     [
+      259.0,
+      1054.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "OR#",
+    "confidence": 0.9954503178596497,
+    "bbox": [
+     [
+      522.0,
+      1034.0
+     ],
+     [
+      557.0,
+      1034.0
+     ],
+     [
+      557.0,
+      1053.0
+     ],
+     [
+      522.0,
+      1053.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Date",
+    "confidence": 0.9989619851112366,
+    "bbox": [
+     [
+      771.0,
+      1030.0
+     ],
+     [
+      823.0,
+      1034.0
+     ],
+     [
+      821.0,
+      1056.0
+     ],
+     [
+      769.0,
+      1052.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "WB",
+    "confidence": 0.9947158098220825,
+    "bbox": [
+     [
+      70.0,
+      1061.0
+     ],
+     [
+      102.0,
+      1061.0
+     ],
+     [
+      102.0,
+      1080.0
+     ],
+     [
+      70.0,
+      1080.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "480.85",
+    "confidence": 0.9980642795562744,
+    "bbox": [
+     [
+      346.0,
+      1059.0
+     ],
+     [
+      418.0,
+      1059.0
+     ],
+     [
+      418.0,
+      1082.0
+     ],
+     [
+      346.0,
+      1082.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "011005759016",
+    "confidence": 0.9995977282524109,
+    "bbox": [
+     [
+      499.0,
+      1059.0
+     ],
+     [
+      629.0,
+      1059.0
+     ],
+     [
+      629.0,
+      1080.0
+     ],
+     [
+      499.0,
+      1080.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "11/26/2023",
+    "confidence": 0.9981754422187805,
+    "bbox": [
+     [
+      774.0,
+      1061.0
+     ],
+     [
+      883.0,
+      1061.0
+     ],
+     [
+      883.0,
+      1078.0
+     ],
+     [
+      774.0,
+      1078.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Description: WB-Water Bill, GD-Guarantee Deposit, MIsc-Reopening Fee,Connection Fee,Metering Charge",
+    "confidence": 0.9568952322006226,
+    "bbox": [
+     [
+      59.0,
+      1096.0
+     ],
+     [
+      955.0,
+      1096.0
+     ],
+     [
+      955.0,
+      1117.0
+     ],
+     [
+      59.0,
+      1117.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "BILLING",
+    "confidence": 0.9959506988525391,
+    "bbox": [
+     [
+      389.0,
+      1134.0
+     ],
+     [
+      536.0,
+      1134.0
+     ],
+     [
+      536.0,
+      1155.0
+     ],
+     [
+      389.0,
+      1155.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "SUMMARY",
+    "confidence": 0.9927369952201843,
+    "bbox": [
+     [
+      528.0,
+      1136.0
+     ],
+     [
+      656.0,
+      1136.0
+     ],
+     [
+      656.0,
+      1152.0
+     ],
+     [
+      528.0,
+      1152.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "BILLING",
+    "confidence": 0.996193528175354,
+    "bbox": [
+     [
+      64.0,
+      1158.0
+     ],
+     [
+      165.0,
+      1158.0
+     ],
+     [
+      165.0,
+      1174.0
+     ],
+     [
+      64.0,
+      1174.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Current Charges",
+    "confidence": 0.9716348648071289,
+    "bbox": [
+     [
+      62.0,
+      1174.0
+     ],
+     [
+      259.0,
+      1174.0
+     ],
+     [
+      259.0,
+      1195.0
+     ],
+     [
+      62.0,
+      1195.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": ".",
+    "confidence": 0.18048599362373352,
+    "bbox": [
+     [
+      165.0,
+      1162.0
+     ],
+     [
+      173.0,
+      1162.0
+     ],
+     [
+      173.0,
+      1170.0
+     ],
+     [
+      165.0,
+      1170.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "PERIOD",
+    "confidence": 0.9882163405418396,
+    "bbox": [
+     [
+      170.0,
+      1158.0
+     ],
+     [
+      258.0,
+      1158.0
+     ],
+     [
+      258.0,
+      1174.0
+     ],
+     [
+      170.0,
+      1174.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "11/13/2023",
+    "confidence": 0.9968053698539734,
+    "bbox": [
+     [
+      258.0,
+      1158.0
+     ],
+     [
+      418.0,
+      1158.0
+     ],
+     [
+      418.0,
+      1174.0
+     ],
+     [
+      258.0,
+      1174.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "TO",
+    "confidence": 0.9730821251869202,
+    "bbox": [
+     [
+      411.0,
+      1158.0
+     ],
+     [
+      470.0,
+      1158.0
+     ],
+     [
+      470.0,
+      1174.0
+     ],
+     [
+      411.0,
+      1174.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "12/13/2023",
+    "confidence": 0.9987630844116211,
+    "bbox": [
+     [
+      462.0,
+      1157.0
+     ],
+     [
+      606.0,
+      1157.0
+     ],
+     [
+      606.0,
+      1178.0
+     ],
+     [
+      462.0,
+      1178.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "452.99",
+    "confidence": 0.999029815196991,
+    "bbox": [
+     [
+      882.0,
+      1174.0
+     ],
+     [
+      965.0,
+      1174.0
+     ],
+     [
+      965.0,
+      1197.0
+     ],
+     [
+      882.0,
+      1197.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Basic Charge",
+    "confidence": 0.9954134821891785,
+    "bbox": [
+     [
+      77.0,
+      1198.0
+     ],
+     [
+      216.0,
+      1198.0
+     ],
+     [
+      216.0,
+      1219.0
+     ],
+     [
+      77.0,
+      1219.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Environmental Charges (20% of Basic Charge)",
+    "confidence": 0.9523653388023376,
+    "bbox": [
+     [
+      77.0,
+      1216.0
+     ],
+     [
+      536.0,
+      1216.0
+     ],
+     [
+      536.0,
+      1237.0
+     ],
+     [
+      77.0,
+      1237.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "366.86",
+    "confidence": 0.9992475509643555,
+    "bbox": [
+     [
+      891.0,
+      1197.0
+     ],
+     [
+      963.0,
+      1197.0
+     ],
+     [
+      963.0,
+      1219.0
+     ],
+     [
+      891.0,
+      1219.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "73.37",
+    "confidence": 0.9985505938529968,
+    "bbox": [
+     [
+      902.0,
+      1216.0
+     ],
+     [
+      963.0,
+      1216.0
+     ],
+     [
+      963.0,
+      1238.0
+     ],
+     [
+      902.0,
+      1238.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Maintenance Service Charge (Msc)",
+    "confidence": 0.9665287733078003,
+    "bbox": [
+     [
+      77.0,
+      1237.0
+     ],
+     [
+      421.0,
+      1237.0
+     ],
+     [
+      421.0,
+      1258.0
+     ],
+     [
+      77.0,
+      1258.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1.50",
+    "confidence": 0.9986301064491272,
+    "bbox": [
+     [
+      915.0,
+      1237.0
+     ],
+     [
+      965.0,
+      1237.0
+     ],
+     [
+      965.0,
+      1259.0
+     ],
+     [
+      915.0,
+      1259.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total Current Charges Before Taxes",
+    "confidence": 0.9711561799049377,
+    "bbox": [
+     [
+      77.0,
+      1258.0
+     ],
+     [
+      448.0,
+      1258.0
+     ],
+     [
+      448.0,
+      1278.0
+     ],
+     [
+      77.0,
+      1278.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "441.73",
+    "confidence": 0.9976415634155273,
+    "bbox": [
+     [
+      891.0,
+      1258.0
+     ],
+     [
+      965.0,
+      1258.0
+     ],
+     [
+      965.0,
+      1280.0
+     ],
+     [
+      891.0,
+      1280.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Government Taxes",
+    "confidence": 0.9690788984298706,
+    "bbox": [
+     [
+      80.0,
+      1282.0
+     ],
+     [
+      253.0,
+      1282.0
+     ],
+     [
+      253.0,
+      1298.0
+     ],
+     [
+      80.0,
+      1298.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "11.26",
+    "confidence": 0.9994083642959595,
+    "bbox": [
+     [
+      904.0,
+      1278.0
+     ],
+     [
+      963.0,
+      1278.0
+     ],
+     [
+      963.0,
+      1301.0
+     ],
+     [
+      904.0,
+      1301.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Refund/Rebate/Overpayment/Adjustment",
+    "confidence": 0.9919525980949402,
+    "bbox": [
+     [
+      64.0,
+      1310.0
+     ],
+     [
+      451.0,
+      1310.0
+     ],
+     [
+      451.0,
+      1331.0
+     ],
+     [
+      64.0,
+      1331.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0.15",
+    "confidence": 0.9996142387390137,
+    "bbox": [
+     [
+      917.0,
+      1310.0
+     ],
+     [
+      963.0,
+      1310.0
+     ],
+     [
+      963.0,
+      1334.0
+     ],
+     [
+      917.0,
+      1334.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "TOTAL AMOUNT DUE",
+    "confidence": 0.9608744382858276,
+    "bbox": [
+     [
+      64.0,
+      1344.0
+     ],
+     [
+      294.0,
+      1344.0
+     ],
+     [
+      294.0,
+      1365.0
+     ],
+     [
+      64.0,
+      1365.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "PHP452.84",
+    "confidence": 0.9969809651374817,
+    "bbox": [
+     [
+      789.0,
+      1344.0
+     ],
+     [
+      958.0,
+      1344.0
+     ],
+     [
+      958.0,
+      1366.0
+     ],
+     [
+      789.0,
+      1366.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "PAYMENT DUE DATE",
+    "confidence": 0.944891095161438,
+    "bbox": [
+     [
+      64.0,
+      1370.0
+     ],
+     [
+      296.0,
+      1370.0
+     ],
+     [
+      296.0,
+      1390.0
+     ],
+     [
+      64.0,
+      1390.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "12/20/2023",
+    "confidence": 0.9997953176498413,
+    "bbox": [
+     [
+      789.0,
+      1368.0
+     ],
+     [
+      957.0,
+      1370.0
+     ],
+     [
+      957.0,
+      1392.0
+     ],
+     [
+      789.0,
+      1390.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Please examine your bill carefully. If no complaint is made within 60 days of receipt, the bill is",
+    "confidence": 0.949354350566864,
+    "bbox": [
+     [
+      61.0,
+      1406.0
+     ],
+     [
+      858.0,
+      1406.0
+     ],
+     [
+      858.0,
+      1427.0
+     ],
+     [
+      61.0,
+      1427.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "considered true and correct.",
+    "confidence": 0.9763415455818176,
+    "bbox": [
+     [
+      64.0,
+      1429.0
+     ],
+     [
+      298.0,
+      1429.0
+     ],
+     [
+      298.0,
+      1445.0
+     ],
+     [
+      64.0,
+      1445.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "THIS DOCUMENT IS NOT VALID FOR CLAIM OF INPUT TAX.\"",
+    "confidence": 0.936490535736084,
+    "bbox": [
+     [
+      62.0,
+      1462.0
+     ],
+     [
+      608.0,
+      1462.0
+     ],
+     [
+      608.0,
+      1483.0
+     ],
+     [
+      62.0,
+      1483.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "FOR INOUIRIES AND CONCERNS ON SANITATION SERVICES.PLEASE CALL",
+    "confidence": 0.9346800446510315,
+    "bbox": [
+     [
+      214.0,
+      1496.0
+     ],
+     [
+      826.0,
+      1496.0
+     ],
+     [
+      826.0,
+      1507.0
+     ],
+     [
+      214.0,
+      1507.0
+     ]
+    ],
+    "engine": "paddleocr"
+   }
+  ]
+ },
+ "post_process": {
+  "invoice_number": "011005759016",
+  "invoice_date": "2023-11-13",
+  "due_date": "2023-12-20",
+  "vendor_name": "ESTRELLA D. DEGUZMAN",
+  "vendor_address": "B3 L21-B BAYFAIR DR BAYFAIR SUBD MUNTINLUPA",
+  "vendor_tax_id": null,
+  "customer_name": null,
+  "customer_contact": null,
+  "customer_address": null,
+  "customer_tax_id": null,
+  "plate_number": null,
+  "line_items": [
+   {
+    "description": "Basic Charge",
+    "quantity": 1.0,
+    "unit_price": 366.86,
+    "amount": 366.86
+   },
+   {
+    "description": "Environmental Charges (20% of Basic Charge)",
+    "quantity": 1.0,
+    "unit_price": 73.37,
+    "amount": 73.37
+   },
+   {
+    "description": "Maintenance Service Charge (Msc)",
+    "quantity": 1.0,
+    "unit_price": 1.5,
+    "amount": 1.5
+   }
+  ],
+  "subtotal": 441.73,
+  "tax_amount": 11.26,
+  "tax_rate": null,
+  "discount": 0.15,
+  "withholding_tax": null,
+  "zero_rated_sales": null,
+  "vat_exempt_sales": null,
+  "total_amount": 452.84,
+  "current_charges_total": 452.99,
+  "previous_balance": null,
+  "currency": "PHP",
+  "payment_terms": null
+ },
+ "wrong_final": {
+  "vendor_name": "ESTRELLA D. DEGUZMAN",
+  "vendor_address": "B3 L21-B BAYFAIR DR BAYFAIR SUBD MUNTINLUPA",
+  "vendor_tax_id": null,
+  "customer_name": null,
+  "customer_address": null,
+  "invoice_number": "011005759016",
+  "invoice_date": "2023-11-13",
+  "due_date": "2023-12-20",
+  "subtotal": 441.73,
+  "tax_amount": 11.26,
+  "discount": 0.15,
+  "total_amount": 452.84,
+  "current_charges_total": 452.99,
+  "previous_balance": null,
+  "currency": "PHP",
+  "line_items": [
+   {
+    "description": "Basic Charge",
+    "quantity": 1.0,
+    "unit_price": 73.37,
+    "amount": 73.37
+   },
+   {
+    "description": "Environmental Charges (20% of Basic Charge)",
+    "quantity": 1.0,
+    "unit_price": 73.37,
+    "amount": 73.37
+   },
+   {
+    "description": "Maintenance Service Charge (Msc)",
+    "quantity": 1.0,
+    "unit_price": 1.5,
+    "amount": 1.5
+   }
+  ]
+ }
+}

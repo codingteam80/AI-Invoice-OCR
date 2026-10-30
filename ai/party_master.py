@@ -100,7 +100,7 @@ def _token_matches(tok: str, pool: list[str]) -> bool:
 
 
 # ------------------------------------------- 1) vendor / customer isolation
-def isolate_party_addresses(data: dict) -> tuple[dict, list[str]]:
+def isolate_party_addresses(data: dict, seller_header: str = "") -> tuple[dict, list[str]]:
     """Strip customer address text (and slogans) from vendor_address; repair the
     customer address from known printed variants when it is garbled."""
     out = dict(data)
@@ -118,6 +118,10 @@ def isolate_party_addresses(data: dict) -> tuple[dict, list[str]]:
         segs = [s.strip() for s in re.split(r",\s*", cleaned) if s.strip(" .,;")]
         # customer text is appended AFTER the seller's own address -> peel from the end
         while len(segs) > 1:
+            # Exact seller-header evidence outranks resemblance to a known buyer.
+            header = re.split(r"(?i)\b(?:sold to|bill(?:ed)? to|registered name|customer|received from)\b", seller_header)[0]
+            if _norm(segs[-1]) and _norm(segs[-1]) in _norm(header):
+                break
             toks = _tokens(segs[-1])
             hit = [t for t in toks if _token_matches(t, ref_tokens)]
             distinctive = [t for t in hit if t not in _GENERIC]
@@ -152,15 +156,49 @@ def isolate_party_addresses(data: dict) -> tuple[dict, list[str]]:
 
 
 # ------------------------------------------------ 2) vendor master by TIN
+def _canonical_vendor_name(data: dict, v: dict):
+    """The master's printed name when the extracted one differs only in spacing/punctuation/case
+    (``DIGITELMOBILE PHILIPPINES, INC.`` vs ``Digitel Mobile Philippines, Inc.``)."""
+    name = str(data.get("vendor_name") or "")
+    primary = re.split(r"\s+[(/]", str(v.get("label") or ""), maxsplit=1)[0].strip()
+    squash = lambda t: re.sub(r"[^a-z0-9]+", "", t.lower())
+    if not name or not primary or squash(name) != squash(primary) or name == primary:
+        return None
+    return primary.upper() if name.isupper() else primary
+
+
 def apply_vendor_master(data: dict) -> tuple[dict, list[str]]:
     v = _find_vendor(data)
+    if v:
+        canon = _canonical_vendor_name(data, v)
+        if canon:
+            data = dict(data, vendor_name=canon)
+            _name_note = [f"vendor master (TIN {v.get('tin')}): vendor_name spacing restored to {canon!r}."]
+        else:
+            _name_note = []
+    else:
+        _name_note = []
     if not v or not v.get("vendor_address"):
-        return data, []
+        return data, _name_note
     if re.sub(r"\s+", " ", str(data.get("vendor_address") or "")).strip() == v["vendor_address"]:
-        return data, []
+        return data, _name_note
+    # A TIN identifies the company, not the site: Meralco's business centers (Alabang, Roosevelt, ...)
+    # all print the same TIN. For a vendor flagged ``"multi_site": true`` in party_master.json the master
+    # address only repairs a garbled read of ITS OWN address; an extracted address that shares nothing
+    # with it is a different site printed on this bill, so keep it. (Single-site vendors are unchanged:
+    # their master address also replaces a heavily garbled/contaminated read.)
+    _cur = data.get("vendor_address")
+    if v.get("multi_site") and _cur and str(_cur).strip():
+        _key = [t for t in _tokens(v["vendor_address"]) if t not in _GENERIC]
+        _pool = _tokens(_cur)
+        if _key and sum(1 for t in _key if _token_matches(t, _pool)) / len(_key) < 0.25:
+            return data, _name_note + [
+                f"vendor master (TIN {v.get('tin')}) address for {v.get('label')} not applied: the printed vendor "
+                "address does not resemble it (same company, different site)."]
     out = dict(data)
     out["vendor_address"] = v["vendor_address"]
-    return out, [f"1.71 vendor master (TIN {v.get('tin')}) supplied the exact printed vendor address for {v.get('label')}."]
+    return out, _name_note + [f"1.71 vendor master (TIN {v.get('tin')}) supplied the exact printed vendor address for {v.get('label')}."]
+
 
 
 # ----------------------------------------------------- 3) Issue Date label
@@ -263,11 +301,11 @@ def recover_missing_line_items(data: dict, ocr_text: str) -> tuple[dict, list[st
 
 
 # ------------------------------------------------------------- entry point
-def apply_final_master_pass(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
+def apply_final_master_pass(data: dict, ocr_text: str, seller_header: str = "") -> tuple[dict, list[str]]:
     notes: list[str] = []
     cur = dict(data)
     for step in (
-        lambda d: isolate_party_addresses(d),
+        lambda d: isolate_party_addresses(d, seller_header=seller_header or ocr_text),
         lambda d: apply_vendor_master(d),
         lambda d: reconcile_issue_date(d, ocr_text),
         lambda d: recover_missing_line_items(d, ocr_text),
@@ -275,3 +313,95 @@ def apply_final_master_pass(data: dict, ocr_text: str) -> tuple[dict, list[str]]
         cur, n = step(cur)
         notes.extend(n)
     return cur, notes
+
+
+def repair_vendor_tin_from_master(data: dict) -> tuple[dict, list[str]]:
+    """Snap a near-miss vendor TIN to the master TIN of the vendor whose printed address matches.
+
+    A tiny seller-header TIN read by vision/OCR is easy to get wrong by a few digits
+    (``300-350-816-000`` for ``000-360-916-00000``), and ``apply_vendor_master`` only matches the
+    exact first 9 digits. Two independent facts are required: the 9-digit base differs from a master
+    TIN in at most 3 positions, AND the extracted vendor address matches that master vendor's
+    printed address (>= 80% of its distinctive tokens). Then the master TIN is the printed one.
+    """
+    base = _digits(data.get("vendor_tax_id"))[:9]
+    addr = _tokens(data.get("vendor_address") or "")
+    if len(base) != 9 or not addr:
+        return data, []
+    vendors = load_master().get("vendors", [])
+    if any(base == _digits(v.get("tin"))[:9] for v in vendors):
+        return data, []                                   # exact match: apply_vendor_master handles it
+    cands = []
+    for v in vendors:
+        mb = _digits(v.get("tin"))[:9]
+        if len(mb) != 9 or not v.get("vendor_address"):
+            continue
+        dist = sum(a != b for a, b in zip(base, mb))
+        key = [t for t in _tokens(v["vendor_address"]) if t not in _GENERIC]
+        if dist > 3 or not key:
+            continue
+        hit = sum(1 for t in key if _token_matches(t, addr)) / len(key)
+        if hit >= 0.8:
+            cands.append((dist, -hit, v))
+    cands.sort(key=lambda c: c[:2])
+    if not cands or (len(cands) > 1 and cands[0][:2] == cands[1][:2]):
+        return data, []                                   # nothing, or ambiguous
+    dist, _, v = cands[0]
+    return dict(data, vendor_tax_id=v["tin"]), [
+        f"Vendor master: vendor_tax_id {data.get('vendor_tax_id')!r} is {dist} digit(s) from the master TIN of "
+        f"{v.get('label')} and the printed vendor address matches; set to {v['tin']}."
+    ]
+
+
+
+def repair_vendor_tin_equal_to_customer(data: dict, ocr_text: str) -> tuple[dict, list[str]]:
+    """A seller can't bill itself: vendor_tax_id equal to customer_tax_id means the customer's TIN
+    (e.g. the 'Customer TIN' box of a statement) was read as the seller's. Replace it with the one
+    other TIN printed on the page (preferably the 'VAT Registered TIN' header), else clear it so the
+    record is reviewed instead of silently carrying the wrong TIN."""
+    vd = _digits(data.get("vendor_tax_id")); cd = _digits(data.get("customer_tax_id"))
+    if len(vd) < 9 or len(cd) < 9 or vd.lstrip("0")[:9] != cd.lstrip("0")[:9]:
+        return data, []                      # different TINs (the normal case) -> nothing to do
+    text = ocr_text or ""
+    pat = re.compile(r"(?<!\d)(\d{3})[\s\-.]?(\d{3})[\s\-.]?(\d{3})(?:[\s\-.]?(\d{3,5}))?(?!\d)")
+    found = []
+    for m in pat.finditer(text):
+        digits = "".join(g for g in m.groups() if g)
+        if digits[:9] in (vd[:9], cd[:9]):
+            continue
+        near = text[max(0, m.start() - 40):m.start()]
+        found.append((0 if re.search(r"(?i)\bVAT\b|\bTIN\b|REG", near) else 1, m.start(), "-".join(g for g in m.groups() if g)))
+    out = dict(data)
+    labelled = sorted({f[2] for f in found if f[0] == 0})
+    # Known seller: its printed header address (even OCR-garbled) identifies the master vendor.
+    addr = _tokens(data.get("vendor_address") or "")
+    mhits = []
+    for v in load_master().get("vendors", []):
+        key = [t for t in _tokens(v.get("vendor_address") or "") if t not in _GENERIC]
+        if key and addr and sum(1 for t in key if _token_matches(t, addr)) / len(key) >= 0.8:
+            mhits.append(v)
+    if len(mhits) == 1:
+        out["vendor_tax_id"] = mhits[0]["tin"]
+        return out, [f"Vendor TIN {data.get('vendor_tax_id')!r} is identical to the customer TIN; the printed vendor address "
+                     f"matches {mhits[0].get('label')}, so vendor_tax_id was set to its master TIN {mhits[0]['tin']}."]
+    if len(labelled) == 1:
+        out["vendor_tax_id"] = labelled[0]
+        return out, [f"Vendor TIN {data.get('vendor_tax_id')!r} is identical to the customer TIN (the customer's TIN box); "
+                     f"replaced with the seller header 'VAT Registered TIN' {labelled[0]}."]
+    out["vendor_tax_id"] = None
+    return out, [f"Vendor TIN {data.get('vendor_tax_id')!r} is identical to the customer TIN, so it belongs to the customer; "
+                 "cleared vendor_tax_id for review (no single seller-header TIN was readable)."]
+
+
+
+def tidy_party_name_spacing(data: dict) -> tuple[dict, list[str]]:
+    """``JUAN R.DELA CRUZ`` -> ``JUAN R. DELA CRUZ``: OCR drops the space after a middle initial."""
+    out, notes = dict(data), []
+    for f in ("customer_name", "vendor_name"):
+        v = out.get(f)
+        if isinstance(v, str):
+            nv = re.sub(r"(?<![A-Za-z])([A-Z])\.(?=[A-Z]{2,}\b)", r"\1. ", v)
+            if nv != v:
+                out[f] = nv; notes.append(f"{f}: restored the space after an initial ({v!r} -> {nv!r}).")
+    return out, notes
+

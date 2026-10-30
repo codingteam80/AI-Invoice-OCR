@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from services.invoice_service import (
@@ -48,8 +49,11 @@ def delete_one(invoice_id: int):
 
 @router.get("/export/{fmt}")
 def export(fmt: str, status: str | None = None):
-    invoices = list_invoices(limit=1000, status=status)
+    invoices = list_invoices(limit=None, status=status)
     if not invoices:
         raise HTTPException(status_code=404, detail="No invoices to export")
-    path = export_invoices(invoices, fmt=fmt)
-    return FileResponse(path, filename=path.split("/")[-1])
+    try:
+        paths = export_invoices(invoices, fmt=fmt)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return FileResponse(paths[0], filename=Path(paths[0]).name)

@@ -1,8 +1,11 @@
+> October 15 repair (v6): read [READ_FIRST_REPAIR_V6.md](READ_FIRST_REPAIR_V6.md) before upgrading. It supersedes older deadline instructions.
+
 # AI-Invoice-OCR
 
-Local, privacy-friendly invoice extraction: OCR (PaddleOCR/Tesseract/EasyOCR)
-+ a local LLM (Qwen 2.5 / Llama 3 via Ollama) turn scanned invoices and PDFs
-into structured, validated, searchable data — no cloud calls required.
+AI-assisted invoice extraction for printed and handwritten documents: image preprocessing,
+PaddleOCR (plus TrOCR for handwriting), structured LLM extraction, evidence checks, validation,
+and SQLite storage. Choose Groq API or local Ollama. **API mode transmits invoice content
+and images to a cloud provider**; use local-only mode when required by data-handling rules.
 
 ## Features
 
@@ -14,20 +17,80 @@ into structured, validated, searchable data — no cloud calls required.
 - SQLite storage via SQLAlchemy, with vendor deduplication
 - Streamlit UI: Upload, Dashboard (spend analytics), History, Reports
   (Excel/CSV/PDF export), and Activity Log
-- Local Qwen2.5:7b natural-language search on History, Reports, and Log; the
-  model translates plain-English requests into validated filters and never
-  executes raw SQL
+- Natural-language search on History, Reports, and Log; the configured
+  text model interprets search filters without executing raw model-generated SQL
 - Optional FastAPI REST API for integrations
-- Fully local — invoice data never leaves your machine
+- Cloud API or local Ollama processing; invoice files stay on your PC in local mode
+
+
+## Default API: Groq Qwen3.8 27B
+
+Use the OpenAI-compatible Groq endpoint in your private **.env** (never commit API keys):
+
+```
+LLM_PROVIDER=api
+LLM_API_KEY=your-groq-api-key
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_MODEL=qwen/qwen3.8-27b
+DEFAULT_CURRENCY=PHP
+```
+
+These model/URL defaults are also in `config/settings.py` and `.env.example`.
+Existing `.env` values take precedence: change an old OpenRouter URL/model in `.env` or the
+app will continue using them. Restart after editing. To use **Ollama only**, select Ollama
+in the sidebar or set `LLM_PROVIDER=ollama`. A missing/invalid Groq key cannot be fixed by
+model defaults alone.
+The retry/fallback notes below apply to every hosted provider.
+
+## Using OpenRouter instead of local Ollama
+
+1. Create a key at https://openrouter.ai/keys and put it in your **.env** (never commit it):
+
+   ```
+   LLM_PROVIDER=openrouter
+   OPENROUTER_API_KEY=sk-or-...
+   OPENROUTER_MODEL=openrouter/free
+   ```
+
+2. Restart the app. Text extraction, AI Search and (if enabled) vision verification all go through OpenRouter.
+   Set `LLM_PROVIDER=ollama` to switch back to the local models.
+
+With `LLM_PROVIDER=ollama` the local-model path is exactly the original: same requests, same options, same timeouts.
+
+Retries: transient OpenRouter failures (HTTP 408/425/429/5xx, connection errors, an empty answer, or an answer that is
+not valid JSON) are retried up to `OPENROUTER_MAX_RETRIES` times with exponential backoff (`Retry-After` is honoured),
+within `OPENROUTER_RETRY_BUDGET_SECONDS`. Timeouts get `OPENROUTER_TIMEOUT_RETRIES` extra tries. Permanent errors
+(400/401/402/403/404) are not retried. Each retry is recorded in the diagnostic trace (`usage.retries`).
+
+Automatic fallback: with `LLM_FALLBACK_TO_OLLAMA=true` (default), a failed OpenRouter request (invalid key, no credits,
+rate limit, timeout, 5xx) is repeated on local Ollama, and OpenRouter is skipped for `OPENROUTER_COOLDOWN_SECONDS`
+(600s for 401/402/403) or `OPENROUTER_SHORT_COOLDOWN_SECONDS` (60s otherwise). Ollama must be running with the
+model pulled for the fallback to work. Failover details are stored in the diagnostic trace (`fallback_from`).
+
+Notes: `openrouter/free` picks a random free model per request, so results can vary between calls and free models
+are rate limited. Invoice text/images are sent to third-party providers - do not use free models for sensitive documents
+unless you have checked their data policies. Pin a specific model id in `OPENROUTER_MODEL` for repeatable results.
 
 ## Quick start
 
 ```bash
 pip install -r requirements.txt
+# Windows: copy .env.example .env (then set your API key or choose Ollama)
 cp .env.example .env
-ollama pull qwen2.5:7b
+# For local-only/fallback extraction: ollama pull qwen2.5:7b
+# Optional local vision: ollama pull qwen2.5vl:7b
 python app.py ui
 ```
+
+Use **one invoice per uploaded file** (a genuine multi-page invoice is supported, multiple
+separate invoices in a file are rejected). Scan one invoice at a time. PHP amounts may be
+marked `PHP`, `₱`, or `P` in a monetary context; USD amounts are stored and reported
+separately from PHP. **Never add PHP and USD totals without an explicit exchange rate**.
+
+Missing Vendor, Invoice #, Invoice Date, Total Amount Due, and future Invoice Dates are
+flagged for review. Highlighted values need source verification. Source confidence remains
+internal. The system does not automatically repair already-saved database records; reprocess
+or edit them (while keeping a backup) to benefit from new extraction rules.
 
 See `docs/user_manual.md` for full setup instructions, `docs/architecture.md`
 for how the pipeline fits together, and `docs/api.md` for the REST API.
@@ -80,3 +143,32 @@ Upload now supports direct flatbed scanning through free NAPS2 on Windows. Log d
 ## CPU speed and verification reliability
 
 See [CPU_SPEED_UPDATE.md](CPU_SPEED_UPDATE.md) for the batch vision-timeout guard, earlier cleanup before text correction, review warnings, and new timing fields. Both improvements are enabled by default without changing your existing .env.
+
+## October 26, 2026 document-evidence QA revision
+
+This build is based on `AI-Invoice-OCR-API-Ollama-Dan-QA-Fixed-v6.zip`. It adds source-evidence checks for utility/telecom statement amounts, addresses, credits and line items, and highlights genuinely unverified date/identifier/tax facts rather than hardcoding one invoice's expected answers. See `docs/QA_EVIDENCE_REVIEW_2026-10-26.md` for individual invoice findings and limitations. The optional low-resolution image utility is `tools/enhance_low_resolution_invoice.py`.
+
+Use **one invoice per file**; an invoice may itself have multiple pages. Enhanced images cannot regenerate text lost in the original capture, and missing VATable Sales or VAT must not be interpreted as a confirmed zero. Previously saved database records are not rewritten by this upgrade.
+
+## Consolidated October 26 edition — approved UI and conditional vision
+
+This edition includes the source-based October 26 QA corrections **plus** the October 23 conditional vision, evidence-based review highlights and client-approved History/export interface. Refer to [`CONSOLIDATION_NOTES_2026-10-26.md`](CONSOLIDATION_NOTES_2026-10-26.md) for the exact behavior and limitations.
+
+- With `VISION_VERIFICATION_ENABLED=true`, `qwen2.5vl:7b` is used for difficult invoices, not automatically for every clean printed invoice. The app checks availability before uploads and skips optional local vision if the model is missing; text OCR/LLM processing remains available.
+- History shows the uploaded filename as heading, compact amber verification flags, and the approved invoice/financial fields only. Overall confidence stays internal; evidence is stored for fields and individual line-item cells.
+- Upload **one invoice per file**. Multiple pages of the **same** invoice are supported when correctly grouped. Multiple separate invoices in one file are rejected without saving partial results.
+- Export columns exclude internal fields such as Due Date, Tax Rate, Payment Terms, Customer Contact, Current Charges Total and Previous Balance.
+- A missing amount may appear as `0.00` in the History display, but remains missing in the database; never treat an inferred zero as a confirmed amount.
+
+## October 28, 2026 QA update
+
+- Corrected Bill-to ownership for invoices where metadata table headings appear before the
+  customer name in OCR reading order (for example, NOTARIZE INV-29).
+- Highlight future invoice dates even when the OCR confidence is high; missing required
+  fields continue to trigger `needs_review`.
+- Isolate monetary summaries by **currency** on Dashboard, Reports, exports, and charts.
+  No automatic exchange-rate conversion is performed; mixed-currency exports have one total
+  row per currency.
+- Updated default API endpoint/model to Groq (`qwen/qwen3.8-27b`); original
+  provider overrides still work.
+- See `docs/QA_OCT28_CHANGELOG.md` for tests and limitations.

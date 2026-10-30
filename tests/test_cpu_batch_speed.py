@@ -99,6 +99,7 @@ def test_pipeline_saves_review_status_and_warning_for_failed_and_skipped_vision(
     from parser import invoice_parser as parser
     data={'invoice_number':'INV-1','invoice_date':'2026-09-28','vendor_name':'Acme Services','subtotal':100,'tax_amount':12,'total_amount':112,'currency':'PHP','line_items':[{'description':'Monthly software subscription','quantity':1,'unit_price':100,'amount':100}]}
     monkeypatch.setattr(parser,'extract_invoice_data',lambda *a,**k:dict(data))
+    monkeypatch.setattr(parser.settings, 'VISION_VERIFICATION_ENABLED', True)
     monkeypatch.setattr(parser,'recover_vendor_header_fields',lambda *a,**k:({},[],set()))
     for name in ['verify_handwritten_invoice_date','verify_statement_summary_crop','verify_customer_address_crop','verify_vendor_address_crop','verify_plate_number_crop']:
         monkeypatch.setattr(parser,name,lambda *a,**k:(None,[]))
@@ -115,7 +116,8 @@ def test_pipeline_saves_review_status_and_warning_for_failed_and_skipped_vision(
     monkeypatch.setattr(parser,'save_diagnostic_trace',lambda **k:(traces.append(k) or None))
     with budget.vision_batch():
         for _ in range(2):
-            invoice=parser._build_invoice_from_ocr('test.png','test.png','Acme Services\nInvoice INV-1\n2026-09-28\nVATable Sales 100.00\nVAT 12.00\nTotal 112.00',.99,'paddleocr')
+            # Force low OCR confidence so conditional whole-image vision is needed.
+            invoice=parser._build_invoice_from_ocr('test.png','test.png','Acme Services\nInvoice INV-1\n2026-09-28\nVATable Sales 100.00\nVAT 12.00\nTotal 112.00',.70,'paddleocr')
             assert invoice.status=='needs_review'
             assert 'VISION_VERIFICATION_INCOMPLETE' in invoice.vision_notes
     assert len(calls)==1

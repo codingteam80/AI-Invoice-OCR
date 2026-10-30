@@ -7,11 +7,15 @@ Ollama /api/generate to /api/chat when a multimodal generate request is rejected
 from __future__ import annotations
 
 import base64
+import time
 import re
 import uuid
 from pathlib import Path
 import requests
+from ai import vision_budget
 from ai.vision_budget import vision_post
+from ai.processing_budget import model_scope, ModelBudgetExceeded
+from ai import llm_client
 import cv2
 
 from config.logging import get_logger
@@ -65,7 +69,80 @@ def _usage(body: dict) -> dict:
     }
 
 
+@model_scope("api_vision")
+def _post_openrouter_vision(prompt: str, image_b64: str, trace: dict) -> str | None:
+    """Vision request via OpenRouter's OpenAI-style /chat/completions.
+
+    With fallback enabled, any failure raises requests.RequestException so the
+    caller can fail over to local Ollama; otherwise a rejected request returns
+    None (original behaviour) and a timeout trips the batch circuit breaker.
+    """
+    payload = llm_client.chat_payload(
+        prompt, model=settings.OPENROUTER_VISION_MODEL, temperature=settings.LLM_TEMPERATURE,
+        max_tokens=settings.LLM_MAX_TOKENS, image_b64=image_b64,
+    )
+    attempt = {"endpoint": "/chat/completions", "provider": llm_client.provider_name(), "model": payload["model"]}
+    trace.setdefault("http_attempts", []).append(attempt)
+    # Retries (429/5xx/timeouts/empty/invalid JSON, with backoff) live in
+    # llm_client.request_openrouter. Without a fallback, keep the per-batch
+    # circuit breaker: after one failed vision request, skip the rest of the batch.
+    guard = None if llm_client.fallback_enabled() else vision_budget._CURRENT.get()
+    if guard is not None and guard.reason and getattr(settings, "VISION_BATCH_GUARD_ENABLED", True):
+        guard.skipped += 1
+        attempt.update(skipped=True, skipped_reason=guard.reason)
+        raise requests.RequestException("Vision skipped for this batch after an earlier failure: " + guard.reason)
+    start = time.perf_counter()
+    if guard is not None:
+        guard.requests += 1
+    try:
+        raw, usage, resp = llm_client.request_openrouter(
+            payload, min(settings.OPENROUTER_TIMEOUT_SECONDS, settings.VISION_TIMEOUT_SECONDS),
+            expect_json=True, log=attempt.setdefault("retries", []),
+        )
+    except requests.RequestException as exc:
+        err_resp = getattr(exc, "response", None)
+        if err_resp is not None:
+            attempt["http_status"] = err_resp.status_code
+            attempt["response_body"] = err_resp.text[:4000]
+        attempt["error"] = str(exc)[:500]
+        if guard is not None:
+            guard.reason = str(exc) if isinstance(exc, ModelBudgetExceeded) else ("vision request timed out" if isinstance(exc, requests.exceptions.Timeout) else "vision request failed")
+        if llm_client.fallback_enabled() or isinstance(exc, requests.exceptions.Timeout):
+            raise
+        return None  # rejected: same as the original behaviour for a non-OK response
+    finally:
+        attempt["elapsed_seconds"] = round(time.perf_counter() - start, 3)
+        if guard is not None:
+            guard.elapsed_seconds += time.perf_counter() - start
+    attempt["http_status"] = resp.status_code
+    attempt["usage"] = usage
+    attempt["raw_response"] = raw
+    return raw
+
+
 def _post_generate(prompt: str, image_b64: str, trace: dict) -> str | None:
+    if llm_client.pick_provider() == "openrouter":
+        try:
+            return _post_openrouter_vision(prompt, image_b64, trace)
+        except requests.RequestException as exc:
+            if not llm_client.fallback_enabled():
+                raise
+            if not isinstance(exc, ModelBudgetExceeded):
+                llm_client.note_openrouter_failure(exc)
+            logger.warning(f"{llm_client.label()} vision failed ({exc}); falling back to local Ollama")
+            trace["fallback_from"] = {"provider": llm_client.provider_name(), "error": str(exc)[:500]}
+    raw = _post_ollama_generate(prompt, image_b64, trace)
+    if raw is not None and trace.get("fallback_from"):
+        trace["fallback_from"]["recovered"] = True
+        for attempt in trace.get("http_attempts", []):
+            if attempt.get("provider") != "ollama" and attempt.get("error"):
+                attempt["recovered"] = True
+    return raw
+
+
+def _post_ollama_generate(prompt: str, image_b64: str, trace: dict) -> str | None:
+    if vision_budget.local_vision_unavailable(trace):
+        return None
     url = f"{settings.OLLAMA_HOST}/api/generate"
     payload = {
         "model": settings.VISION_MODEL,
@@ -76,7 +153,7 @@ def _post_generate(prompt: str, image_b64: str, trace: dict) -> str | None:
         "keep_alive": settings.OLLAMA_KEEP_ALIVE,
         "options": {"temperature": settings.LLM_TEMPERATURE, "num_ctx": settings.VISION_NUM_CTX},
     }
-    attempt = {"endpoint": "/api/generate"}
+    attempt = {"endpoint": "/api/generate", "provider": "ollama", "model": settings.VISION_MODEL}
     trace.setdefault("http_attempts", []).append(attempt)
     resp = vision_post(url, payload, attempt)
     attempt["http_status"] = resp.status_code
@@ -93,6 +170,11 @@ def _post_generate(prompt: str, image_b64: str, trace: dict) -> str | None:
 
 
 def _post_chat(prompt: str, image_b64: str, trace: dict) -> str | None:
+    if vision_budget.local_vision_unavailable(trace):
+        return None
+    if llm_client.pick_provider() == "openrouter":
+        # No second endpoint to fall back to; don't burn free-tier quota on a repeat.
+        return None
     url = f"{settings.OLLAMA_HOST}/api/chat"
     payload = {
         "model": settings.VISION_MODEL,
@@ -102,7 +184,7 @@ def _post_chat(prompt: str, image_b64: str, trace: dict) -> str | None:
         "keep_alive": settings.OLLAMA_KEEP_ALIVE,
         "options": {"temperature": settings.LLM_TEMPERATURE, "num_ctx": settings.VISION_NUM_CTX},
     }
-    attempt = {"endpoint": "/api/chat"}
+    attempt = {"endpoint": "/api/chat", "provider": "ollama", "model": settings.VISION_MODEL}
     trace.setdefault("http_attempts", []).append(attempt)
     resp = vision_post(url, payload, attempt)
     attempt["http_status"] = resp.status_code
@@ -160,22 +242,22 @@ def _extract_labeled_tin_from_header_text(text: str) -> str | None:
         return None
     compact = re.sub(r"[ \t]+", " ", text)
     pat = re.compile(
-        r"(?:VAT\s*(?:R(?:e)?g(?:istered)?\.?)?\s*TIN|VATRg?|Tax\s*Identification\s*No\.?|\bTIN\b)"
+        r"(?:VAT\s*(?:R(?:e)?g(?:istered)?\.?)?\s*TIN|VATRg?|Tax\s*Identification\s*No\.?|\bTIN\b"
+        # OCR often drops the 'I' of a tiny white-on-red 'TIN' label ('TN000488793-00000')
+        r"|(?<![A-Za-z])T[I1l]?N(?=[\s:#.\-]*\d))"
         r"\s*[:#.-]*\s*(?:\n\s*)?([0-9][0-9 -]{7,20}[0-9])",
         re.IGNORECASE,
     )
     for m in pat.finditer(compact):
+        # The header crop often also contains the BILLING INFORMATION box ("Customer TIN 176175637");
+        # that is the customer's TIN, never the seller's.
+        if re.search(r"(?i)(?:cust\w*|c\w{0,4}[o0]m[e3]r)[\s:]*$", compact[max(0, m.start() - 16):m.start()]):
+            continue
         candidate = normalize_tin(m.group(1).strip())
         if is_valid_tin(candidate):
             return candidate
     return None
 
-
-_HEADER_ADDRESS_CUE_RE = re.compile(
-    r"\b(?:street|st\.?|avenue|ave\.?|road|rd\.?|boulevard|bldg|building|tower|"
-    r"floor|city|philippines|barangay|brgy\.?|corner|cor\.?|loop|park|district|ncr|"
-    r"taguig|cebu|makati|pasig|mandaluyong|quezon)\b", re.IGNORECASE
-)
 
 def _address_from_header_ocr(text: str) -> str | None:
     from ai.address_ownership import seller_header_address
@@ -876,9 +958,13 @@ def verify_against_image(
 ) -> tuple[dict, list[str]]:
     if trace is None:
         trace = {}
-    trace.update({"enabled": settings.VISION_VERIFICATION_ENABLED, "model": settings.VISION_MODEL})
+    trace.update({"enabled": settings.VISION_VERIFICATION_ENABLED, "model": llm_client.active_vision_model()})
     if not settings.VISION_VERIFICATION_ENABLED:
         trace["skipped_reason"] = "VISION_VERIFICATION_ENABLED=false"
+        return {}, []
+    # Fail open before opening/encoding the image if the local model is absent.
+    # Cloud-only processing is not blocked by an Ollama preflight.
+    if llm_client.pick_provider() == "ollama" and vision_budget.local_vision_unavailable(trace):
         return {}, []
 
     image_b64 = _image_to_base64(file_path)

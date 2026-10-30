@@ -7,10 +7,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import pandas as pd
 import streamlit as st
+from services.search_service import filter_invoice_keyword
 import streamlit.components.v1 as components
 from config.constants import CATEGORY_OPTIONS
 from services.invoice_service import list_invoices, list_custom_categories
 from services.export_service import export_invoices
+from services.currency_totals import totals_by_currency
 from services.audit_service import log_action
 from exports.chart import generate_chart
 from ui.components.nav import render_nav, guard_locked_navigation
@@ -126,7 +128,7 @@ def _render_preview_table(df: pd.DataFrame) -> None:
     )
 
 
-all_invoices = list_invoices(limit=1000, status=None)
+all_invoices = list_invoices(limit=None, status=None)
 
 month_keys = sorted(
     {_month_key(inv) for inv in all_invoices if _month_key(inv) != "unknown"}, reverse=True
@@ -160,7 +162,8 @@ vendor_choice = f4.multiselect("Filter by vendor", vendors)
 
 fmt = st.radio("Export format", ["xlsx", "csv", "pdf"], horizontal=True)
 
-invoices = all_invoices
+keyword = st.text_input("Invoice number, vendor or filename", key="reports_keyword")
+invoices = filter_invoice_keyword(all_invoices, keyword)
 if month_choice:
     chosen_month_keys = {month_label_map[m] for m in month_choice}
     invoices = [inv for inv in invoices if _month_key(inv) in chosen_month_keys]
@@ -205,8 +208,9 @@ else:
     # Vatable Sales and VAT sums are intentionally not shown on this page —
     # only Total Amount Due is. All three are still included in every
     # exported file (see exports/common.py: invoice_totals_row).
-    total_sum = sum(inv.get("total_amount") or 0 for inv in invoices)
-    st.metric("Total Amount Due (sum)", f"{total_sum:,.2f}")
+    for currency, amount in totals_by_currency(invoices).items():
+        st.metric(f"Total Amount Due ({currency})", f"{amount:,.2f}")
+    st.caption("Amounts are summed only within the same currency; no exchange-rate conversion is performed.")
 
 st.subheader("📊 Chart")
 chart_path_for_export = None

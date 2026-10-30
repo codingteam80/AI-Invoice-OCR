@@ -53,7 +53,8 @@ def test_chart_is_in_same_print_pdf(tmp_path):
 
 
 def test_token_valid_in_process_but_invalid_after_restart(tmp_path):
-    env=dict(os.environ, DATABASE_URL='sqlite:///'+str(tmp_path/'auth.db'), PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    pythonpath = os.pathsep.join(filter(None, [str(Path(__file__).resolve().parents[1]), os.environ.get('PYTHONPATH')]))
+    env=dict(os.environ, DATABASE_URL='sqlite:///'+str(tmp_path/'auth.db'), PYTHONPATH=pythonpath)
     create='''from database.database import init_db,SessionLocal
 from database.models import UserORM
 from services.browser_session_service import create_browser_session,browser_session_user

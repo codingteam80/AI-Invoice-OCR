@@ -1,15 +1,17 @@
 """Shared row/column definition for invoice exports.
 
-All export formats use the same invoice-level columns. Review-only UI state
+All export formats use the same invoice-level columns. Due Date, Tax Rate,
+Payment Terms, Customer Contact, Current Charges Total, and Previous Balance
+are internal-only metadata, not columns in client exports. Review-only UI state
 (Status / Locked), hidden Discount, and Items Purchased / Line Items are not
 part of generated export files.
 """
 from datetime import datetime
 
 EXPORT_COLUMNS = [
-    "ID", "Invoice #", "Vendor", "Customer", "Plate #", "Invoice Date", "Date Uploaded", "Due Date", "Filename",
+    "ID", "Invoice #", "Vendor", "Customer", "Plate #", "Invoice Date", "Date Uploaded", "Filename",
     "Category", "Vatable Sales", "VAT-Exempt Sales", "Zero-Rated Sales", "VAT", "Withholding Tax",
-    "Current Charges Total", "Previous Balance", "Total Amount Due", "Currency",
+    "Total Amount Due", "Currency",
 ]
 
 
@@ -28,10 +30,24 @@ def invoice_totals_row(invoices: list[dict]) -> dict:
     row["Zero-Rated Sales"] = sum(inv.get("zero_rated_sales") or 0 for inv in invoices)
     row["VAT"] = sum(inv.get("tax_amount") or 0 for inv in invoices)
     row["Withholding Tax"] = sum(inv.get("withholding_tax") or 0 for inv in invoices)
-    row["Current Charges Total"] = sum(inv.get("current_charges_total") or 0 for inv in invoices)
-    row["Previous Balance"] = sum(inv.get("previous_balance") or 0 for inv in invoices)
     row["Total Amount Due"] = sum(inv.get("total_amount") or 0 for inv in invoices)
     return row
+
+
+def invoice_totals_rows(invoices: list[dict]) -> list[dict]:
+    """One totals row per currency; never add PHP to USD or unknown currency."""
+    from services.currency_totals import currency_code
+    currencies = sorted({currency_code(inv.get("currency")) for inv in invoices})
+    if not currencies:
+        return [invoice_totals_row([])]
+    rows = []
+    for code in currencies:
+        subset = [inv for inv in invoices if currency_code(inv.get("currency")) == code]
+        row = invoice_totals_row(subset)
+        row["ID"] = "TOTAL"
+        row["Currency"] = code
+        rows.append(row)
+    return rows
 
 
 def invoice_export_row(inv: dict) -> dict:
@@ -44,7 +60,6 @@ def invoice_export_row(inv: dict) -> dict:
         "Plate #": inv.get("plate_number") or "-",
         "Invoice Date": inv.get("invoice_date") or "-",
         "Date Uploaded": inv.get("date_uploaded") or (inv.get("created_at") or "")[:10] or "-",
-        "Due Date": inv.get("due_date") or "-",
         "Filename": inv.get("original_filename") or "-",
         "Category": inv.get("category") or "-",
         "Vatable Sales": inv.get("subtotal") or 0,
@@ -52,8 +67,6 @@ def invoice_export_row(inv: dict) -> dict:
         "Zero-Rated Sales": inv.get("zero_rated_sales") or 0,
         "VAT": inv.get("tax_amount") or 0,
         "Withholding Tax": inv.get("withholding_tax") or 0,
-        "Current Charges Total": inv.get("current_charges_total") if inv.get("current_charges_total") is not None else "",
-        "Previous Balance": inv.get("previous_balance") if inv.get("previous_balance") is not None else "",
-        "Total Amount Due": inv.get("total_amount") or 0,
+        "Total Amount Due": inv.get("total_amount") if inv.get("total_amount") is not None else "",
         "Currency": inv.get("currency") or "-",
     }

@@ -4,6 +4,7 @@ from __future__ import annotations
 import streamlit as st
 
 from ai.search_interpreter import SearchInterpretationError, interpret_natural_language_search
+from ai import llm_client
 from config.settings import settings
 from services.search_service import summarize_search_plan
 
@@ -29,7 +30,7 @@ def render_ai_search(
     applied_query_key = f"ai_search_applied_query_{key}"
     warnings_key = f"ai_search_warnings_{key}"
 
-    st.markdown(f"**🤖 AI Search ({settings.SEARCH_LLM_MODEL})**")
+    st.markdown(f"**🤖 AI Search ({llm_client.active_search_model()})**")
     query = st.text_input(
         "Natural-language search",
         key=query_key,
@@ -50,7 +51,7 @@ def render_ai_search(
             st.warning("Enter a natural-language search request first.")
         else:
             try:
-                with st.spinner(f"{settings.SEARCH_LLM_MODEL} is interpreting your search..."):
+                with st.spinner(f"{llm_client.active_search_model()} is interpreting your search..."):
                     plan, warnings = interpret_natural_language_search(
                         query,
                         page=page,

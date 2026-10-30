@@ -1,6 +1,7 @@
 """Business logic layer: process an uploaded invoice end-to-end and persist it."""
 import json
-from ai.vision_budget import vision_scope
+from ai.vision_budget import vision_scope, vision_file_scope
+from ai.processing_budget import processing_scope
 from pathlib import Path
 from config.constants import SUPPORTED_IMAGE_EXTS
 from config.settings import settings
@@ -112,7 +113,8 @@ def _generate_enhanced_image(file_path: str, enabled: bool | None = None) -> str
         return None
 
 
-@vision_scope
+@processing_scope
+@vision_file_scope
 def process_invoice_file(
     file_path: str,
     force_handwritten: bool | None = None,
@@ -142,14 +144,22 @@ def process_invoice_file(
     enhance_image: None (default) follows settings.ENHANCE_IMAGE_ENABLED,
     or True/False to override per-call (see Upload.py's checkbox).
     """
+    # API, scanner and direct-service uploads also get a one-time preflight.
+    # A missing optional local vision model must never stop text extraction.
+    from ai.vision_budget import preflight_local_vision_model
+    preflight_local_vision_model()
     try:
         invoices = parse_invoice_pages(file_path, force_handwritten=force_handwritten)
-    except InvoiceParsingError as e:
+    except Exception as e:
         logger.error(f"Parsing failed for {file_path}: {e}")
         return [{"success": False, "error": str(e), "file": file_path}]
 
     base_filename = original_filename or Path(file_path).name
     multi_invoice = len(invoices) > 1
+    if multi_invoice:
+        return [{"success": False, "rejected_document": True,
+                 "error": "Multiple invoices detected in one file. No invoices were saved. Please upload one invoice per file; pages belonging to the same invoice are allowed.",
+                 "file": base_filename}]
 
     # Enhance BEFORE move_to_processed() relocates file_path further down —
     # camscan() needs to read the file from its current location. Only
@@ -164,7 +174,7 @@ def process_invoice_file(
         repo = InvoiceRepository(session)
         for i, invoice in enumerate(invoices, start=1):
             invoice.original_filename = (
-                f"{base_filename} (page {i}/{len(invoices)})" if multi_invoice else base_filename
+                f"{base_filename} (invoice {i}/{len(invoices)})" if multi_invoice else base_filename
             )
             invoice.vendor_name = (invoice.vendor_name or "Unknown Vendor").strip().upper()
             invoice.customer_name = (invoice.customer_name or "").strip().upper() or None
@@ -194,8 +204,17 @@ def process_invoice_file(
                 })
                 continue
 
+            except Exception as e:
+                session.rollback()
+                logger.exception("Could not persist invoice %s", invoice.invoice_number)
+                results.append({"success": False, "error": str(e), "file": invoice.original_filename})
+                continue
+
             invoice.id = orm_invoice.id
-            _archive_json(invoice)
+            try:
+                _archive_json(invoice)
+            except OSError as e:
+                logger.warning("Invoice saved but JSON archive failed: %s", e)
             log_action("UPLOAD", "invoice", invoice.id, f"Uploaded and processed {invoice.original_filename}; invoice #{invoice.invoice_number}")
             results.append({
                 "success": True,
@@ -219,6 +238,9 @@ def process_invoice_file(
                 "currency": invoice.currency,
                 "category": invoice.category,
                 "confidence_score": invoice.confidence_score,
+                "validation_issues": invoice.validation_issues,
+                "field_confidences": invoice.field_confidences,
+                "field_evidence": invoice.field_evidence,
                 "status": invoice.status,
                 "ocr_engine_used": invoice.ocr_engine_used,
                 "vision_notes": invoice.vision_notes,
@@ -311,7 +333,14 @@ def update_invoice(invoice_id: int, updates: dict, audit: bool = True) -> dict:
         before = _orm_to_dict(before_row)
         submitted_fields = list(updates.keys())
 
-        row = repo.update(invoice_id, updates)
+        from ai.field_evidence import mark_user_changes, build_field_evidence
+        stored = before.get("field_evidence") or {}
+        if not stored and before.get("raw_text"):
+            stored = build_field_evidence(before, before["raw_text"],
+                                          validation_issues=before.get("validation_issues") or [],
+                                          ocr_engine=before.get("ocr_engine_used"))
+        review = mark_user_changes(before, updates, stored)
+        row = repo.update(invoice_id, {**updates, "field_evidence": review})
         if row is None:
             raise ValueError(f"Invoice {invoice_id} not found")
         result = _orm_to_dict(row)
@@ -505,6 +534,9 @@ def _orm_to_dict(row) -> dict:
         "status": row.status,
         "locked": row.locked,
         "confidence_score": row.confidence_score,
+        "validation_issues": json.loads(row.validation_issues or "[]"),
+        "field_confidences": json.loads(row.field_confidences or "[]"),
+        "field_evidence": json.loads(row.field_evidence or "{}"),
         "ocr_engine_used": row.ocr_engine_used,
         "raw_text": row.raw_text,
         "vision_notes": row.vision_notes,

@@ -14,6 +14,8 @@ page_link can't prevent by itself.
 """
 import streamlit as st
 from config.constants import APP_NAME, APP_VERSION, COMPANY_NAME, COPYRIGHT_YEAR
+from ai import llm_client
+from config.settings import settings
 from ui.components.auth import require_login, render_account_box, is_admin
 
 # (path relative to the main script ui/streamlit_app.py, label, icon)
@@ -126,6 +128,8 @@ def render_nav() -> None:
             st.page_link(path, label=label, icon=icon, disabled=locked and path != _UPLOAD_PAGE)
 
         st.divider()
+        _render_engine_selector(locked)
+        st.divider()
         render_account_box(locked=locked)
 
         st.markdown(
@@ -137,6 +141,37 @@ def render_nav() -> None:
             """,
             unsafe_allow_html=True,
         )
+
+
+def _render_engine_selector(locked: bool) -> None:
+    """Sidebar choice: API only / Ollama only / Both. Applies to the whole app."""
+    llm_client.load_saved_mode()
+    current = llm_client.get_mode()
+    labels = [llm_client.MODE_LABELS[m] for m in llm_client.MODES]
+    picked_label = st.radio(
+        "🤖 AI engine",
+        labels,
+        index=llm_client.MODES.index(current),
+        disabled=locked,
+        key="llm_mode_radio",
+        help=(
+            "API only: hosted model from LLM_BASE_URL / LLM_MODEL.\n\n"
+            "Ollama only: local model, nothing is sent online.\n\n"
+            "Both: API first, automatically falls back to local Ollama if the API fails."
+        ),
+    )
+    picked = llm_client.MODES[labels.index(picked_label)]
+    if picked != current:
+        llm_client.set_mode(picked)
+        current = picked
+    if current == "ollama_only":
+        st.caption(f"Local: `{settings.OLLAMA_MODEL}`")
+    else:
+        st.caption(f"API: `{settings.OPENROUTER_MODEL}`")
+        if not llm_client.api_configured():
+            st.warning("No LLM_API_KEY set in .env — API calls will fail.")
+        if current == "both":
+            st.caption(f"Fallback: `{settings.OLLAMA_MODEL}`")
 
 
 def guard_locked_navigation() -> None:

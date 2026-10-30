@@ -34,7 +34,7 @@ from config.logging import get_logger
 from config.settings import settings
 from ocr import paddleocr_engine, trocr_engine, handwriting_detector
 from ocr.preprocessing import preprocess, rotate_90
-from utils.pdf_utils import pdf_to_images
+from utils.pdf_utils import pdf_to_images, native_pdf_pages
 
 logger = get_logger("ocr.engine")
 
@@ -82,6 +82,8 @@ def _hybrid_extract(image_path: str) -> dict:
     lines = []
     region_counts = {"printed": 0, "handwritten": 0}
 
+    handwriting_available = True
+    warnings = []
     for bbox in boxes:
         crop_bgr = _crop_bgr(img_bgr, bbox)
         if crop_bgr.size == 0:
@@ -97,7 +99,7 @@ def _hybrid_extract(image_path: str) -> dict:
             logger.warning(f"Region classification failed ({e}), defaulting region to printed")
             is_handwritten = False
 
-        if is_handwritten:
+        if is_handwritten and handwriting_available:
             crop_pil = img_rgb_pil.crop(_bbox_pil_box(bbox))
             try:
                 res = trocr_engine.recognize_crop(crop_pil)
@@ -116,9 +118,13 @@ def _hybrid_extract(image_path: str) -> dict:
                 # PaddleOCR, which can't read handwriting at all. Skipping
                 # just this one region keeps everything else the page
                 # already read correctly.
-                logger.warning(f"TrOCR recognition failed for one region ({e}), skipping that region")
-                continue
-            engine_tag = "trocr"
+                handwriting_available = False
+                warnings.append("Handwriting recognition failed; printed OCR was used as a fallback. Check handwritten fields.")
+                logger.warning("TrOCR failed; falling back to printed OCR: %s", e)
+                res = paddleocr_engine.recognize_crop(crop_bgr)
+                engine_tag = "paddleocr_fallback"
+            else:
+                engine_tag = "trocr"
         else:
             try:
                 res = paddleocr_engine.recognize_crop(crop_bgr)
@@ -183,6 +189,7 @@ def _hybrid_extract(image_path: str) -> dict:
         "avg_confidence": round(sum(confidences) / len(confidences), 4) if confidences else 0.0,
         "engine": "+".join(engines_used) if engines_used else "paddleocr",
         "region_summary": region_counts,
+        "warnings": warnings,
     }
 
 
@@ -231,7 +238,7 @@ def _orientation_score(image_path: str) -> tuple[float, dict]:
             crop = _crop_bgr(img, bbox)
             if crop.size == 0:
                 continue
-            res = paddleocr_engine.recognize_crop(crop)
+            res = paddleocr_engine.recognize_crop(crop, classify_angle=False)
             text = str(res.get("text") or "").strip()
             conf = float(res.get("confidence") or 0.0)
             meaningful = [c for c in text if c.isalnum()]
@@ -359,6 +366,12 @@ def extract_from_image(
 
     if force_handwritten is False:
         result = paddleocr_engine.extract_text(target_path)
+        if target_path != oriented_path and result.get("avg_confidence", 0) < 0.85:
+            original = paddleocr_engine.extract_text(oriented_path)
+            def quality(value):
+                return sum(sum(c.isalnum() for c in row.get("text", "")) * row.get("confidence", 0) for row in value.get("lines", []))
+            if quality(original) > quality(result):
+                result, target_path = original, oriented_path
         result["engine"] = "paddleocr"
         result.update({"original_image_path": image_path, "oriented_image_path": oriented_path, "processed_image_path": target_path, "orientation_quarter_turns": orientation_turns})
         return result
@@ -460,11 +473,16 @@ def extract_pages_from_file(
         return [result]
 
     image_paths = pdf_to_images(file_path)
+    native = native_pdf_pages(file_path, image_paths) if force_handwritten is not True else [None] * len(image_paths)
     pages = []
     for i, img_path in enumerate(image_paths):
-        res = extract_from_image(
-            img_path, use_preprocessing=use_preprocessing, force_handwritten=force_handwritten
-        )
+        try:
+            res = native[i] if native[i] is not None else extract_from_image(
+                img_path, use_preprocessing=use_preprocessing, force_handwritten=force_handwritten
+            )
+        except Exception as exc:
+            logger.exception("OCR failed on page %s", i + 1)
+            res = {"text": "", "lines": [], "avg_confidence": 0.0, "error": str(exc)}
         res["page_number"] = i + 1
         res["total_pages"] = len(image_paths)
         res["image_path"] = img_path

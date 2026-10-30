@@ -4,12 +4,12 @@ import pandas as pd
 from openpyxl.styles import Font, PatternFill
 from openpyxl.drawing.image import Image as XLImage
 from config.settings import settings
-from exports.common import EXPORT_COLUMNS, invoice_export_row, invoice_totals_row, timestamped_export_filename
+from exports.common import EXPORT_COLUMNS, invoice_export_row, invoice_totals_rows, timestamped_export_filename
 
 
 def export_to_excel(invoices: list[dict], filename: str | None = None, chart_path: str | None = None) -> list[str]:
     rows = [invoice_export_row(inv) for inv in invoices]
-    rows.append(invoice_totals_row(invoices))
+    rows.extend(invoice_totals_rows(invoices))
     df = pd.DataFrame(rows, columns=EXPORT_COLUMNS)
     filename = filename or timestamped_export_filename("invoices_export", "xlsx")
     out_path = Path(settings.EXPORT_DIR) / filename
@@ -26,9 +26,10 @@ def export_to_excel(invoices: list[dict], filename: str | None = None, chart_pat
             ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
 
         totals_fill = PatternFill(start_color="E4E9E3", end_color="E4E9E3", fill_type="solid")
-        for cell in ws[ws.max_row]:
-            cell.font = Font(bold=True)
-            cell.fill = totals_fill
+        for row_number in range(ws.max_row - len(invoice_totals_rows(invoices)) + 1, ws.max_row + 1):
+            for cell in ws[row_number]:
+                cell.font = Font(bold=True)
+                cell.fill = totals_fill
 
         # v1.63: Items Purchased / Line Items are intentionally excluded.
         if chart_path:

@@ -25,7 +25,13 @@ st.caption("Local OCR + LLM-powered invoice data extraction")
 stats = get_dashboard_stats()
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total Invoices", stats["total_invoices"])
-col2.metric("Total Amount", f"{stats['total_amount']:,.2f}")
+totals = stats.get("total_by_currency") or {}
+total_display = " | ".join(
+    f"{currency} {amount:,.2f}"
+    for currency, amount in sorted(totals.items())
+) or "0.00"
+
+col2.metric("Total Amount by Currency", total_display)
 col3.metric("Vendors", stats["vendor_count"])
 col4.metric("Needs Review", stats["needs_review"])
 

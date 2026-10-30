@@ -1,0 +1,3478 @@
+{
+ "_note": "INV-27 Meralco 'Your electric bill' with impossible printed dates (31/11/2021, 31/02/2021) and itemised rows that sum to 1,522.06 vs printed 1,502.42.",
+ "ocr": {
+  "text": "SANTOS,ROBERT POLLEDO\nSTA.MARIA BUSINESS CENTER\n055 NATIONAL RD\nPROVINCIAL\nCAYPOMBO\nSANTA MARIA\nSANTA MARIA 3022 BULACAN\nTIN 000-101-528-000VAT\nBilling Statement No.:2141123 658608\nMERALCO\nMeter No.:119BAS089228\nRoute Seq:2140300005\nPrint Seq:35917\nPage1of2\nYour electric bill\nCustomer Account Number (CAN)\nDue Date\nBilling Period\nBill Date\n1764577134\n31/02/2021\n32/13/2021 to 00/00/2021\n31/11/2021\nDate of Meter Reading\nElectric Meter Number\n Please Pay\n31/02/2021\n119BAS089238\nDate of Next Meter Reading\nCurrent Reading\nP 1,502.42\n00/00/2021\nCustomer Type\nPrevious Reading\nResidential\nActual Consumption\nBill Computation Summary\nYour rate this month\nP9.82 per kWh\nRemaining Balance from previous bill\n0.00\nSee Terms and Conditions for more information\nDoes not include due for payment under the Remaining Liquid\nation,and includes other charges and adjustments.)\nPlease see the back page of your bill for more details about you\nCharge for this billing period\n1,502.42\nGeneration\n845.94\nmeter reading and consumption.\nTransmission\n109.27\nSystem Loss\n73.13\nDistribution (Meralco)\n262.14\nYour monthly consumption 28.3c \nSubsidies\n11.63\nGovernment Taxes\n154.48\nAvg.temp this month 0.3\nUniversal Charges\n50.43\nkWh\n0 2020\n0 2021\ndeg.higher than prev\n405\nFIT-All (Renewable)\n15.04\n324\n243\n162\nTotal Amount Due\nP 1,502.42\n81\nJan Feb Mar Apr May Jun\nJul Aug Sep Oct Nov Dec\nBill concerns?\nkWh\n97\n106111\n98\n103\n107\n112\n119\n167\n156144153\nConnect with us through our 24/7 channels:\nYour consumption explained\nYour typical consumption\nf\nfb.com/meralco\nThis bill is 1.6%ower -17.6 kWh\nprevious billing period.\n144 kWh\n5.1 kWh\n*50.1\ny\n@meralco\nper month\nper day\nAvg.daily\nThis bill is5.3%lower -176kWh\nconsumption\nC\nHotline 16211\nvs.same period last year.\n(orsimilar)\n(orsimilar)\n(orsinilar)\nEnvironmental Impact\ncustomercare@meralco.com.ph\nBe the energy efficient.Save the planet one drop at a time.\n153kWh\nC\n0.1090tc0e\n5trees*\nElectricity Used\nCarbon Emissions\n=to Offset Emissions\nUsing D0E,2015-2017National Emission Grid Factor of 0.0007122 tC0/kWh.\nForArbor Day Foundation1 mature tree can absorb 48 pounds0.0218 tonneof CO/year\nPlease be informed that MERALCO may conduct a routine metereline inspection of your\ncustomer metering facilities without prior notice.\nPayment Instruction\nO\nPlease pay at any Meralco Business Center or through any\nCustomer Account No.(CAN)\n Please Pay\n2\naccredited payment partner before the due date.\n1764577134\nP1,502.42\nPayment made after 11 Dec 2021 will be re-lected\nO\non your next bill.\nQR code contains\nBIR Permit No.0305-116-000364-PAARebt:March 21,2005\nyour CAN.\nMMERALCO\nFor more information, you may reach us\n @meralco  customercare@meralco.com.ph\nwww.meralco.com.ph\nC16211\nthrough any of our channels:",
+  "lines": [
+   {
+    "text": "SANTOS,ROBERT POLLEDO",
+    "confidence": 0.9446328282356262,
+    "bbox": [
+     [
+      32.0,
+      20.0
+     ],
+     [
+      210.0,
+      20.0
+     ],
+     [
+      210.0,
+      35.0
+     ],
+     [
+      32.0,
+      35.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "STA.MARIA BUSINESS CENTER",
+    "confidence": 0.9624039530754089,
+    "bbox": [
+     [
+      512.0,
+      20.0
+     ],
+     [
+      713.0,
+      20.0
+     ],
+     [
+      713.0,
+      35.0
+     ],
+     [
+      512.0,
+      35.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "055 NATIONAL RD",
+    "confidence": 0.9495161175727844,
+    "bbox": [
+     [
+      29.0,
+      36.0
+     ],
+     [
+      167.0,
+      38.0
+     ],
+     [
+      166.0,
+      59.0
+     ],
+     [
+      29.0,
+      57.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "PROVINCIAL",
+    "confidence": 0.9974485635757446,
+    "bbox": [
+     [
+      512.0,
+      38.0
+     ],
+     [
+      605.0,
+      38.0
+     ],
+     [
+      605.0,
+      54.0
+     ],
+     [
+      512.0,
+      54.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "CAYPOMBO",
+    "confidence": 0.9913288354873657,
+    "bbox": [
+     [
+      31.0,
+      56.0
+     ],
+     [
+      116.0,
+      56.0
+     ],
+     [
+      116.0,
+      72.0
+     ],
+     [
+      31.0,
+      72.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "SANTA MARIA",
+    "confidence": 0.9638184905052185,
+    "bbox": [
+     [
+      511.0,
+      56.0
+     ],
+     [
+      617.0,
+      56.0
+     ],
+     [
+      617.0,
+      72.0
+     ],
+     [
+      511.0,
+      72.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "SANTA MARIA 3022 BULACAN",
+    "confidence": 0.9600614905357361,
+    "bbox": [
+     [
+      31.0,
+      74.0
+     ],
+     [
+      242.0,
+      74.0
+     ],
+     [
+      242.0,
+      94.0
+     ],
+     [
+      31.0,
+      94.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "TIN 000-101-528-000VAT",
+    "confidence": 0.9660158753395081,
+    "bbox": [
+     [
+      509.0,
+      74.0
+     ],
+     [
+      708.0,
+      74.0
+     ],
+     [
+      708.0,
+      94.0
+     ],
+     [
+      509.0,
+      94.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Billing Statement No.:2141123 658608",
+    "confidence": 0.9402099251747131,
+    "bbox": [
+     [
+      511.0,
+      109.0
+     ],
+     [
+      807.0,
+      109.0
+     ],
+     [
+      807.0,
+      128.0
+     ],
+     [
+      511.0,
+      128.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "MERALCO",
+    "confidence": 0.9966812133789062,
+    "bbox": [
+     [
+      890.0,
+      103.0
+     ],
+     [
+      1023.0,
+      103.0
+     ],
+     [
+      1023.0,
+      130.0
+     ],
+     [
+      890.0,
+      130.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Meter No.:119BAS089228",
+    "confidence": 0.9332097768783569,
+    "bbox": [
+     [
+      31.0,
+      127.0
+     ],
+     [
+      230.0,
+      127.0
+     ],
+     [
+      230.0,
+      146.0
+     ],
+     [
+      31.0,
+      146.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Route Seq:2140300005",
+    "confidence": 0.9530631899833679,
+    "bbox": [
+     [
+      31.0,
+      146.0
+     ],
+     [
+      224.0,
+      146.0
+     ],
+     [
+      224.0,
+      166.0
+     ],
+     [
+      31.0,
+      166.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Print Seq:35917",
+    "confidence": 0.9535468816757202,
+    "bbox": [
+     [
+      301.0,
+      143.0
+     ],
+     [
+      427.0,
+      143.0
+     ],
+     [
+      427.0,
+      164.0
+     ],
+     [
+      301.0,
+      164.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Page1of2",
+    "confidence": 0.9741418361663818,
+    "bbox": [
+     [
+      935.0,
+      143.0
+     ],
+     [
+      1024.0,
+      143.0
+     ],
+     [
+      1024.0,
+      164.0
+     ],
+     [
+      935.0,
+      164.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Your electric bill",
+    "confidence": 0.9989720582962036,
+    "bbox": [
+     [
+      31.0,
+      178.0
+     ],
+     [
+      282.0,
+      175.0
+     ],
+     [
+      282.0,
+      207.0
+     ],
+     [
+      31.0,
+      210.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Customer Account Number (CAN)",
+    "confidence": 0.9876030087471008,
+    "bbox": [
+     [
+      548.0,
+      184.0
+     ],
+     [
+      799.0,
+      184.0
+     ],
+     [
+      799.0,
+      204.0
+     ],
+     [
+      548.0,
+      204.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Due Date",
+    "confidence": 0.966219961643219,
+    "bbox": [
+     [
+      950.0,
+      184.0
+     ],
+     [
+      1029.0,
+      184.0
+     ],
+     [
+      1029.0,
+      205.0
+     ],
+     [
+      950.0,
+      205.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Billing Period",
+    "confidence": 0.9621370434761047,
+    "bbox": [
+     [
+      32.0,
+      214.0
+     ],
+     [
+      147.0,
+      214.0
+     ],
+     [
+      147.0,
+      235.0
+     ],
+     [
+      32.0,
+      235.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Bill Date",
+    "confidence": 0.899474024772644,
+    "bbox": [
+     [
+      338.0,
+      214.0
+     ],
+     [
+      412.0,
+      214.0
+     ],
+     [
+      412.0,
+      235.0
+     ],
+     [
+      338.0,
+      235.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1764577134",
+    "confidence": 0.999742865562439,
+    "bbox": [
+     [
+      549.0,
+      213.0
+     ],
+     [
+      717.0,
+      213.0
+     ],
+     [
+      717.0,
+      238.0
+     ],
+     [
+      549.0,
+      238.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "31/02/2021",
+    "confidence": 0.9990243911743164,
+    "bbox": [
+     [
+      882.0,
+      213.0
+     ],
+     [
+      1029.0,
+      213.0
+     ],
+     [
+      1029.0,
+      240.0
+     ],
+     [
+      882.0,
+      240.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "32/13/2021 to 00/00/2021",
+    "confidence": 0.9667369723320007,
+    "bbox": [
+     [
+      34.0,
+      237.0
+     ],
+     [
+      304.0,
+      235.0
+     ],
+     [
+      304.0,
+      256.0
+     ],
+     [
+      34.0,
+      258.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "31/11/2021",
+    "confidence": 0.9979717135429382,
+    "bbox": [
+     [
+      339.0,
+      238.0
+     ],
+     [
+      460.0,
+      238.0
+     ],
+     [
+      460.0,
+      259.0
+     ],
+     [
+      339.0,
+      259.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Date of Meter Reading",
+    "confidence": 0.9895572662353516,
+    "bbox": [
+     [
+      34.0,
+      273.0
+     ],
+     [
+      211.0,
+      276.0
+     ],
+     [
+      211.0,
+      297.0
+     ],
+     [
+      34.0,
+      294.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Electric Meter Number",
+    "confidence": 0.97120600938797,
+    "bbox": [
+     [
+      338.0,
+      274.0
+     ],
+     [
+      511.0,
+      276.0
+     ],
+     [
+      510.0,
+      297.0
+     ],
+     [
+      338.0,
+      296.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": " Please Pay",
+    "confidence": 0.9524926543235779,
+    "bbox": [
+     [
+      554.0,
+      286.0
+     ],
+     [
+      648.0,
+      290.0
+     ],
+     [
+      647.0,
+      311.0
+     ],
+     [
+      554.0,
+      307.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "31/02/2021",
+    "confidence": 0.9988217353820801,
+    "bbox": [
+     [
+      35.0,
+      300.0
+     ],
+     [
+      153.0,
+      300.0
+     ],
+     [
+      153.0,
+      321.0
+     ],
+     [
+      35.0,
+      321.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "119BAS089238",
+    "confidence": 0.9955012798309326,
+    "bbox": [
+     [
+      339.0,
+      300.0
+     ],
+     [
+      491.0,
+      300.0
+     ],
+     [
+      491.0,
+      321.0
+     ],
+     [
+      339.0,
+      321.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Date of Next Meter Reading",
+    "confidence": 0.9565659761428833,
+    "bbox": [
+     [
+      34.0,
+      326.0
+     ],
+     [
+      247.0,
+      327.0
+     ],
+     [
+      247.0,
+      348.0
+     ],
+     [
+      34.0,
+      347.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Current Reading",
+    "confidence": 0.9651920199394226,
+    "bbox": [
+     [
+      338.0,
+      326.0
+     ],
+     [
+      471.0,
+      327.0
+     ],
+     [
+      470.0,
+      349.0
+     ],
+     [
+      338.0,
+      347.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P 1,502.42",
+    "confidence": 0.9480805397033691,
+    "bbox": [
+     [
+      557.0,
+      329.0
+     ],
+     [
+      765.0,
+      329.0
+     ],
+     [
+      765.0,
+      370.0
+     ],
+     [
+      557.0,
+      370.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "00/00/2021",
+    "confidence": 0.9971095323562622,
+    "bbox": [
+     [
+      35.0,
+      350.0
+     ],
+     [
+      150.0,
+      350.0
+     ],
+     [
+      150.0,
+      371.0
+     ],
+     [
+      35.0,
+      371.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Customer Type",
+    "confidence": 0.989120602607727,
+    "bbox": [
+     [
+      35.0,
+      374.0
+     ],
+     [
+      157.0,
+      374.0
+     ],
+     [
+      157.0,
+      394.0
+     ],
+     [
+      35.0,
+      394.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Previous Reading",
+    "confidence": 0.9948663115501404,
+    "bbox": [
+     [
+      336.0,
+      372.0
+     ],
+     [
+      475.0,
+      374.0
+     ],
+     [
+      475.0,
+      395.0
+     ],
+     [
+      336.0,
+      394.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Residential",
+    "confidence": 0.9976655840873718,
+    "bbox": [
+     [
+      35.0,
+      395.0
+     ],
+     [
+      143.0,
+      395.0
+     ],
+     [
+      143.0,
+      416.0
+     ],
+     [
+      35.0,
+      416.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Actual Consumption",
+    "confidence": 0.9702988862991333,
+    "bbox": [
+     [
+      338.0,
+      419.0
+     ],
+     [
+      495.0,
+      419.0
+     ],
+     [
+      495.0,
+      439.0
+     ],
+     [
+      338.0,
+      439.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Bill Computation Summary",
+    "confidence": 0.9806470274925232,
+    "bbox": [
+     [
+      537.0,
+      415.0
+     ],
+     [
+      805.0,
+      416.0
+     ],
+     [
+      805.0,
+      442.0
+     ],
+     [
+      537.0,
+      440.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Your rate this month",
+    "confidence": 0.9725967645645142,
+    "bbox": [
+     [
+      35.0,
+      434.0
+     ],
+     [
+      187.0,
+      434.0
+     ],
+     [
+      187.0,
+      454.0
+     ],
+     [
+      35.0,
+      454.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P9.82 per kWh",
+    "confidence": 0.9457183480262756,
+    "bbox": [
+     [
+      37.0,
+      457.0
+     ],
+     [
+      180.0,
+      457.0
+     ],
+     [
+      180.0,
+      478.0
+     ],
+     [
+      37.0,
+      478.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Remaining Balance from previous bill",
+    "confidence": 0.9693610668182373,
+    "bbox": [
+     [
+      540.0,
+      445.0
+     ],
+     [
+      835.0,
+      445.0
+     ],
+     [
+      835.0,
+      465.0
+     ],
+     [
+      540.0,
+      465.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0.00",
+    "confidence": 0.998161792755127,
+    "bbox": [
+     [
+      995.0,
+      445.0
+     ],
+     [
+      1041.0,
+      445.0
+     ],
+     [
+      1041.0,
+      468.0
+     ],
+     [
+      995.0,
+      468.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "See Terms and Conditions for more information",
+    "confidence": 0.9632927179336548,
+    "bbox": [
+     [
+      35.0,
+      478.0
+     ],
+     [
+      304.0,
+      478.0
+     ],
+     [
+      304.0,
+      498.0
+     ],
+     [
+      35.0,
+      498.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Does not include due for payment under the Remaining Liquid",
+    "confidence": 0.9721716642379761,
+    "bbox": [
+     [
+      538.0,
+      465.0
+     ],
+     [
+      913.0,
+      465.0
+     ],
+     [
+      913.0,
+      484.0
+     ],
+     [
+      538.0,
+      484.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "ation,and includes other charges and adjustments.)",
+    "confidence": 0.9330896735191345,
+    "bbox": [
+     [
+      541.0,
+      486.0
+     ],
+     [
+      850.0,
+      486.0
+     ],
+     [
+      850.0,
+      496.0
+     ],
+     [
+      541.0,
+      496.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Please see the back page of your bill for more details about you",
+    "confidence": 0.9518287181854248,
+    "bbox": [
+     [
+      93.0,
+      520.0
+     ],
+     [
+      491.0,
+      520.0
+     ],
+     [
+      491.0,
+      540.0
+     ],
+     [
+      93.0,
+      540.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Charge for this billing period",
+    "confidence": 0.9741424322128296,
+    "bbox": [
+     [
+      540.0,
+      507.0
+     ],
+     [
+      768.0,
+      507.0
+     ],
+     [
+      768.0,
+      526.0
+     ],
+     [
+      540.0,
+      526.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1,502.42",
+    "confidence": 0.9752500057220459,
+    "bbox": [
+     [
+      958.0,
+      504.0
+     ],
+     [
+      1040.0,
+      504.0
+     ],
+     [
+      1040.0,
+      525.0
+     ],
+     [
+      958.0,
+      525.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Generation",
+    "confidence": 0.9980915188789368,
+    "bbox": [
+     [
+      560.0,
+      532.0
+     ],
+     [
+      648.0,
+      532.0
+     ],
+     [
+      648.0,
+      549.0
+     ],
+     [
+      560.0,
+      549.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "845.94",
+    "confidence": 0.9977004528045654,
+    "bbox": [
+     [
+      981.0,
+      529.0
+     ],
+     [
+      1041.0,
+      529.0
+     ],
+     [
+      1041.0,
+      551.0
+     ],
+     [
+      981.0,
+      551.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "meter reading and consumption.",
+    "confidence": 0.9791311621665955,
+    "bbox": [
+     [
+      91.0,
+      540.0
+     ],
+     [
+      296.0,
+      540.0
+     ],
+     [
+      296.0,
+      560.0
+     ],
+     [
+      91.0,
+      560.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Transmission",
+    "confidence": 0.9990913271903992,
+    "bbox": [
+     [
+      560.0,
+      554.0
+     ],
+     [
+      665.0,
+      554.0
+     ],
+     [
+      665.0,
+      570.0
+     ],
+     [
+      560.0,
+      570.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "109.27",
+    "confidence": 0.9974539875984192,
+    "bbox": [
+     [
+      981.0,
+      552.0
+     ],
+     [
+      1041.0,
+      552.0
+     ],
+     [
+      1041.0,
+      573.0
+     ],
+     [
+      981.0,
+      573.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "System Loss",
+    "confidence": 0.9806427359580994,
+    "bbox": [
+     [
+      558.0,
+      576.0
+     ],
+     [
+      656.0,
+      576.0
+     ],
+     [
+      656.0,
+      593.0
+     ],
+     [
+      558.0,
+      593.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "73.13",
+    "confidence": 0.9969056844711304,
+    "bbox": [
+     [
+      989.0,
+      573.0
+     ],
+     [
+      1041.0,
+      573.0
+     ],
+     [
+      1041.0,
+      594.0
+     ],
+     [
+      989.0,
+      594.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Distribution (Meralco)",
+    "confidence": 0.9733882546424866,
+    "bbox": [
+     [
+      558.0,
+      594.0
+     ],
+     [
+      740.0,
+      594.0
+     ],
+     [
+      740.0,
+      614.0
+     ],
+     [
+      558.0,
+      614.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "262.14",
+    "confidence": 0.9973683953285217,
+    "bbox": [
+     [
+      981.0,
+      599.0
+     ],
+     [
+      1040.0,
+      599.0
+     ],
+     [
+      1040.0,
+      615.0
+     ],
+     [
+      981.0,
+      615.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Your monthly consumption 28.3c ",
+    "confidence": 0.991320013999939,
+    "bbox": [
+     [
+      36.0,
+      605.0
+     ],
+     [
+      518.0,
+      609.0
+     ],
+     [
+      518.0,
+      646.0
+     ],
+     [
+      35.0,
+      641.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Subsidies",
+    "confidence": 0.9979512691497803,
+    "bbox": [
+     [
+      558.0,
+      612.0
+     ],
+     [
+      634.0,
+      616.0
+     ],
+     [
+      633.0,
+      637.0
+     ],
+     [
+      557.0,
+      633.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "11.63",
+    "confidence": 0.9973294138908386,
+    "bbox": [
+     [
+      989.0,
+      617.0
+     ],
+     [
+      1041.0,
+      617.0
+     ],
+     [
+      1041.0,
+      638.0
+     ],
+     [
+      989.0,
+      638.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Government Taxes",
+    "confidence": 0.9707322120666504,
+    "bbox": [
+     [
+      557.0,
+      638.0
+     ],
+     [
+      710.0,
+      638.0
+     ],
+     [
+      710.0,
+      658.0
+     ],
+     [
+      557.0,
+      658.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "154.48",
+    "confidence": 0.9966989159584045,
+    "bbox": [
+     [
+      981.0,
+      633.0
+     ],
+     [
+      1042.0,
+      637.0
+     ],
+     [
+      1040.0,
+      660.0
+     ],
+     [
+      979.0,
+      656.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Avg.temp this month 0.3",
+    "confidence": 0.9703519940376282,
+    "bbox": [
+     [
+      378.0,
+      649.0
+     ],
+     [
+      518.0,
+      649.0
+     ],
+     [
+      518.0,
+      668.0
+     ],
+     [
+      378.0,
+      668.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Universal Charges",
+    "confidence": 0.9797106385231018,
+    "bbox": [
+     [
+      557.0,
+      658.0
+     ],
+     [
+      708.0,
+      659.0
+     ],
+     [
+      708.0,
+      680.0
+     ],
+     [
+      557.0,
+      679.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "50.43",
+    "confidence": 0.9960986971855164,
+    "bbox": [
+     [
+      989.0,
+      659.0
+     ],
+     [
+      1041.0,
+      659.0
+     ],
+     [
+      1041.0,
+      680.0
+     ],
+     [
+      989.0,
+      680.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "kWh",
+    "confidence": 0.9954531788825989,
+    "bbox": [
+     [
+      57.0,
+      670.0
+     ],
+     [
+      89.0,
+      670.0
+     ],
+     [
+      89.0,
+      688.0
+     ],
+     [
+      57.0,
+      688.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0 2020",
+    "confidence": 0.9555,
+    "bbox": [
+     [
+      103.0,
+      668.0
+     ],
+     [
+      167.0,
+      668.0
+     ],
+     [
+      167.0,
+      689.0
+     ],
+     [
+      103.0,
+      689.0
+     ]
+    ],
+    "engine": "trocr"
+   },
+   {
+    "text": "0 2021",
+    "confidence": 0.9413,
+    "bbox": [
+     [
+      184.0,
+      670.0
+     ],
+     [
+      242.0,
+      670.0
+     ],
+     [
+      242.0,
+      686.0
+     ],
+     [
+      184.0,
+      686.0
+     ]
+    ],
+    "engine": "trocr"
+   },
+   {
+    "text": "deg.higher than prev",
+    "confidence": 0.972955048084259,
+    "bbox": [
+     [
+      379.0,
+      668.0
+     ],
+     [
+      495.0,
+      668.0
+     ],
+     [
+      495.0,
+      683.0
+     ],
+     [
+      379.0,
+      683.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "405",
+    "confidence": 0.9987984299659729,
+    "bbox": [
+     [
+      76.0,
+      697.0
+     ],
+     [
+      110.0,
+      697.0
+     ],
+     [
+      110.0,
+      721.0
+     ],
+     [
+      76.0,
+      721.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "FIT-All (Renewable)",
+    "confidence": 0.9551325440406799,
+    "bbox": [
+     [
+      558.0,
+      682.0
+     ],
+     [
+      720.0,
+      682.0
+     ],
+     [
+      720.0,
+      703.0
+     ],
+     [
+      558.0,
+      703.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "15.04",
+    "confidence": 0.9973773956298828,
+    "bbox": [
+     [
+      990.0,
+      683.0
+     ],
+     [
+      1041.0,
+      683.0
+     ],
+     [
+      1041.0,
+      704.0
+     ],
+     [
+      990.0,
+      704.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "324",
+    "confidence": 0.9989455342292786,
+    "bbox": [
+     [
+      77.0,
+      727.0
+     ],
+     [
+      110.0,
+      727.0
+     ],
+     [
+      110.0,
+      748.0
+     ],
+     [
+      77.0,
+      748.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "243",
+    "confidence": 0.9991524815559387,
+    "bbox": [
+     [
+      77.0,
+      754.0
+     ],
+     [
+      110.0,
+      754.0
+     ],
+     [
+      110.0,
+      775.0
+     ],
+     [
+      77.0,
+      775.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "162",
+    "confidence": 0.9991400241851807,
+    "bbox": [
+     [
+      79.0,
+      781.0
+     ],
+     [
+      108.0,
+      781.0
+     ],
+     [
+      108.0,
+      801.0
+     ],
+     [
+      79.0,
+      801.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Total Amount Due",
+    "confidence": 0.9681218266487122,
+    "bbox": [
+     [
+      551.0,
+      790.0
+     ],
+     [
+      714.0,
+      790.0
+     ],
+     [
+      714.0,
+      810.0
+     ],
+     [
+      551.0,
+      810.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P 1,502.42",
+    "confidence": 0.995653510093689,
+    "bbox": [
+     [
+      926.0,
+      787.0
+     ],
+     [
+      1049.0,
+      791.0
+     ],
+     [
+      1048.0,
+      816.0
+     ],
+     [
+      925.0,
+      813.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "81",
+    "confidence": 0.9971727132797241,
+    "bbox": [
+     [
+      86.0,
+      810.0
+     ],
+     [
+      106.0,
+      810.0
+     ],
+     [
+      106.0,
+      830.0
+     ],
+     [
+      86.0,
+      830.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Jan Feb Mar Apr May Jun",
+    "confidence": 0.9264991879463196,
+    "bbox": [
+     [
+      119.0,
+      851.0
+     ],
+     [
+      324.0,
+      851.0
+     ],
+     [
+      324.0,
+      870.0
+     ],
+     [
+      119.0,
+      870.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Jul Aug Sep Oct Nov Dec",
+    "confidence": 0.9118102788925171,
+    "bbox": [
+     [
+      315.0,
+      851.0
+     ],
+     [
+      515.0,
+      851.0
+     ],
+     [
+      515.0,
+      870.0
+     ],
+     [
+      315.0,
+      870.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Bill concerns?",
+    "confidence": 0.9972972869873047,
+    "bbox": [
+     [
+      824.0,
+      848.0
+     ],
+     [
+      990.0,
+      848.0
+     ],
+     [
+      990.0,
+      873.0
+     ],
+     [
+      824.0,
+      873.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "kWh",
+    "confidence": 0.9888877868652344,
+    "bbox": [
+     [
+      71.0,
+      872.0
+     ],
+     [
+      102.0,
+      872.0
+     ],
+     [
+      102.0,
+      890.0
+     ],
+     [
+      71.0,
+      890.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "97",
+    "confidence": 0.995345413684845,
+    "bbox": [
+     [
+      122.0,
+      876.0
+     ],
+     [
+      145.0,
+      876.0
+     ],
+     [
+      145.0,
+      891.0
+     ],
+     [
+      122.0,
+      891.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "106111",
+    "confidence": 0.9941665530204773,
+    "bbox": [
+     [
+      147.0,
+      875.0
+     ],
+     [
+      213.0,
+      875.0
+     ],
+     [
+      213.0,
+      891.0
+     ],
+     [
+      147.0,
+      891.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "98",
+    "confidence": 0.9980900287628174,
+    "bbox": [
+     [
+      222.0,
+      876.0
+     ],
+     [
+      242.0,
+      876.0
+     ],
+     [
+      242.0,
+      890.0
+     ],
+     [
+      222.0,
+      890.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "103",
+    "confidence": 0.9992049336433411,
+    "bbox": [
+     [
+      255.0,
+      878.0
+     ],
+     [
+      276.0,
+      878.0
+     ],
+     [
+      276.0,
+      890.0
+     ],
+     [
+      255.0,
+      890.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "107",
+    "confidence": 0.9956221580505371,
+    "bbox": [
+     [
+      290.0,
+      875.0
+     ],
+     [
+      324.0,
+      875.0
+     ],
+     [
+      324.0,
+      891.0
+     ],
+     [
+      290.0,
+      891.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "112",
+    "confidence": 0.9984984397888184,
+    "bbox": [
+     [
+      318.0,
+      875.0
+     ],
+     [
+      349.0,
+      875.0
+     ],
+     [
+      349.0,
+      891.0
+     ],
+     [
+      318.0,
+      891.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "119",
+    "confidence": 0.9980904459953308,
+    "bbox": [
+     [
+      356.0,
+      875.0
+     ],
+     [
+      387.0,
+      875.0
+     ],
+     [
+      387.0,
+      891.0
+     ],
+     [
+      356.0,
+      891.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "167",
+    "confidence": 0.9981462955474854,
+    "bbox": [
+     [
+      389.0,
+      878.0
+     ],
+     [
+      417.0,
+      878.0
+     ],
+     [
+      417.0,
+      890.0
+     ],
+     [
+      389.0,
+      890.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "156144153",
+    "confidence": 0.9984095692634583,
+    "bbox": [
+     [
+      412.0,
+      876.0
+     ],
+     [
+      517.0,
+      876.0
+     ],
+     [
+      517.0,
+      891.0
+     ],
+     [
+      412.0,
+      891.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Connect with us through our 24/7 channels:",
+    "confidence": 0.9567034840583801,
+    "bbox": [
+     [
+      756.0,
+      881.0
+     ],
+     [
+      1046.0,
+      881.0
+     ],
+     [
+      1046.0,
+      900.0
+     ],
+     [
+      756.0,
+      900.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Your consumption explained",
+    "confidence": 0.9941253066062927,
+    "bbox": [
+     [
+      37.0,
+      911.0
+     ],
+     [
+      275.0,
+      911.0
+     ],
+     [
+      275.0,
+      931.0
+     ],
+     [
+      37.0,
+      931.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Your typical consumption",
+    "confidence": 0.9846148490905762,
+    "bbox": [
+     [
+      296.0,
+      916.0
+     ],
+     [
+      517.0,
+      917.0
+     ],
+     [
+      517.0,
+      938.0
+     ],
+     [
+      296.0,
+      937.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "f",
+    "confidence": 0.9947850108146667,
+    "bbox": [
+     [
+      793.0,
+      917.0
+     ],
+     [
+      816.0,
+      917.0
+     ],
+     [
+      816.0,
+      935.0
+     ],
+     [
+      793.0,
+      935.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "fb.com/meralco",
+    "confidence": 0.9737977981567383,
+    "bbox": [
+     [
+      826.0,
+      912.0
+     ],
+     [
+      940.0,
+      916.0
+     ],
+     [
+      939.0,
+      937.0
+     ],
+     [
+      825.0,
+      933.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "This bill is 1.6%ower -17.6 kWh",
+    "confidence": 0.895999550819397,
+    "bbox": [
+     [
+      60.0,
+      935.0
+     ],
+     [
+      268.0,
+      937.0
+     ],
+     [
+      268.0,
+      958.0
+     ],
+     [
+      60.0,
+      956.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "previous billing period.",
+    "confidence": 0.9581959843635559,
+    "bbox": [
+     [
+      62.0,
+      955.0
+     ],
+     [
+      202.0,
+      955.0
+     ],
+     [
+      202.0,
+      974.0
+     ],
+     [
+      62.0,
+      974.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "144 kWh",
+    "confidence": 0.927628219127655,
+    "bbox": [
+     [
+      299.0,
+      944.0
+     ],
+     [
+      366.0,
+      944.0
+     ],
+     [
+      366.0,
+      965.0
+     ],
+     [
+      299.0,
+      965.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "5.1 kWh",
+    "confidence": 0.9233352541923523,
+    "bbox": [
+     [
+      381.0,
+      944.0
+     ],
+     [
+      444.0,
+      944.0
+     ],
+     [
+      444.0,
+      965.0
+     ],
+     [
+      381.0,
+      965.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "*50.1",
+    "confidence": 0.897005558013916,
+    "bbox": [
+     [
+      466.0,
+      944.0
+     ],
+     [
+      514.0,
+      944.0
+     ],
+     [
+      514.0,
+      965.0
+     ],
+     [
+      466.0,
+      965.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "y",
+    "confidence": 0.9113579392433167,
+    "bbox": [
+     [
+      793.0,
+      950.0
+     ],
+     [
+      814.0,
+      950.0
+     ],
+     [
+      814.0,
+      976.0
+     ],
+     [
+      793.0,
+      976.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "@meralco",
+    "confidence": 0.9657090902328491,
+    "bbox": [
+     [
+      830.0,
+      953.0
+     ],
+     [
+      901.0,
+      953.0
+     ],
+     [
+      901.0,
+      970.0
+     ],
+     [
+      830.0,
+      970.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "per month",
+    "confidence": 0.9842773079872131,
+    "bbox": [
+     [
+      298.0,
+      968.0
+     ],
+     [
+      366.0,
+      968.0
+     ],
+     [
+      366.0,
+      985.0
+     ],
+     [
+      298.0,
+      985.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "per day",
+    "confidence": 0.9850753545761108,
+    "bbox": [
+     [
+      383.0,
+      968.0
+     ],
+     [
+      435.0,
+      968.0
+     ],
+     [
+      435.0,
+      985.0
+     ],
+     [
+      383.0,
+      985.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Avg.daily",
+    "confidence": 0.9828351140022278,
+    "bbox": [
+     [
+      457.0,
+      965.0
+     ],
+     [
+      521.0,
+      965.0
+     ],
+     [
+      521.0,
+      986.0
+     ],
+     [
+      457.0,
+      986.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "This bill is5.3%lower -176kWh",
+    "confidence": 0.9000780582427979,
+    "bbox": [
+     [
+      62.0,
+      983.0
+     ],
+     [
+      259.0,
+      983.0
+     ],
+     [
+      259.0,
+      1003.0
+     ],
+     [
+      62.0,
+      1003.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "consumption",
+    "confidence": 0.9950171113014221,
+    "bbox": [
+     [
+      454.0,
+      986.0
+     ],
+     [
+      531.0,
+      986.0
+     ],
+     [
+      531.0,
+      1003.0
+     ],
+     [
+      454.0,
+      1003.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "C",
+    "confidence": 0.4543592631816864,
+    "bbox": [
+     [
+      793.0,
+      988.0
+     ],
+     [
+      816.0,
+      988.0
+     ],
+     [
+      816.0,
+      1008.0
+     ],
+     [
+      793.0,
+      1008.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Hotline 16211",
+    "confidence": 0.9462411403656006,
+    "bbox": [
+     [
+      828.0,
+      991.0
+     ],
+     [
+      929.0,
+      991.0
+     ],
+     [
+      929.0,
+      1008.0
+     ],
+     [
+      828.0,
+      1008.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "vs.same period last year.",
+    "confidence": 0.9747681617736816,
+    "bbox": [
+     [
+      63.0,
+      1003.0
+     ],
+     [
+      208.0,
+      1003.0
+     ],
+     [
+      208.0,
+      1018.0
+     ],
+     [
+      63.0,
+      1018.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "(orsimilar)",
+    "confidence": 0.9885768890380859,
+    "bbox": [
+     [
+      301.0,
+      1005.0
+     ],
+     [
+      361.0,
+      1005.0
+     ],
+     [
+      361.0,
+      1020.0
+     ],
+     [
+      301.0,
+      1020.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "(orsimilar)",
+    "confidence": 0.9446563720703125,
+    "bbox": [
+     [
+      373.0,
+      1005.0
+     ],
+     [
+      440.0,
+      1005.0
+     ],
+     [
+      440.0,
+      1020.0
+     ],
+     [
+      373.0,
+      1020.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "(orsinilar)",
+    "confidence": 0.983002245426178,
+    "bbox": [
+     [
+      452.0,
+      1005.0
+     ],
+     [
+      514.0,
+      1005.0
+     ],
+     [
+      514.0,
+      1021.0
+     ],
+     [
+      452.0,
+      1021.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Environmental Impact",
+    "confidence": 0.9860330820083618,
+    "bbox": [
+     [
+      37.0,
+      1032.0
+     ],
+     [
+      230.0,
+      1032.0
+     ],
+     [
+      230.0,
+      1051.0
+     ],
+     [
+      37.0,
+      1051.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "customercare@meralco.com.ph",
+    "confidence": 0.9962165951728821,
+    "bbox": [
+     [
+      827.0,
+      1023.0
+     ],
+     [
+      1032.0,
+      1023.0
+     ],
+     [
+      1032.0,
+      1042.0
+     ],
+     [
+      827.0,
+      1042.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Be the energy efficient.Save the planet one drop at a time.",
+    "confidence": 0.9734800457954407,
+    "bbox": [
+     [
+      35.0,
+      1053.0
+     ],
+     [
+      409.0,
+      1053.0
+     ],
+     [
+      409.0,
+      1072.0
+     ],
+     [
+      35.0,
+      1072.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "153kWh",
+    "confidence": 0.9899694323539734,
+    "bbox": [
+     [
+      76.0,
+      1077.0
+     ],
+     [
+      139.0,
+      1077.0
+     ],
+     [
+      139.0,
+      1094.0
+     ],
+     [
+      76.0,
+      1094.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "C",
+    "confidence": 0.11409689486026764,
+    "bbox": [
+     [
+      187.0,
+      1083.0
+     ],
+     [
+      207.0,
+      1083.0
+     ],
+     [
+      207.0,
+      1097.0
+     ],
+     [
+      187.0,
+      1097.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "0.1090tc0e",
+    "confidence": 0.9635157585144043,
+    "bbox": [
+     [
+      218.0,
+      1077.0
+     ],
+     [
+      309.0,
+      1077.0
+     ],
+     [
+      309.0,
+      1094.0
+     ],
+     [
+      218.0,
+      1094.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "5trees*",
+    "confidence": 0.987579882144928,
+    "bbox": [
+     [
+      398.0,
+      1077.0
+     ],
+     [
+      454.0,
+      1077.0
+     ],
+     [
+      454.0,
+      1094.0
+     ],
+     [
+      398.0,
+      1094.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Electricity Used",
+    "confidence": 0.9709927439689636,
+    "bbox": [
+     [
+      71.0,
+      1093.0
+     ],
+     [
+      165.0,
+      1095.0
+     ],
+     [
+      165.0,
+      1112.0
+     ],
+     [
+      71.0,
+      1110.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Carbon Emissions",
+    "confidence": 0.9899556636810303,
+    "bbox": [
+     [
+      216.0,
+      1093.0
+     ],
+     [
+      327.0,
+      1095.0
+     ],
+     [
+      327.0,
+      1112.0
+     ],
+     [
+      216.0,
+      1110.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "=to Offset Emissions",
+    "confidence": 0.9878670573234558,
+    "bbox": [
+     [
+      400.0,
+      1097.0
+     ],
+     [
+      512.0,
+      1097.0
+     ],
+     [
+      512.0,
+      1112.0
+     ],
+     [
+      400.0,
+      1112.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Using D0E,2015-2017National Emission Grid Factor of 0.0007122 tC0/kWh.",
+    "confidence": 0.8904396295547485,
+    "bbox": [
+     [
+      35.0,
+      1124.0
+     ],
+     [
+      455.0,
+      1124.0
+     ],
+     [
+      455.0,
+      1143.0
+     ],
+     [
+      35.0,
+      1143.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "ForArbor Day Foundation1 mature tree can absorb 48 pounds0.0218 tonneof CO/year",
+    "confidence": 0.9132989645004272,
+    "bbox": [
+     [
+      36.0,
+      1139.0
+     ],
+     [
+      517.0,
+      1140.0
+     ],
+     [
+      517.0,
+      1160.0
+     ],
+     [
+      35.0,
+      1158.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Please be informed that MERALCO may conduct a routine metereline inspection of your",
+    "confidence": 0.9612149000167847,
+    "bbox": [
+     [
+      548.0,
+      1127.0
+     ],
+     [
+      1041.0,
+      1127.0
+     ],
+     [
+      1041.0,
+      1142.0
+     ],
+     [
+      548.0,
+      1142.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "customer metering facilities without prior notice.",
+    "confidence": 0.9655292630195618,
+    "bbox": [
+     [
+      546.0,
+      1143.0
+     ],
+     [
+      822.0,
+      1143.0
+     ],
+     [
+      822.0,
+      1158.0
+     ],
+     [
+      546.0,
+      1158.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Payment Instruction",
+    "confidence": 0.9926995635032654,
+    "bbox": [
+     [
+      48.0,
+      1181.0
+     ],
+     [
+      242.0,
+      1184.0
+     ],
+     [
+      242.0,
+      1205.0
+     ],
+     [
+      48.0,
+      1202.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "O",
+    "confidence": 0.24754318594932556,
+    "bbox": [
+     [
+      76.0,
+      1213.0
+     ],
+     [
+      99.0,
+      1213.0
+     ],
+     [
+      99.0,
+      1231.0
+     ],
+     [
+      76.0,
+      1231.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Please pay at any Meralco Business Center or through any",
+    "confidence": 0.9692772626876831,
+    "bbox": [
+     [
+      173.0,
+      1207.0
+     ],
+     [
+      515.0,
+      1207.0
+     ],
+     [
+      515.0,
+      1222.0
+     ],
+     [
+      173.0,
+      1222.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Customer Account No.(CAN)",
+    "confidence": 0.9599149823188782,
+    "bbox": [
+     [
+      563.0,
+      1204.0
+     ],
+     [
+      776.0,
+      1204.0
+     ],
+     [
+      776.0,
+      1223.0
+     ],
+     [
+      563.0,
+      1223.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": " Please Pay",
+    "confidence": 0.9907551407814026,
+    "bbox": [
+     [
+      823.0,
+      1200.0
+     ],
+     [
+      911.0,
+      1206.0
+     ],
+     [
+      909.0,
+      1227.0
+     ],
+     [
+      822.0,
+      1221.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "2",
+    "confidence": 0.5381112098693848,
+    "bbox": [
+     [
+      77.0,
+      1237.0
+     ],
+     [
+      93.0,
+      1237.0
+     ],
+     [
+      93.0,
+      1249.0
+     ],
+     [
+      77.0,
+      1249.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "accredited payment partner before the due date.",
+    "confidence": 0.9797013998031616,
+    "bbox": [
+     [
+      171.0,
+      1223.0
+     ],
+     [
+      460.0,
+      1222.0
+     ],
+     [
+      460.0,
+      1238.0
+     ],
+     [
+      171.0,
+      1240.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "1764577134",
+    "confidence": 0.9510055780410767,
+    "bbox": [
+     [
+      568.0,
+      1237.0
+     ],
+     [
+      714.0,
+      1237.0
+     ],
+     [
+      714.0,
+      1258.0
+     ],
+     [
+      568.0,
+      1258.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "P1,502.42",
+    "confidence": 0.9989656805992126,
+    "bbox": [
+     [
+      825.0,
+      1234.0
+     ],
+     [
+      960.0,
+      1234.0
+     ],
+     [
+      960.0,
+      1261.0
+     ],
+     [
+      825.0,
+      1261.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "Payment made after 11 Dec 2021 will be re-lected",
+    "confidence": 0.9527704119682312,
+    "bbox": [
+     [
+      171.0,
+      1247.0
+     ],
+     [
+      477.0,
+      1247.0
+     ],
+     [
+      477.0,
+      1262.0
+     ],
+     [
+      171.0,
+      1262.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "O",
+    "confidence": 0.20990689098834991,
+    "bbox": [
+     [
+      74.0,
+      1259.0
+     ],
+     [
+      108.0,
+      1263.0
+     ],
+     [
+      106.0,
+      1283.0
+     ],
+     [
+      72.0,
+      1278.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "on your next bill.",
+    "confidence": 0.953614354133606,
+    "bbox": [
+     [
+      173.0,
+      1264.0
+     ],
+     [
+      275.0,
+      1264.0
+     ],
+     [
+      275.0,
+      1279.0
+     ],
+     [
+      173.0,
+      1279.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "QR code contains",
+    "confidence": 0.9816924929618835,
+    "bbox": [
+     [
+      48.0,
+      1285.0
+     ],
+     [
+      165.0,
+      1288.0
+     ],
+     [
+      165.0,
+      1308.0
+     ],
+     [
+      48.0,
+      1305.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "BIR Permit No.0305-116-000364-PAARebt:March 21,2005",
+    "confidence": 0.9290196299552917,
+    "bbox": [
+     [
+      173.0,
+      1296.0
+     ],
+     [
+      531.0,
+      1297.0
+     ],
+     [
+      531.0,
+      1317.0
+     ],
+     [
+      173.0,
+      1315.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "your CAN.",
+    "confidence": 0.9371641874313354,
+    "bbox": [
+     [
+      79.0,
+      1305.0
+     ],
+     [
+      143.0,
+      1305.0
+     ],
+     [
+      143.0,
+      1321.0
+     ],
+     [
+      79.0,
+      1321.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "MMERALCO",
+    "confidence": 0.9807407855987549,
+    "bbox": [
+     [
+      874.0,
+      1306.0
+     ],
+     [
+      1045.0,
+      1303.0
+     ],
+     [
+      1046.0,
+      1335.0
+     ],
+     [
+      875.0,
+      1338.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "For more information, you may reach us",
+    "confidence": 0.9509604573249817,
+    "bbox": [
+     [
+      37.0,
+      1342.0
+     ],
+     [
+      324.0,
+      1342.0
+     ],
+     [
+      324.0,
+      1362.0
+     ],
+     [
+      37.0,
+      1362.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": " @meralco  customercare@meralco.com.ph",
+    "confidence": 0.9595090746879578,
+    "bbox": [
+     [
+      346.0,
+      1353.0
+     ],
+     [
+      794.0,
+      1353.0
+     ],
+     [
+      794.0,
+      1379.0
+     ],
+     [
+      346.0,
+      1379.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "www.meralco.com.ph",
+    "confidence": 0.9815390706062317,
+    "bbox": [
+     [
+      794.0,
+      1354.0
+     ],
+     [
+      967.0,
+      1354.0
+     ],
+     [
+      967.0,
+      1376.0
+     ],
+     [
+      794.0,
+      1376.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "C16211",
+    "confidence": 0.9304237365722656,
+    "bbox": [
+     [
+      980.0,
+      1356.0
+     ],
+     [
+      1052.0,
+      1356.0
+     ],
+     [
+      1052.0,
+      1377.0
+     ],
+     [
+      980.0,
+      1377.0
+     ]
+    ],
+    "engine": "paddleocr"
+   },
+   {
+    "text": "through any of our channels:",
+    "confidence": 0.9649396538734436,
+    "bbox": [
+     [
+      37.0,
+      1362.0
+     ],
+     [
+      241.0,
+      1362.0
+     ],
+     [
+      241.0,
+      1382.0
+     ],
+     [
+      37.0,
+      1382.0
+     ]
+    ],
+    "engine": "paddleocr"
+   }
+  ]
+ },
+ "final": {
+  "vendor_name": "MERALCO",
+  "vendor_address": "STA.MARIA BUSINESS CENTER, PROVINCIAL",
+  "vendor_tax_id": "000-101-528-000",
+  "customer_name": "SANTOS,ROBERT POLLEDO",
+  "customer_address": "055 NATIONAL RD, CAYPOMBO, SANTA MARIA 3022 BULACAN",
+  "invoice_number": "2141123 658608",
+  "invoice_date": "2021-11-30",
+  "due_date": null,
+  "subtotal": 1502.42,
+  "tax_amount": null,
+  "total_amount": 1502.42,
+  "current_charges_total": 1502.42,
+  "previous_balance": 0.0,
+  "currency": "PHP",
+  "line_items": [
+   {
+    "description": "Generation",
+    "quantity": 1.0,
+    "unit_price": 845.94,
+    "amount": 845.94
+   },
+   {
+    "description": "Transmission",
+    "quantity": 1.0,
+    "unit_price": 109.27,
+    "amount": 109.27
+   },
+   {
+    "description": "System Loss",
+    "quantity": 1.0,
+    "unit_price": 73.13,
+    "amount": 73.13
+   },
+   {
+    "description": "Distribution (Meralco)",
+    "quantity": 1.0,
+    "unit_price": 262.14,
+    "amount": 262.14
+   },
+   {
+    "description": "Subsidies",
+    "quantity": 1.0,
+    "unit_price": 11.63,
+    "amount": 11.63
+   },
+   {
+    "description": "Government Taxes",
+    "quantity": 1.0,
+    "unit_price": 154.48,
+    "amount": 154.48
+   },
+   {
+    "description": "Universal Charges",
+    "quantity": 1.0,
+    "unit_price": 50.43,
+    "amount": 50.43
+   },
+   {
+    "description": "FIT-All (Renewable)",
+    "quantity": 1.0,
+    "unit_price": 15.04,
+    "amount": 15.04
+   }
+  ]
+ }
+}

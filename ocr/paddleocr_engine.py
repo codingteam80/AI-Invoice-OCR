@@ -123,7 +123,7 @@ def detect_boxes(image_path: str) -> list:
             for entry in raw]
 
 
-def recognize_crop(crop) -> dict:
+def recognize_crop(crop, classify_angle: bool = True) -> dict:
     """
     Recognition-only pass on an already-cropped line/word image (numpy
     array, BGR). Used by the hybrid router to read a single region that's
@@ -132,7 +132,7 @@ def recognize_crop(crop) -> dict:
     Returns: {"text": str, "confidence": float}
     """
     ocr = _get_paddle_instance()
-    result = ocr.ocr(crop, cls=True, det=False, rec=True)
+    result = ocr.ocr(crop, cls=classify_angle, det=False, rec=True)
     if not result or not result[0]:
         return {"text": "", "confidence": 0.0}
     text, conf = result[0][0]

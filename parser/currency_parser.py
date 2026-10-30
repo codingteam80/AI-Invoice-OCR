@@ -1,5 +1,6 @@
 """Currency detection and numeric normalization."""
 import re
+import math
 from config.constants import CURRENCY_SYMBOLS
 
 _ISO_CODES = {"USD", "EUR", "GBP", "JPY", "PHP", "INR", "KRW", "AUD", "CAD", "SGD", "CNY"}
@@ -7,16 +8,24 @@ _ISO_CODES = {"USD", "EUR", "GBP", "JPY", "PHP", "INR", "KRW", "AUD", "CAD", "SG
 
 def normalize_currency(value: str) -> str:
     if not value:
-        return "USD"
+        return ""
+    value = str(value)
     v = value.strip().upper()
     if v in _ISO_CODES:
         return v
     if value.strip() in CURRENCY_SYMBOLS:
         return CURRENCY_SYMBOLS[value.strip()]
+    # Standalone P and P immediately before a price are Philippine peso
+    # notation; never infer PHP from an arbitrary letter P in an address.
+    if v in {"P", "PESO", "PESOS", "PHILIPPINE PESO", "PHILIPPINE PESOS"}:
+        return "PHP"
+    if re.search(r"(?<![A-Za-z])P\s*(?=\d[\d,]*(?:\.\d{1,2})?\b)", value, re.I):
+        return "PHP"
     for symbol, code in CURRENCY_SYMBOLS.items():
-        if symbol in value:
-            return code
-    return "USD"
+        if len(symbol) > 1 or not symbol.isalpha():
+            if symbol in value:
+                return code
+    return v
 
 
 def to_float(value) -> float | None:
@@ -43,8 +52,10 @@ def to_float(value) -> float | None:
     """
     if value is None:
         return None
+    if isinstance(value, bool):
+        return None
     if isinstance(value, (int, float)):
-        return float(value)
+        return float(value) if math.isfinite(value) else None
     s = str(value).strip()
     if not s:
         return None
